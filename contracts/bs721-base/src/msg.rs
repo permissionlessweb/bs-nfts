@@ -70,6 +70,12 @@ pub struct MintMsg<T> {
     /// Should point to a JSON file that conforms to the ERC721
     /// Metadata JSON Schema
     pub token_uri: Option<String>,
+    /// Seller fee basis points, 0-10000
+    /// 0 means no fee, 100 means 1%, 10000 means 100%
+    /// This is the fee paid by the buyer to the original creator
+    pub seller_fee_bps: Option<u16>,
+    /// Payment address, is the address that will receive the payment
+    pub payment_addr: Option<String>,
     /// Any custom extension used by this contract
     pub extension: T,
 }

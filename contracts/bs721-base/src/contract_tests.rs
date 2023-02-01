@@ -1,6 +1,6 @@
 #![cfg(test)]
 use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
-use cosmwasm_std::{from_binary, to_binary, CosmosMsg, DepsMut, Empty, Response, WasmMsg};
+use cosmwasm_std::{from_binary, to_binary, CosmosMsg, DepsMut, Empty, Response, WasmMsg, Addr};
 
 use bs721::{
     Approval, ApprovalResponse, ContractInfoResponse, Bs721Query, Bs721ReceiveMsg, Expiration,
@@ -82,6 +82,8 @@ fn minting() {
         token_id: token_id.clone(),
         owner: String::from("medusa"),
         token_uri: Some(token_uri.clone()),
+        seller_fee_bps: Option::from(100u16),
+        payment_addr: Option::from("addr".to_string()),
         extension: None,
     });
 
@@ -113,6 +115,8 @@ fn minting() {
         info,
         NftInfoResponse::<Extension> {
             token_uri: Some(token_uri),
+            seller_fee_bps: Option::from(100u16),
+            payment_addr: Option::from(Addr::unchecked("addr")),
             extension: None,
         }
     );
@@ -133,6 +137,8 @@ fn minting() {
     let mint_msg2 = ExecuteMsg::Mint(MintMsg::<Extension> {
         token_id: token_id.clone(),
         owner: String::from("hercules"),
+        seller_fee_bps: Option::from(100u16),
+        payment_addr: Option::from("addr".to_string()),
         token_uri: None,
         extension: None,
     });
@@ -161,6 +167,8 @@ fn burning() {
         token_id: token_id.clone(),
         owner: MINTER.to_string(),
         token_uri: Some(token_uri),
+        seller_fee_bps: Option::from(100u16),
+        payment_addr: Option::from("addr".to_string()),
         extension: None,
     });
 
@@ -211,6 +219,8 @@ fn transferring_nft() {
         token_id: token_id.clone(),
         owner: String::from("venus"),
         token_uri: Some(token_uri),
+        seller_fee_bps: Option::from(100u16),
+        payment_addr: Option::from("addr".to_string()),
         extension: None,
     });
 
@@ -265,6 +275,8 @@ fn sending_nft() {
         token_id: token_id.clone(),
         owner: String::from("venus"),
         token_uri: Some(token_uri),
+        seller_fee_bps: Option::from(100u16),
+        payment_addr: Option::from("addr".to_string()),
         extension: None,
     });
 
@@ -331,6 +343,8 @@ fn approving_revoking() {
         token_id: token_id.clone(),
         owner: String::from("demeter"),
         token_uri: Some(token_uri),
+        seller_fee_bps: Option::from(100u16),
+        payment_addr: Option::from("addr".to_string()),
         extension: None,
     });
 
@@ -478,6 +492,8 @@ fn approving_all_revoking_all() {
         token_id: token_id1.clone(),
         owner: String::from("demeter"),
         token_uri: Some(token_uri1),
+        seller_fee_bps: Option::from(100u16),
+        payment_addr: Option::from("addr".to_string()),
         extension: None,
     });
 
@@ -490,6 +506,8 @@ fn approving_all_revoking_all() {
         token_id: token_id2.clone(),
         owner: String::from("demeter"),
         token_uri: Some(token_uri2),
+        seller_fee_bps: Option::from(100u16),
+        payment_addr: Option::from("addr".to_string()),
         extension: None,
     });
 
@@ -693,6 +711,8 @@ fn query_tokens_by_owner() {
     let mint_msg = ExecuteMsg::Mint(MintMsg::<Extension> {
         token_id: token_id1.clone(),
         owner: demeter.clone(),
+        seller_fee_bps: Option::from(100u16),
+        payment_addr: Option::from("addr".to_string()),
         token_uri: None,
         extension: None,
     });
@@ -703,6 +723,8 @@ fn query_tokens_by_owner() {
     let mint_msg = ExecuteMsg::Mint(MintMsg::<Extension> {
         token_id: token_id2.clone(),
         owner: ceres.clone(),
+        seller_fee_bps: Option::from(100u16),
+        payment_addr: Option::from("addr".to_string()),
         token_uri: None,
         extension: None,
     });
@@ -713,6 +735,8 @@ fn query_tokens_by_owner() {
     let mint_msg = ExecuteMsg::Mint(MintMsg::<Extension> {
         token_id: token_id3.clone(),
         owner: demeter.clone(),
+        seller_fee_bps: Option::from(100u16),
+        payment_addr: Option::from("addr".to_string()),
         token_uri: None,
         extension: None,
     });

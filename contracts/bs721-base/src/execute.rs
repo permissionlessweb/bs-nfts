@@ -4,6 +4,7 @@ use serde::Serialize;
 use cosmwasm_std::{Binary, CustomMsg, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
 
 use cw2::set_contract_version;
+use cw_utils::maybe_addr;
 use bs721::{ContractInfoResponse, Bs721Execute, Bs721ReceiveMsg, Expiration};
 
 use crate::error::ContractError;
@@ -13,6 +14,8 @@ use crate::state::{Approval, Bs721Contract, TokenInfo};
 // Version info for migration
 const CONTRACT_NAME: &str = "crates.io:bs721-base";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
+
+const MAX_SELLER_FEE: u16 = 10000; // mean 100%
 
 impl<'a, T, C, E, Q> Bs721Contract<'a, T, C, E, Q>
 where
@@ -98,12 +101,28 @@ where
             return Err(ContractError::Unauthorized {});
         }
 
+        // seller fee and payment address are optional, if one is set, both must be set
+        if (msg.seller_fee_bps.is_some() && msg.payment_addr.is_none())
+            || (msg.seller_fee_bps.is_none() && msg.payment_addr.is_some())
+        {
+            return Err(ContractError::InvalidSellerFee {});
+        }
+
+        // seller fee must be between 0 and 100%
+        if let Some(fee) = msg.seller_fee_bps {
+            if fee > MAX_SELLER_FEE {
+                return Err(ContractError::MaxSellerFeeExceeded {});
+            }
+        }
+
         // create the token
         let token = TokenInfo {
             owner: deps.api.addr_validate(&msg.owner)?,
             approvals: vec![],
             token_uri: msg.token_uri,
             extension: msg.extension,
+            seller_fee_bps: msg.seller_fee_bps,
+            payment_addr: maybe_addr(deps.api, msg.payment_addr)?,
         };
         self.tokens
             .update(deps.storage, &msg.token_id, |old| match old {

@@ -39,6 +39,8 @@ where
         let info = self.tokens.load(deps.storage, &token_id)?;
         Ok(NftInfoResponse {
             token_uri: info.token_uri,
+            seller_fee_bps: info.seller_fee_bps,
+            payment_addr: info.payment_addr,
             extension: info.extension,
         })
     }
@@ -203,6 +205,8 @@ where
             },
             info: NftInfoResponse {
                 token_uri: info.token_uri,
+                seller_fee_bps: info.seller_fee_bps,
+                payment_addr: info.payment_addr,
                 extension: info.extension,
             },
         })

@@ -2,7 +2,7 @@
 members = ["packages/*", "contracts/*"]
 
 [workspace.package]
-version       = "0.1.0"
+version       = "0.1.0-alpha.1"
 edition       = "2021"
 license       = "Apache-2.0"
 repository    = "https://github.com/bitsongofficial/bs-nfts"
@@ -14,8 +14,8 @@ cosmwasm-schema = "1.1.5"
 cosmwasm-std    = "1.1.5"
 cw2             = "0.16.0"
 cw20            = "0.16.0"
-bs721           = { version = "0.1.0", path = "./packages/bs721" }
-bs721-base      = { version = "0.1.0", path = "contracts/bs721-base" }
+bs721           = { version = "0.1.0-alpha.1", path = "./packages/bs721" }
+bs721-base      = { version = "0.1.0-alpha.1", path = "contracts/bs721-base" }
 cw-storage-plus = "0.16.0"
 cw-utils        = "0.16.0"
 schemars        = "0.8.10"

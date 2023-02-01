@@ -17,4 +17,10 @@ pub enum ContractError {
 
     #[error("Approval not found for: {spender}")]
     ApprovalNotFound { spender: String },
+
+    #[error("Max seller fee exceeded 10000")]
+    MaxSellerFeeExceeded {},
+
+    #[error("Seller fee and payment address must be set together")]
+    InvalidSellerFee {},
 }
