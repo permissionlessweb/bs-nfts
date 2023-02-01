@@ -61,12 +61,8 @@ done
 [tasks.publish]
 script = """
 crates=(
-  cw721
-  cw721-base
-  cw721-fixed-price
-  cw721-metadata-onchain
-  cw721-non-transferable
-  cw2981-royalties
+  bs721
+  bs721-base
 )
 
 for crate in $crates; do

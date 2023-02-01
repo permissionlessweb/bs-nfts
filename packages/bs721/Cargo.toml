@@ -1,0 +1,19 @@
+[package]
+name          = "bs721"
+description   = "Definition and types for the BitSong-721 NFT interface based on the original CosmWasm-721"
+authors       = [
+  "Angelo Recca <angelorc@users.noreply.github.com>",
+]
+version       = { workspace = true }
+edition       = { workspace = true }
+license       = { workspace = true }
+repository    = { workspace = true }
+homepage      = { workspace = true }
+documentation = { workspace = true }
+
+[dependencies]
+cosmwasm-schema = { workspace = true }
+cosmwasm-std    = { workspace = true }
+cw-utils        = { workspace = true }
+schemars        = { workspace = true }
+serde           = { workspace = true }
