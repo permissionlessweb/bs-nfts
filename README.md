@@ -1,34 +1,21 @@
-# CosmWasm NFTS
+# BitSong NFTs
 
-This repo is the official repository to work on all NFT standard and examples
-in the CosmWasm ecosystem. `cw721` and `cw721-base` were moved from
-[`cw-plus`](https://github.com/CosmWasm/cw-plus) to start this repo, but it shall evolve
-as driven by the community's needs.
+## Overview
+This repository is a fork of the original [cw-nfts](https://github.com/CosmWasm/cw-nfts) project. The purpose of this fork is to provide additional functionality to the NFT collections created with this codebase.
 
-Please feel free to modify `cw721-base` as you need to support these projects and add many extensions
-and additional standards (like [cw-2981](https://github.com/CosmWasm/cw-plus/pull/414)) to meet
-the demands of the various NFT projects springing forth.
+## Changes
+The following changes have been made to the codebase:
 
-## Maintainers
+* Added a `uri` field to the `bs721` package. This field allows for the addition of a URI to the NFT collection, providing additional information and context for each NFT.
+* Added royalty information for each NFT token. This allows creators and owners to define a percentage of the sale price to be paid out to the original creator or another designated recipient.
 
-This repo is not maintained directly by Confio (although we can provide some code reviews and support),
-but rather by 4 highly active community members working on NFT projects of their own:
-
-* [alwin-peng](https://github.com/alwin-peng)
-* [ben2x4](https://github.com/ben2x4)
-* [Callum-A](https://github.com/Callum-A)
-* [ekez](https://github.com/ezekiiel)
-* [JakeHartnell](https://github.com/JakeHartnell)
-* [John Y](https://github.com/yubrew)
-* [orkunkl](https://github.com/orkunkl)
-* [shanev](https://github.com/shanev)
-* [the-frey](https://github.com/the-frey)
+## Codebase
+All other parts of the code remain unchanged and identical to the original cw721 project. This fork is intended to provide additional functionality for those looking to build their own NFT collections, without modifying the underlying codebase.
 
 ## Contributing
 
 If you are working on an NFT project as well and wish to give input, please raise issues and/or PRs.
 Additional maintainers can be added if they show commitment to the project.
 
-You can also join the `#nfts` channel on [CosmWasm Discord](https://docs.cosmwasm.com/chat)
+You can also join the [BitSong Discord](https://discord.bitsong.io) server
 for more interactive discussion on these themes.
-
