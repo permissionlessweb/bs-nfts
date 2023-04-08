@@ -9,6 +9,16 @@ The following changes have been made to the codebase:
 * Added a `uri` field to the `bs721` package. This field allows for the addition of a URI to the NFT collection, providing additional information and context for each NFT.
 * Added royalty information for each NFT token. This allows creators and owners to define a percentage of the sale price to be paid out to the original creator or another designated recipient.
 
+## Optimize
+To optimize the contract, we use the following tools:
+
+```
+docker run --rm -v "$(pwd)":/code \
+  --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target \
+  --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
+  cosmwasm/workspace-optimizer:0.12.13
+```
+
 ## Codebase
 All other parts of the code remain unchanged and identical to the original cw721 project. This fork is intended to provide additional functionality for those looking to build their own NFT collections, without modifying the underlying codebase.
 
