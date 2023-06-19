@@ -1,5 +1,5 @@
-use cosmwasm_schema::{cw_serde, QueryResponses};
 use crate::ContractError;
+use cosmwasm_schema::{cw_serde, QueryResponses};
 
 /// Represents a contributor to the collection.
 #[cw_serde]
@@ -27,18 +27,19 @@ impl InstantiateMsg {
             return Err(ContractError::EmptyContributors {});
         }
 
-        let mut total_share = 0;
         for contributor in &self.contributors {
-            total_share += contributor.share;
-        }
-        // TODO: shouldn't be better to avoid all entry with 0 shares?
-        if total_share == 0 {
-            return Err(ContractError::InvalidShares {});
+            if contributor.share == 0 {
+                return Err(ContractError::InvalidShares {});
+            }
         }
 
         // validate unique contributors
         self.contributors.sort_by(|a, b| a.address.cmp(&b.address));
-        for (a, b) in self.contributors.iter().zip(self.contributors.iter().skip(1)) {
+        for (a, b) in self
+            .contributors
+            .iter()
+            .zip(self.contributors.iter().skip(1))
+        {
             if a.address == b.address {
                 return Err(ContractError::DuplicateContributor {
                     contributor: a.address.clone(),
@@ -53,30 +54,34 @@ impl InstantiateMsg {
 #[cw_serde]
 pub enum ExecuteMsg {
     /// Withdraw royalties for each contributor. This message can only be sent by a contributor.
-    WithdrawForAll { },
+    WithdrawForAll {},
 }
 
 #[cw_serde]
 #[derive(QueryResponses)]
 pub enum QueryMsg {
+    /// Retrieves the list of contributors.
     #[returns(ContributorListResponse)]
     ListContributors {
+        /// Address after which contributors are retrieved.
         start_after: Option<String>,
+        /// Number of contributors to receive.
         limit: Option<u32>,
     },
 }
 
+/// Retrieved contributors response
 #[cw_serde]
 pub struct ContributorListResponse {
     pub contributors: Vec<ContributorResponse>,
 }
 
-/// Contributor response info.
+/// Single contributor response info.
 #[cw_serde]
 pub struct ContributorResponse {
     /// Role of the contributor.
     pub role: String,
-    /// Shares of the contributor. 
+    /// Shares of the contributor.
     pub share: u32,
     /// Role of the contributor.
     pub address: String,
@@ -109,7 +114,7 @@ mod test {
                 "expected to fail since at least one contributor is requried"
             )
         }
-        
+
         {
             let contributor = ContributorMsg {
                 role: String::from("dj"),
@@ -122,7 +127,7 @@ mod test {
             let val = msg.validate().unwrap_err();
             assert_eq!(
                 val,
-                ContractError::InvalidShares { },
+                ContractError::InvalidShares {},
                 "expected to fail since zero shares is not allowed"
             )
         }
@@ -139,13 +144,8 @@ mod test {
             };
 
             let val = msg.validate().unwrap();
-            assert_eq!(
-                val,
-                (),
-                "expected to pass since valid msg"
-            )
+            assert_eq!(val, (), "expected to pass since valid msg")
         }
-
     }
 
     #[test]
@@ -171,11 +171,13 @@ mod test {
             let val = msg.validate().unwrap_err();
             assert_eq!(
                 val,
-                ContractError::DuplicateContributor { contributor: String::from("bitsong0000") },
+                ContractError::DuplicateContributor {
+                    contributor: String::from("bitsong0000")
+                },
                 "expected to fail since zero shares is not allowed"
             )
         }
-        
+
         {
             let contributor_2 = ContributorMsg {
                 role: String::from("drawer"),
@@ -185,16 +187,31 @@ mod test {
 
             let mut msg = InstantiateMsg {
                 denom: "bitsong".to_owned(),
+                contributors: vec![contributor_1.clone(), contributor_2],
+            };
+
+            let val = msg.validate().unwrap_err();
+            assert_eq!(
+                val,
+                ContractError::InvalidShares {},
+                "expected to fail since all contributors must have shares"
+            )
+        }
+
+        {
+            let contributor_2 = ContributorMsg {
+                role: String::from("drawer"),
+                share: 10,
+                address: String::from("bitsong1111"),
+            };
+
+            let mut msg = InstantiateMsg {
+                denom: "bitsong".to_owned(),
                 contributors: vec![contributor_1, contributor_2],
             };
 
             let val = msg.validate().unwrap();
-            assert_eq!(
-                val,
-                (),
-                "expected to pass since contributor_1 has shares"
-            )
+            assert_eq!(val, (), "expected to pass")
         }
-
     }
 }

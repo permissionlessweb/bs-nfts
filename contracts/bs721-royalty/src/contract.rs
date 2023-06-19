@@ -76,7 +76,7 @@ pub fn execute_withdraw_for_all(
     info: MessageInfo,
 ) -> Result<Response, ContractError> {
     // check if the sender is a contributor
-    let sender_addr = info.sender.clone();
+    let sender_addr = info.sender;
     let _sender = CONTRIBUTORS.load(deps.storage, &sender_addr);
     _sender.map_err(|_| ContractError::Unauthorized {})?;
 
@@ -105,8 +105,6 @@ pub fn execute_withdraw_for_all(
     // compute bank messages for all contributors
     let bank_msgs = CONTRIBUTORS
         .range(deps.storage, None, None, Order::Ascending)
-        .into_iter()
-        .filter(|item| item.as_ref().map_or(false, |(_, data)| data.share > 0))
         .map(|item| {
             let (addr, data) = item.unwrap();
             let amount = Uint128::from(data.share) * multiplier;

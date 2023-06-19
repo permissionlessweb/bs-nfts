@@ -1,12 +1,12 @@
 use std::marker::PhantomData;
 
-use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{
-    to_binary, Addr, CosmosMsg, CustomMsg, QuerierWrapper, StdResult, WasmMsg, WasmQuery,
-};
 use bs721::{
     AllNftInfoResponse, Approval, ApprovalResponse, ApprovalsResponse, ContractInfoResponse,
     NftInfoResponse, NumTokensResponse, OperatorsResponse, OwnerOfResponse, TokensResponse,
+};
+use cosmwasm_schema::cw_serde;
+use cosmwasm_std::{
+    to_binary, Addr, CosmosMsg, CustomMsg, QuerierWrapper, StdResult, WasmMsg, WasmQuery,
 };
 use serde::de::DeserializeOwned;
 use serde::Serialize;

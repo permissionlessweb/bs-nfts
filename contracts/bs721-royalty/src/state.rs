@@ -11,7 +11,7 @@ pub struct Contributor {
     pub share: u32,
 }
 
-/// Stores contributors information with their address as keys. 
+/// Stores contributors information with their address as keys.
 pub const CONTRIBUTORS: Map<&Addr, Contributor> = Map::new("contributors");
 /// Stores the total contributors shares value
 pub const TOTAL_SHARES: Item<u64> = Item::new("total_shares");
