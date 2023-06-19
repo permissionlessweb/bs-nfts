@@ -1,5 +1,5 @@
 use crate::error::ContractError;
-use crate::msg::{ConfigResponse, ExecuteMsg, InstantiateMsg, QueryMsg};
+use crate::msg::{ConfigResponse, ExecuteMsg, InstantiateMsg, QueryMsg, self, PartyType};
 use crate::state::{Config, CONFIG};
 
 use bs721_base::{Extension, MintMsg};
@@ -7,7 +7,7 @@ use bs721_base::{Extension, MintMsg};
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     coin, to_binary, Addr, BankMsg, Binary, Deps, DepsMut, Empty, Env, MessageInfo, Reply, ReplyOn,
-    Response, StdResult, SubMsg, Uint128, WasmMsg,
+    Response, StdResult, SubMsg, Uint128, WasmMsg, Timestamp,
 };
 use cw2::set_contract_version;
 
@@ -38,22 +38,20 @@ pub fn instantiate(
         return Err(ContractError::ZeroPrice {});
     }
 
-    if msg.max_editions == 0 {
-        return Err(ContractError::ZeroEditions {});
-    }
+    msg.party_type.validate()?;
 
     let config = Config {
-        creator: info.sender,
+        creator: deps.api.addr_validate(&msg.creator.unwrap_or_else(||info.sender.to_string()))?,
         name: msg.name.clone(),
         symbol: msg.symbol.clone(),
         base_token_uri: msg.base_token_uri.clone(),
         price: msg.price,
-        max_editions: msg.max_editions,
         bs721_address: None,
         next_token_id: 1,
         seller_fee_bps: msg.seller_fee_bps,
         royalty_address: None,
         start_time: msg.start_time,
+        party_type: msg.party_type,
     };
 
     CONFIG.save(deps.storage, &config)?;
@@ -167,8 +165,8 @@ fn execute_mint(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, 
         return Err(ContractError::Bs721NotLinked {});
     }
 
-    if config.next_token_id - 1 >= config.max_editions {
-        return Err(ContractError::SoldOut {});
+    if !party_is_active(&env, &config) {
+        return Err(ContractError::PartyEnded {})
     }
 
     let payment = may_pay(&info, &"ubtsg")?;
@@ -221,6 +219,23 @@ fn execute_mint(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, 
         .add_attribute("recipient", info.sender.to_string()))
 }
 
+/// Returns true if the launcharty is still active, false otherwise.
+pub fn party_is_active(env: &Env, config: &Config) -> bool {
+    match config.party_type {
+        PartyType::MaxEdition(number) => {
+            if config.next_token_id - 1 >= number {
+                return false
+            }
+        }
+        PartyType::EndTime(duration) => {
+            if config.start_time.plus_seconds(duration as u64) < env.block.time {
+                return false
+            }
+        }
+    }
+    true
+}
+
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
@@ -234,7 +249,6 @@ fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
     Ok(ConfigResponse {
         creator: config.creator,
         bs721_address: config.bs721_address,
-        max_editions: config.max_editions,
         price: config.price,
         name: config.name,
         symbol: config.symbol,
@@ -243,6 +257,7 @@ fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
         seller_fee_bps: config.seller_fee_bps,
         royalty_address: config.royalty_address,
         start_time: config.start_time,
+        party_type: config.party_type,
     })
 }
 
@@ -273,17 +288,17 @@ mod tests {
         let msg = InstantiateMsg {
             name: "Launchparty".to_string(),
             price: Uint128::new(1),
-            creator: Addr::unchecked("creator"),
+            creator: Some(String::from("creator")),
             symbol: "LP".to_string(),
             base_token_uri: "ipfs://Qm......".to_string(),
             collection_uri: "ipfs://Qm......".to_string(),
-            max_editions: 1,
             seller_fee_bps: 100,
             contributors: vec![Contributor {
                 addr: "contributor".to_string(),
                 weight: 100,
             }],
             start_time: Timestamp::from_seconds(0),
+            party_type: PartyType::MaxEdition(1)
         };
 
         let info = mock_info("creator", &[]);
@@ -394,12 +409,12 @@ mod tests {
                 symbol: "LP".to_string(),
                 base_token_uri: "ipfs://Qm......".to_string(),
                 price: Uint128::new(1),
-                max_editions: 1,
                 bs721_address: Some(Addr::unchecked(NFT_CONTRACT_ADDR)),
                 next_token_id: 1,
                 seller_fee_bps: 100,
                 royalty_address: Some(Addr::unchecked(ROYALTY_CONTRACT_ADDR)),
                 start_time: Timestamp::from_nanos(0),
+                party_type: PartyType::MaxEdition(1)
             }
         );
     }
@@ -410,17 +425,17 @@ mod tests {
         let msg = InstantiateMsg {
             name: "Launchparty".to_string(),
             price: Uint128::new(1),
-            creator: Addr::unchecked("creator"),
+            creator: Some(String::from("creator")),
             symbol: "LP".to_string(),
             base_token_uri: "ipfs://Qm......".to_string(),
             collection_uri: "ipfs://Qm......".to_string(),
-            max_editions: 1,
             seller_fee_bps: 100,
             contributors: vec![Contributor {
                 addr: "contributor".to_string(),
                 weight: 100,
             }],
             start_time: Timestamp::from_nanos(0),
+            party_type: PartyType::MaxEdition(1),
         };
 
         let info = mock_info("creator", &[coin(1, "ubtsg")]);

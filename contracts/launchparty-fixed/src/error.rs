@@ -19,6 +19,9 @@ pub enum ContractError {
     #[error("Max editions cannot be zero")]
     ZeroEditions {},
 
+    #[error("Party duration cannot be zero")]
+    ZeroDuration {},
+
     #[error("BS721 contract already linked")]
     Bs721AlreadyLinked {},
 
@@ -42,4 +45,7 @@ pub enum ContractError {
 
     #[error("Launchpad not started")]
     NotStarted {},
+
+    #[error("Party has ended")]
+    PartyEnded {},
 }
