@@ -16,7 +16,7 @@ use crate::{
     ContractError,
 };
 
-// version info for migration info
+// version and name info for migration
 const CONTRACT_NAME: &str = "crates.io:bs721-royalty";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
@@ -69,6 +69,7 @@ pub fn execute(
     }
 }
 
+/// Diatribute contract denom balance to all contributors according to their shares.
 pub fn execute_withdraw_for_all(
     deps: Deps,
     env: Env,
