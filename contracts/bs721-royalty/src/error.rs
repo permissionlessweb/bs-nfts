@@ -1,4 +1,4 @@
-use cosmwasm_std::StdError;
+use cosmwasm_std::{StdError, OverflowError};
 use thiserror::Error;
 
 #[derive(Error, Debug, PartialEq)]
@@ -6,10 +6,10 @@ pub enum ContractError {
     #[error("{0}")]
     Std(#[from] StdError),
 
-    #[error("Unauthorized")]
+    #[error("unauthorized")]
     Unauthorized {},
 
-    #[error("duplicate contributor: {contributor}")]
+    #[error("duplicate contributor: [{contributor}]")]
     DuplicateContributor { contributor: String },
 
     #[error("no funds to withdraw")]
@@ -20,4 +20,10 @@ pub enum ContractError {
 
     #[error("invalid shares")]
     InvalidShares {},
+
+    #[error("{0}")]
+    OverflowErr(#[from] OverflowError),
+
+    #[error("nothing to distribute")]
+    NothingToDistribute {},
 }

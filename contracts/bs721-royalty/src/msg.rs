@@ -53,6 +53,10 @@ impl InstantiateMsg {
 
 #[cw_serde]
 pub enum ExecuteMsg {
+    /// 
+    Distribute {},
+    /// Withdraw accrued royalties. This message can only be sent by a contributor.
+    Withdraw {},
     /// Withdraw royalties for each contributor. This message can only be sent by a contributor.
     WithdrawForAll {},
 }
