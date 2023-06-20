@@ -1,8 +1,8 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, BankMsg, Binary, Coin, Deps, DepsMut, Env, MessageInfo, Order, Response, StdResult,
-    Uint128, Uint64, Addr,
+    to_binary, Addr, BankMsg, Binary, Coin, Deps, DepsMut, Env, MessageInfo, Order, Response,
+    StdResult, Uint128, Uint64,
 };
 use cw2::set_contract_version;
 use cw_storage_plus::Bound;
@@ -47,11 +47,12 @@ pub fn instantiate(
             &Contributor {
                 role: contributor.role,
                 share: contributor.share,
-                withdrawable_amount: Uint128::zero()
+                withdrawable_amount: Uint128::zero(),
             },
         )?;
     }
 
+    WITHDRAWABLE_AMOUNT.save(deps.storage, &Uint128::zero())?;
     TOTAL_SHARES.save(deps.storage, &total_shares.u64())?;
     DENOM.save(deps.storage, &msg.denom)?;
 
@@ -66,48 +67,63 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
-        ExecuteMsg::Distribute {  } => execute_distribute(deps, env, info),
+        ExecuteMsg::Distribute {} => execute_distribute(deps, env),
         ExecuteMsg::Withdraw {} => execute_withdraw(deps, env, info),
         ExecuteMsg::WithdrawForAll {} => execute_withdraw_for_all(deps.as_ref(), env, info),
     }
 }
 
-pub fn execute_distribute(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, ContractError> {
-    // only contributors can distribute
-    if !CONTRIBUTORS.has(deps.storage, &info.sender) {
-        return Err(ContractError::Unauthorized {  });
-    }
-
+pub fn execute_distribute(deps: DepsMut, env: Env) -> Result<Response, ContractError> {
     // get contract funds
     let funds = deps
-       .querier
-       .query_balance(env.contract.address, DENOM.load(deps.storage)?)?;
+        .querier
+        .query_balance(env.contract.address, DENOM.load(deps.storage)?)?;
 
-   let withdrawable_amount = WITHDRAWABLE_AMOUNT.load(deps.storage).unwrap_or_default();
+    let withdrawable_amount = WITHDRAWABLE_AMOUNT.load(deps.storage).unwrap_or_default();
 
-   let distributable_royalties = funds.amount.saturating_sub(withdrawable_amount);
-   if  distributable_royalties.is_zero() {
-       return Err(ContractError::NothingToDistribute {});
-   }
+    let distributable_royalties = funds.amount.saturating_sub(withdrawable_amount);
+    if distributable_royalties.is_zero() {
+        return Err(ContractError::NothingToDistribute {});
+    }
 
-   let multiplier = compute_shares_multiplier(deps.as_ref(), funds.amount)?;
+    let multiplier = compute_shares_multiplier(deps.as_ref(), funds.amount)?;
 
-   let contributors = CONTRIBUTORS.keys(deps.storage, None, None, Order::Ascending).collect::<StdResult<Vec<Addr>>>()?;
-   for contributor_address in contributors {
-       CONTRIBUTORS.update(deps.storage, &contributor_address, |info| -> Result<_, ContractError> {
-           let mut info = info.unwrap();
-           info.withdrawable_amount = info.withdrawable_amount.checked_add(funds.amount * multiplier).map_err(ContractError::OverflowErr)?;
-           Ok(info)
-       })?;
-   };
+    let contributors = CONTRIBUTORS
+        .keys(deps.storage, None, None, Order::Ascending)
+        .collect::<StdResult<Vec<Addr>>>()?;
+    let mut distributed_shares = Uint128::zero();
+    for contributor_address in contributors {
+        CONTRIBUTORS.update(
+            deps.storage,
+            &contributor_address,
+            |info| -> Result<_, ContractError> {
+                let mut info = info.unwrap();
+                let contributor_shares = funds.amount * multiplier;
+                info.withdrawable_amount = info
+                    .withdrawable_amount
+                    .checked_add(contributor_shares)
+                    .map_err(ContractError::OverflowErr)?;
+                distributed_shares = distributed_shares.checked_add(contributor_shares)?;
+                Ok(info)
+            },
+        )?;
+    }
 
-   Ok(Response::new().add_attribute("action", "execute_distribute"))
+    WITHDRAWABLE_AMOUNT.update(deps.storage, |amount| -> Result<Uint128, ContractError> {
+        amount.checked_add(distributed_shares).map_err(ContractError::OverflowErr)
+    })?;
+
+    Ok(Response::new().add_attribute("action", "execute_distribute"))
 }
 
-pub fn execute_withdraw(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, ContractError> {
+pub fn execute_withdraw(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+) -> Result<Response, ContractError> {
     // only contributor can withdraw
     if !CONTRIBUTORS.has(deps.storage, &info.sender) {
-        return Err(ContractError::Unauthorized {  })
+        return Err(ContractError::Unauthorized {});
     }
 
     // get contract funds
@@ -118,7 +134,7 @@ pub fn execute_withdraw(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Re
     let withdrawable_amount = WITHDRAWABLE_AMOUNT.load(deps.storage).unwrap_or_default();
 
     if funds.amount.saturating_sub(withdrawable_amount).is_zero() {
-        return Err(ContractError::NothingToDistribute {})
+        return Err(ContractError::NothingToDistribute {});
     }
     unimplemented!()
 }
@@ -150,7 +166,6 @@ pub fn execute_withdraw_for_all(
 
     let multiplier = compute_shares_multiplier(deps, funds.amount)?;
 
-
     // compute bank messages for all contributors
     let bank_msgs = CONTRIBUTORS
         .range(deps.storage, None, None, Order::Ascending)
@@ -177,6 +192,9 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::ListContributors { start_after, limit } => {
             to_binary(&query_list_contributors(deps, start_after, limit)?)
+        },
+        QueryMsg::WithdrawableAmount { } => {
+            to_binary(&WITHDRAWABLE_AMOUNT.load(deps.storage)?)
         }
     }
 }

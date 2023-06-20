@@ -1,5 +1,6 @@
 use crate::ContractError;
 use cosmwasm_schema::{cw_serde, QueryResponses};
+use cosmwasm_std::Uint128;
 
 /// Represents a contributor to the collection.
 #[cw_serde]
@@ -53,7 +54,7 @@ impl InstantiateMsg {
 
 #[cw_serde]
 pub enum ExecuteMsg {
-    /// 
+    /// Update contributors withdrawable amount.
     Distribute {},
     /// Withdraw accrued royalties. This message can only be sent by a contributor.
     Withdraw {},
@@ -72,6 +73,8 @@ pub enum QueryMsg {
         /// Number of contributors to receive.
         limit: Option<u32>,
     },
+    #[returns(Uint128)]
+    WithdrawableAmount {}
 }
 
 /// Retrieved contributors response
@@ -97,11 +100,7 @@ pub struct ContributorResponse {
 
 #[cfg(test)]
 mod test {
-    use crate::ContractError;
-
-    use crate::InstantiateMsg;
-
-    use super::ContributorMsg;
+    use super::*;
 
     #[test]
     pub fn validate_single() {
