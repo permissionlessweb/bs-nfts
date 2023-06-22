@@ -1,6 +1,8 @@
+use std::collections::HashSet;
+
 use crate::ContractError;
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::Uint128;
+use cosmwasm_std::{Decimal, Uint128};
 
 /// Represents a contributor to the collection.
 #[cw_serde]
@@ -8,7 +10,7 @@ pub struct ContributorMsg {
     /// Contributor's role
     pub role: String,
     /// Amount of share associated to the contributor.
-    pub share: u32,
+    pub shares: u32,
     /// Contributor's address.
     pub address: String,
 }
@@ -22,33 +24,32 @@ pub struct InstantiateMsg {
 }
 
 impl InstantiateMsg {
-    pub fn validate(&mut self) -> Result<(), ContractError> {
+    /// Checks that each contributor has non-zero shares, that there are no duplicated contributors
+    /// and returns the total shares if checks pass.
+    pub fn validate_and_compute_total_shares(&mut self) -> Result<Uint128, ContractError> {
         // cannot instantiate a royality contract without at least one contributor
-        if self.contributors.clone().is_empty() {
+        if self.contributors.is_empty() {
             return Err(ContractError::EmptyContributors {});
         }
 
+        let mut addresses = Vec::with_capacity(self.contributors.len());
+        let mut total_shares = Uint128::zero();
         for contributor in &self.contributors {
-            if contributor.share == 0 {
+            if contributor.shares == 0 {
                 return Err(ContractError::InvalidShares {});
             }
+            addresses.push(contributor.address.clone());
+            total_shares = total_shares.checked_add(Uint128::from(contributor.shares))?;
         }
 
-        // validate unique contributors
-        self.contributors.sort_by(|a, b| a.address.cmp(&b.address));
-        for (a, b) in self
-            .contributors
-            .iter()
-            .zip(self.contributors.iter().skip(1))
-        {
-            if a.address == b.address {
-                return Err(ContractError::DuplicateContributor {
-                    contributor: a.address.clone(),
-                });
-            }
+        // check if contributor addresses are a set
+        let addresses_as_set: HashSet<&String> = addresses.iter().collect();
+
+        if addresses.len() != addresses_as_set.len() {
+            return Err(ContractError::DuplicateContributor {});
         }
 
-        Ok(())
+        Ok(total_shares)
     }
 }
 
@@ -74,7 +75,10 @@ pub enum QueryMsg {
         limit: Option<u32>,
     },
     #[returns(Uint128)]
-    WithdrawableAmount {}
+    WithdrawableAmount {},
+    /// Retrieves amount of denom that can be distributed.
+    #[returns(Uint128)]
+    DistributableAmount {},
 }
 
 /// Retrieved contributors response
@@ -86,12 +90,14 @@ pub struct ContributorListResponse {
 /// Single contributor response info.
 #[cw_serde]
 pub struct ContributorResponse {
+    /// Address of the contributor.
+    pub address: String,
     /// Role of the contributor.
     pub role: String,
     /// Shares of the contributor.
-    pub share: u32,
-    /// Role of the contributor.
-    pub address: String,
+    pub initial_shares: u32,
+    /// Shares of the contributor in terms of percentage of total shares
+    pub percentage_shares: Decimal,
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -110,7 +116,7 @@ mod test {
         };
 
         {
-            let val = msg.validate().unwrap_err();
+            let val = msg.validate_and_compute_total_shares().unwrap_err();
             assert_eq!(
                 val,
                 ContractError::EmptyContributors {},
@@ -121,13 +127,13 @@ mod test {
         {
             let contributor = ContributorMsg {
                 role: String::from("dj"),
-                share: 0,
+                shares: 0,
                 address: String::from("bitsong0000"),
             };
 
             msg.contributors.push(contributor);
 
-            let val = msg.validate().unwrap_err();
+            let val = msg.validate_and_compute_total_shares().unwrap_err();
             assert_eq!(
                 val,
                 ContractError::InvalidShares {},
@@ -137,7 +143,7 @@ mod test {
         {
             let contributor = ContributorMsg {
                 role: String::from("dj"),
-                share: 10,
+                shares: 10,
                 address: String::from("bitsong0000"),
             };
 
@@ -146,8 +152,12 @@ mod test {
                 ..msg
             };
 
-            let val = msg.validate().unwrap();
-            assert_eq!(val, (), "expected to pass since valid msg")
+            let total_shares = msg.validate_and_compute_total_shares().unwrap();
+            assert_eq!(
+                total_shares,
+                Uint128::from(10u128),
+                "expected to pass since valid msg"
+            )
         }
     }
 
@@ -155,14 +165,14 @@ mod test {
     pub fn validate_multiple() {
         let contributor_1 = ContributorMsg {
             role: String::from("dj"),
-            share: 10,
+            shares: 10,
             address: String::from("bitsong0000"),
         };
 
         {
             let contributor_2 = ContributorMsg {
                 role: String::from("dj"),
-                share: 10,
+                shares: 10,
                 address: String::from("bitsong0000"),
             };
 
@@ -171,20 +181,18 @@ mod test {
                 contributors: vec![contributor_1.clone(), contributor_2],
             };
 
-            let val = msg.validate().unwrap_err();
+            let val = msg.validate_and_compute_total_shares().unwrap_err();
             assert_eq!(
                 val,
-                ContractError::DuplicateContributor {
-                    contributor: String::from("bitsong0000")
-                },
-                "expected to fail since zero shares is not allowed"
+                ContractError::DuplicateContributor {},
+                "expected to fail since duplicated contributors are not allowed"
             )
         }
 
         {
             let contributor_2 = ContributorMsg {
                 role: String::from("drawer"),
-                share: 0,
+                shares: 0,
                 address: String::from("bitsong1111"),
             };
 
@@ -193,7 +201,7 @@ mod test {
                 contributors: vec![contributor_1.clone(), contributor_2],
             };
 
-            let val = msg.validate().unwrap_err();
+            let val = msg.validate_and_compute_total_shares().unwrap_err();
             assert_eq!(
                 val,
                 ContractError::InvalidShares {},
@@ -202,9 +210,13 @@ mod test {
         }
 
         {
+            // we should check overflow error properly handled.
+        }
+
+        {
             let contributor_2 = ContributorMsg {
                 role: String::from("drawer"),
-                share: 10,
+                shares: 10,
                 address: String::from("bitsong1111"),
             };
 
@@ -213,8 +225,8 @@ mod test {
                 contributors: vec![contributor_1, contributor_2],
             };
 
-            let val = msg.validate().unwrap();
-            assert_eq!(val, (), "expected to pass")
+            let val = msg.validate_and_compute_total_shares().unwrap();
+            assert_eq!(val, Uint128::from(20u128), "expected to pass")
         }
     }
 }

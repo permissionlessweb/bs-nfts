@@ -110,7 +110,7 @@ impl TestSuite {
             .unwrap();
     }
 
-    /// Helper distribute royalty shares to contributors.
+    /// Helper to distribute royalty shares to contributors.
     pub fn distribute(&mut self, sender: &str) -> AnyResult<AppResponse> {
         self.app.execute_contract(
             Addr::unchecked(sender),
@@ -142,6 +142,18 @@ impl TestSuite {
             .query_wasm_smart(
                 self.contract_address.clone(),
                 &QueryMsg::WithdrawableAmount {  },
+            )
+            .unwrap()
+    }
+
+    pub fn query_distirbutable_amount(
+        &self,
+    ) -> Uint128 {
+        self.app
+            .wrap()
+            .query_wasm_smart(
+                self.contract_address.clone(),
+                &QueryMsg::DistributableAmount {  },
             )
             .unwrap()
     }

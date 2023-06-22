@@ -23,17 +23,17 @@ fn init(deps: DepsMut) {
         contributors: vec![
             ContributorMsg {
                 role: "role".into(),
-                share: 10,
+                shares: 10,
                 address: CONTRIBUTOR1.into(),
             },
             ContributorMsg {
                 role: "role".into(),
-                share: 10,
+                shares: 10,
                 address: CONTRIBUTOR2.into(),
             },
             ContributorMsg {
                 role: "role".into(),
-                share: 10,
+                shares: 10,
                 address: CONTRIBUTOR3.into(),
             },
         ],
@@ -63,17 +63,17 @@ fn test_query_list_contributors() {
             contributors: vec![
                 ContributorResponse {
                     role: "role".into(),
-                    share: 10,
+                    shares: 10,
                     address: CONTRIBUTOR1.into(),
                 },
                 ContributorResponse {
                     role: "role".into(),
-                    share: 10,
+                    shares: 10,
                     address: CONTRIBUTOR2.into(),
                 },
                 ContributorResponse {
                     role: "role".into(),
-                    share: 10,
+                    shares: 10,
                     address: CONTRIBUTOR3.into(),
                 },
             ]
@@ -101,7 +101,7 @@ fn test_query_list_contributors() {
         ContributorListResponse {
             contributors: vec![ContributorResponse {
                 role: "role".into(),
-                share: 10,
+                shares: 10,
                 address: CONTRIBUTOR2.into(),
             }]
         }

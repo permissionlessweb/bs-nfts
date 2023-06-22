@@ -1,6 +1,6 @@
-use cosmwasm_std::Uint128;
+use cosmwasm_std::{Uint128, coins};
 
-use crate::msg::{ContributorMsg, ContributorResponse};
+use crate::{msg::{ContributorMsg, ContributorResponse}, multitest::suite::DENOM};
 
 use super::suite::TestSuiteBuilder;
 
@@ -59,4 +59,21 @@ pub fn withdrawable_amount() {
 
     let resp = suite.query_withdrawable_amount();
     assert_eq!(Uint128::zero(), resp, "expected nothing to withdraw since never distributed");
+}
+
+#[test]
+pub fn distirbutable_shares() {
+    let mut suite = TestSuiteBuilder::new().build();
+
+    {
+        let resp = suite.query_distirbutable_amount();
+        assert_eq!(Uint128::zero(), resp, "expected nothing to distribute");
+    }
+
+    {
+        suite.mint_to_contract(coins(1_000, DENOM));
+        let resp = suite.query_distirbutable_amount();
+        assert_eq!(Uint128::from(1_000u128), resp, "expected all balance to be distributed");
+    }
+
 }

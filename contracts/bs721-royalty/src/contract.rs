@@ -1,8 +1,8 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, Addr, BankMsg, Binary, Coin, Deps, DepsMut, Env, MessageInfo, Order, Response,
-    StdResult, Uint128, Uint64,
+    coins, to_binary, Addr, BalanceResponse, BankMsg, Binary, Coin, Decimal, Deps, DepsMut, Env,
+    MessageInfo, Order, Response, StdResult, Uint128, Uint64,
 };
 use cw2::set_contract_version;
 use cw_storage_plus::Bound;
@@ -31,29 +31,26 @@ pub fn instantiate(
 ) -> Result<Response, ContractError> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
-    msg.validate()?;
+    let total_shares = msg.validate_and_compute_total_shares()?;
 
-    let contributors = msg.contributors.clone();
-    let mut total_shares = Uint64::zero();
-
-    for contributor in contributors.into_iter() {
+    for contributor in msg.contributors {
         let contributor_addr = deps.api.addr_validate(&contributor.address)?;
-        let contributor_share = Uint64::from(contributor.share);
-        total_shares = total_shares.checked_add(contributor_share).unwrap();
+        let percentage_shares = Decimal::from_ratio(Uint64::from(contributor.shares), total_shares);
 
         CONTRIBUTORS.save(
             deps.storage,
             &contributor_addr,
             &Contributor {
                 role: contributor.role,
-                share: contributor.share,
+                initial_shares: contributor.shares,
+                percentage_shares,
                 withdrawable_amount: Uint128::zero(),
             },
         )?;
     }
 
     WITHDRAWABLE_AMOUNT.save(deps.storage, &Uint128::zero())?;
-    TOTAL_SHARES.save(deps.storage, &total_shares.u64())?;
+    TOTAL_SHARES.save(deps.storage, &total_shares)?;
     DENOM.save(deps.storage, &msg.denom)?;
 
     Ok(Response::default())
@@ -68,8 +65,8 @@ pub fn execute(
 ) -> Result<Response, ContractError> {
     match msg {
         ExecuteMsg::Distribute {} => execute_distribute(deps, env),
-        ExecuteMsg::Withdraw {} => execute_withdraw(deps, env, info),
-        ExecuteMsg::WithdrawForAll {} => execute_withdraw_for_all(deps.as_ref(), env, info),
+        ExecuteMsg::Withdraw {} => execute_withdraw(deps, info),
+        ExecuteMsg::WithdrawForAll {} => unimplemented!(), //execute_withdraw_for_all(deps.as_ref(), env, info),
     }
 }
 
@@ -87,6 +84,10 @@ pub fn execute_distribute(deps: DepsMut, env: Env) -> Result<Response, ContractE
     }
 
     let multiplier = compute_shares_multiplier(deps.as_ref(), funds.amount)?;
+    // we have to handle situation with very few denom to distribute
+    if multiplier.is_zero() {
+        return Err(ContractError::NothingToDistribute {});
+    }
 
     let contributors = CONTRIBUTORS
         .keys(deps.storage, None, None, Order::Ascending)
@@ -110,33 +111,51 @@ pub fn execute_distribute(deps: DepsMut, env: Env) -> Result<Response, ContractE
     }
 
     WITHDRAWABLE_AMOUNT.update(deps.storage, |amount| -> Result<Uint128, ContractError> {
-        amount.checked_add(distributed_shares).map_err(ContractError::OverflowErr)
+        amount
+            .checked_add(distributed_shares)
+            .map_err(ContractError::OverflowErr)
     })?;
 
     Ok(Response::new().add_attribute("action", "execute_distribute"))
 }
 
-pub fn execute_withdraw(
-    deps: DepsMut,
-    env: Env,
-    info: MessageInfo,
-) -> Result<Response, ContractError> {
+pub fn execute_withdraw(deps: DepsMut, info: MessageInfo) -> Result<Response, ContractError> {
     // only contributor can withdraw
-    if !CONTRIBUTORS.has(deps.storage, &info.sender) {
+    let maybe_contributor = CONTRIBUTORS.load(deps.storage, &info.sender);
+    if maybe_contributor.is_err() {
         return Err(ContractError::Unauthorized {});
     }
 
-    // get contract funds
-    let funds = deps
-        .querier
-        .query_balance(env.contract.address, DENOM.load(deps.storage)?)?;
+    let mut tokens_to_send: Coin = Coin::new(0u128, DENOM.load(deps.storage)?);
+    CONTRIBUTORS.update(
+        deps.storage,
+        &info.sender,
+        |c| -> Result<_, ContractError> {
+            let mut contributor = c.unwrap();
+            tokens_to_send.amount = tokens_to_send
+                .amount
+                .checked_add(contributor.withdrawable_amount)?;
+            contributor.withdrawable_amount = Uint128::zero();
+            Ok(contributor)
+        },
+    )?;
 
-    let withdrawable_amount = WITHDRAWABLE_AMOUNT.load(deps.storage).unwrap_or_default();
+    WITHDRAWABLE_AMOUNT.update(deps.storage, |amount| -> Result<_, ContractError> {
+        Ok(amount.checked_sub(tokens_to_send.amount)?)
+    })?;
 
-    if funds.amount.saturating_sub(withdrawable_amount).is_zero() {
-        return Err(ContractError::NothingToDistribute {});
-    }
-    unimplemented!()
+    let msg = BankMsg::Send {
+        to_address: info.sender.to_string(),
+        amount: vec![tokens_to_send.clone()],
+    };
+
+    Ok(Response::new()
+        .add_attributes(vec![
+            ("action", "withdraw"),
+            ("contributor", &info.sender.to_string()),
+            ("amount", &format!("{}", tokens_to_send.amount)),
+        ])
+        .add_message(msg))
 }
 
 pub fn compute_shares_multiplier(deps: Deps, shares: Uint128) -> Result<Uint128, ContractError> {
@@ -148,7 +167,7 @@ pub fn compute_shares_multiplier(deps: Deps, shares: Uint128) -> Result<Uint128,
     Ok(multiplier)
 }
 
-/// Diatribute contract denom balance to all contributors according to their shares.
+/* /// Diatribute contract denom balance to all contributors according to their shares.
 pub fn execute_withdraw_for_all(
     deps: Deps,
     env: Env,
@@ -185,17 +204,16 @@ pub fn execute_withdraw_for_all(
     Ok(Response::new()
         .add_attribute("action", "withdraw_for_all")
         .add_messages(bank_msgs))
-}
+} */
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
+pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::ListContributors { start_after, limit } => {
             to_binary(&query_list_contributors(deps, start_after, limit)?)
-        },
-        QueryMsg::WithdrawableAmount { } => {
-            to_binary(&WITHDRAWABLE_AMOUNT.load(deps.storage)?)
         }
+        QueryMsg::WithdrawableAmount {} => to_binary(&WITHDRAWABLE_AMOUNT.load(deps.storage)?),
+        QueryMsg::DistributableAmount {} => to_binary(&query_distributable_amount(deps, env)?),
     }
 }
 
@@ -219,7 +237,8 @@ pub fn query_list_contributors(
             item.map(|(addr, data)| ContributorResponse {
                 address: addr.into(),
                 role: data.role,
-                share: data.share,
+                initial_shares: data.initial_shares,
+                percentage_shares: data.percentage_shares,
             })
         })
         .collect::<StdResult<_>>()?;
@@ -227,4 +246,17 @@ pub fn query_list_contributors(
     Ok(ContributorListResponse {
         contributors: items,
     })
+}
+
+/// Returns the difference between contract balance and the amount of tokens that can be withdrawn as
+/// royalties.
+pub fn query_distributable_amount(deps: Deps, env: Env) -> StdResult<Uint128> {
+    // get contract funds
+    let funds = deps
+        .querier
+        .query_balance(env.contract.address, DENOM.load(deps.storage)?)?;
+
+    let withdrawable_amount = WITHDRAWABLE_AMOUNT.load(deps.storage).unwrap_or_default();
+
+    Ok(funds.amount.saturating_sub(withdrawable_amount))
 }

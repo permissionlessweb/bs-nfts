@@ -9,8 +9,8 @@ pub enum ContractError {
     #[error("unauthorized")]
     Unauthorized {},
 
-    #[error("duplicate contributor: [{contributor}]")]
-    DuplicateContributor { contributor: String },
+    #[error("duplicate contributor")]
+    DuplicateContributor {},
 
     #[error("no funds to withdraw")]
     NoFunds {},
