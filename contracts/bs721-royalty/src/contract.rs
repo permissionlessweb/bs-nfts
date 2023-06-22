@@ -2,7 +2,7 @@
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     coins, to_binary, Addr, BalanceResponse, BankMsg, Binary, Coin, Decimal, Deps, DepsMut, Env,
-    MessageInfo, Order, Response, StdResult, Uint128, Uint64,
+    MessageInfo, Order, Response, StdResult, Uint128,
 };
 use cw2::set_contract_version;
 use cw_storage_plus::Bound;
@@ -35,7 +35,8 @@ pub fn instantiate(
 
     for contributor in msg.contributors {
         let contributor_addr = deps.api.addr_validate(&contributor.address)?;
-        let percentage_shares = Decimal::from_ratio(Uint64::from(contributor.shares), total_shares);
+        let percentage_shares =
+            Decimal::from_ratio(Uint128::from(contributor.shares), total_shares);
 
         CONTRIBUTORS.save(
             deps.storage,
@@ -152,7 +153,7 @@ pub fn execute_withdraw(deps: DepsMut, info: MessageInfo) -> Result<Response, Co
     Ok(Response::new()
         .add_attributes(vec![
             ("action", "withdraw"),
-            ("contributor", &info.sender.to_string()),
+            ("contributor", info.sender.as_ref()),
             ("amount", &format!("{}", tokens_to_send.amount)),
         ])
         .add_message(msg))

@@ -1,7 +1,7 @@
 use cosmwasm_std::{
     coin,
     testing::{mock_dependencies, mock_env, mock_info},
-    BankMsg, CosmosMsg, DepsMut,
+    BankMsg, CosmosMsg, Decimal, DepsMut,
 };
 
 use crate::contract::execute;
@@ -22,19 +22,19 @@ fn init(deps: DepsMut) {
         denom: DENOM.into(),
         contributors: vec![
             ContributorMsg {
-                role: "role".into(),
-                shares: 10,
                 address: CONTRIBUTOR1.into(),
-            },
-            ContributorMsg {
                 role: "role".into(),
                 shares: 10,
+            },
+            ContributorMsg {
                 address: CONTRIBUTOR2.into(),
+                role: "role".into(),
+                shares: 20,
             },
             ContributorMsg {
-                role: "role".into(),
-                shares: 10,
                 address: CONTRIBUTOR3.into(),
+                role: "role".into(),
+                shares: 30,
             },
         ],
     };
@@ -62,19 +62,22 @@ fn test_query_list_contributors() {
         ContributorListResponse {
             contributors: vec![
                 ContributorResponse {
-                    role: "role".into(),
-                    shares: 10,
                     address: CONTRIBUTOR1.into(),
+                    role: "role".into(),
+                    initial_shares: 10,
+                    percentage_shares: Decimal::from_ratio(10u128, 60u128)
                 },
                 ContributorResponse {
-                    role: "role".into(),
-                    shares: 10,
                     address: CONTRIBUTOR2.into(),
+                    role: "role".into(),
+                    initial_shares: 20,
+                    percentage_shares: Decimal::from_ratio(20u128, 60u128)
                 },
                 ContributorResponse {
-                    role: "role".into(),
-                    shares: 10,
                     address: CONTRIBUTOR3.into(),
+                    role: "role".into(),
+                    initial_shares: 30,
+                    percentage_shares: Decimal::from_ratio(30u128, 60u128)
                 },
             ]
         }
@@ -100,9 +103,10 @@ fn test_query_list_contributors() {
         contributors,
         ContributorListResponse {
             contributors: vec![ContributorResponse {
-                role: "role".into(),
-                shares: 10,
                 address: CONTRIBUTOR2.into(),
+                role: "role".into(),
+                initial_shares: 20,
+                percentage_shares: Decimal::from_ratio(20u128, 60u128)
             }]
         }
     )
