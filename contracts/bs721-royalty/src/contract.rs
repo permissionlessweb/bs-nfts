@@ -106,33 +106,31 @@ pub fn execute_distribute(deps: DepsMut, env: Env) -> Result<Response, ContractE
 
     let mut distributed_royalties = Uint128::zero();
     for contributor_address in contributors {
-        CONTRIBUTORS.update(
-            deps.storage,
-            &contributor_address,
-            |info| {
-                // since contributor_address comes from a key of CONTRIBUTORS we should always be able
-                // to unwrap().
-                let mut info = info.unwrap();
-                
-                let contributor_royalties = distributable_royalties * info.percentage_shares;
-                // we should rise an error is we have a contributor with 0 royalties to avoid situations
-                // where some contibutor receive royalties and other one no.
-                if contributor_royalties.is_zero() {
-                    return Err(ContractError::NotEnoughToDistribute { })
-                }
+        CONTRIBUTORS.update(deps.storage, &contributor_address, |info| {
+            // since contributor_address comes from a key of CONTRIBUTORS we should always be able
+            // to unwrap().
+            let mut info = info.unwrap();
 
-                info.withdrawable_amount = info
-                    .withdrawable_amount
-                    .checked_add(contributor_royalties)
-                    .map_err(ContractError::OverflowErr)?;
-                distributed_royalties = distributed_royalties.checked_add(contributor_royalties).map_err(ContractError::OverflowErr)?;
-                Ok(info)
-            },
-        )?;
+            let contributor_royalties = distributable_royalties * info.percentage_shares;
+            // we should rise an error is we have a contributor with 0 royalties to avoid situations
+            // where some contibutor receive royalties and other one no.
+            if contributor_royalties.is_zero() {
+                return Err(ContractError::NotEnoughToDistribute {});
+            }
+
+            info.withdrawable_amount = info
+                .withdrawable_amount
+                .checked_add(contributor_royalties)
+                .map_err(ContractError::OverflowErr)?;
+            distributed_royalties = distributed_royalties
+                .checked_add(contributor_royalties)
+                .map_err(ContractError::OverflowErr)?;
+            Ok(info)
+        })?;
     }
 
     if distributed_royalties > distributable_royalties {
-        return Err(ContractError::NotEnoughToDistribute { })
+        return Err(ContractError::NotEnoughToDistribute {});
     }
 
     WITHDRAWABLE_AMOUNT.update(deps.storage, |amount| -> Result<Uint128, ContractError> {
@@ -143,7 +141,7 @@ pub fn execute_distribute(deps: DepsMut, env: Env) -> Result<Response, ContractE
 
     Ok(Response::new().add_attributes(vec![
         ("action", "execute_distribute"),
-        ("amount", &distributable_royalties.to_string())
+        ("amount", &distributed_royalties.to_string()),
     ]))
 }
 
@@ -231,7 +229,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::ListContributors { start_after, limit } => {
             to_binary(&query_list_contributors(deps, start_after, limit)?)
         }
-        QueryMsg::WithdrawableAmount {} => to_binary(&WITHDRAWABLE_AMOUNT.load(deps.storage)?),
+        QueryMsg::WithdrawableAmount {} => to_binary(&query_withdrawable_amount(deps)),
         QueryMsg::DistributableAmount {} => to_binary(&query_distributable_amount(deps, env)?),
     }
 }
@@ -258,6 +256,7 @@ pub fn query_list_contributors(
                 role: data.role,
                 initial_shares: data.initial_shares,
                 percentage_shares: data.percentage_shares,
+                withdrawable_royalties: data.withdrawable_amount,
             })
         })
         .collect::<StdResult<_>>()?;
@@ -278,6 +277,11 @@ pub fn query_distributable_amount(deps: Deps, env: Env) -> StdResult<Uint128> {
     let withdrawable_amount = WITHDRAWABLE_AMOUNT.load(deps.storage).unwrap_or_default();
 
     Ok(funds.amount.saturating_sub(withdrawable_amount))
+}
+
+/// Returns the withdrawable amount.
+pub fn query_withdrawable_amount(deps: Deps) -> Uint128 {
+    WITHDRAWABLE_AMOUNT.load(deps.storage).unwrap_or_default()
 }
 
 // -------------------------------------------------------------------------------------------------

@@ -1,13 +1,16 @@
 use std::fmt::format;
 
 use cosmwasm_std::{
-    coin,
+    coin, coins,
     testing::{mock_dependencies, mock_env, mock_info},
-    BankMsg, CosmosMsg, Decimal, DepsMut, coins, Attribute,
+    Attribute, BankMsg, CosmosMsg, Decimal, DepsMut, Uint128,
 };
 
-use crate::contract::execute;
 use crate::msg::ExecuteMsg;
+use crate::{
+    contract::{execute, query, query_distributable_amount, query_withdrawable_amount},
+    msg::QueryMsg,
+};
 use crate::{
     contract::{instantiate, query_list_contributors},
     msg::{ContributorListResponse, ContributorMsg, ContributorResponse, InstantiateMsg},
@@ -87,19 +90,22 @@ fn test_query_list_contributors() {
                     address: CONTRIBUTOR1.into(),
                     role: "role".into(),
                     initial_shares: 10,
-                    percentage_shares: Decimal::from_ratio(10u128, 60u128)
+                    percentage_shares: Decimal::from_ratio(10u128, 60u128),
+                    withdrawable_royalties: Uint128::zero(),
                 },
                 ContributorResponse {
                     address: CONTRIBUTOR2.into(),
                     role: "role".into(),
                     initial_shares: 20,
-                    percentage_shares: Decimal::from_ratio(20u128, 60u128)
+                    percentage_shares: Decimal::from_ratio(20u128, 60u128),
+                    withdrawable_royalties: Uint128::zero(),
                 },
                 ContributorResponse {
                     address: CONTRIBUTOR3.into(),
                     role: "role".into(),
                     initial_shares: 30,
-                    percentage_shares: Decimal::from_ratio(30u128, 60u128)
+                    percentage_shares: Decimal::from_ratio(30u128, 60u128),
+                    withdrawable_royalties: Uint128::zero(),
                 },
             ]
         }
@@ -128,7 +134,8 @@ fn test_query_list_contributors() {
                 address: CONTRIBUTOR2.into(),
                 role: "role".into(),
                 initial_shares: 20,
-                percentage_shares: Decimal::from_ratio(20u128, 60u128)
+                percentage_shares: Decimal::from_ratio(20u128, 60u128),
+                withdrawable_royalties: Uint128::zero(),
             }]
         }
     )
@@ -212,7 +219,8 @@ fn distribute_shares_fails() {
     }
 
     {
-        deps.querier.update_balance(env.contract.address.clone(), coins(1_000, "NOT_DENOM"));
+        deps.querier
+            .update_balance(env.contract.address.clone(), coins(1_000, "NOT_DENOM"));
         let err = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone()).unwrap_err();
         assert_eq!(
             ContractError::NothingToDistribute {},
@@ -220,8 +228,30 @@ fn distribute_shares_fails() {
             "expected error since contract has not funds of correct denom to distribute"
         );
     }
+}
 
+#[test]
+fn not_nough_to_distribute() {
+    let env = mock_env();
+    let mut deps = mock_dependencies();
+    init_with_shares(deps.as_mut(), vec![99, 1]);
 
+    let info = mock_info("random_user", &[]);
+    let msg = ExecuteMsg::Distribute {};
+
+    {
+        deps.querier
+            .update_balance(env.contract.address.clone(), coins(99, DENOM));
+        let resp = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone()).unwrap_err();
+        assert_eq!(
+            resp,
+            ContractError::NotEnoughToDistribute {},
+            "expected to fail since 1% of 99 is approximated to zero"
+        );
+
+        let query_resp = query_withdrawable_amount(deps.as_ref());
+        assert_eq!(query_resp, Uint128::new(0), "expected nothing to withdraw");
+    }
 }
 
 #[test]
@@ -234,15 +264,151 @@ fn distribute_shares_single() {
     let msg = ExecuteMsg::Distribute {};
 
     {
-        deps.querier.update_balance(env.contract.address.clone(), coins(1_000, DENOM));
+        deps.querier
+            .update_balance(env.contract.address.clone(), coins(1_000, DENOM));
         let resp = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone()).unwrap();
-        assert_eq!(resp.attributes[1], Attribute {key: "amount".to_owned(), value: "1000".to_owned()})
+        assert_eq!(
+            resp.attributes[1],
+            Attribute {
+                key: "amount".to_owned(),
+                value: "1000".to_owned()
+            },
+            "expected to succed and return an amount equal to contract balance"
+        );
+
+        let query_resp = query_withdrawable_amount(deps.as_ref());
+        assert_eq!(
+            query_resp,
+            Uint128::new(1000),
+            "expected all initial balance as withdrawable"
+        )
     }
 
     {
-        deps.querier.update_balance(env.contract.address.clone(), coins(2_000, DENOM));
+        deps.querier
+            .update_balance(env.contract.address.clone(), coins(2_000, DENOM));
         execute(deps.as_mut(), env.clone(), info.clone(), msg.clone()).unwrap();
         let err = execute(deps.as_mut(), env.clone(), info, msg.clone()).unwrap_err();
-        assert_eq!(err, ContractError::NothingToDistribute {}, "expected to fail since after first distribution the contract has no more funds")
+        assert_eq!(
+            err,
+            ContractError::NothingToDistribute {},
+            "expected to fail since after first distribution the contract has no more funds"
+        );
+
+        let query_resp = query_withdrawable_amount(deps.as_ref());
+        assert_eq!(
+            query_resp,
+            Uint128::new(2000),
+            "expected 1_000 + 1_000 as withdrawable"
+        )
+    }
+}
+
+#[test]
+fn distribute_two_contributor() {
+    let env = mock_env();
+    let mut deps = mock_dependencies();
+    init_with_shares(deps.as_mut(), vec![99, 1]);
+
+    let info = mock_info("random_user", &[]);
+    let msg = ExecuteMsg::Distribute {};
+
+    {
+        deps.querier
+            .update_balance(env.contract.address.clone(), coins(101, DENOM));
+        let resp = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone()).unwrap();
+        assert_eq!(
+            resp.attributes[1],
+            Attribute {
+                key: "amount".to_owned(),
+                value: "100".to_owned()
+            },
+            "expected to succed and return an amount equal to contract balance"
+        );
+
+        let query_resp = query_withdrawable_amount(deps.as_ref());
+        assert_eq!(
+            query_resp,
+            Uint128::new(100),
+            "expected distributed token to withdraw"
+        );
+
+        let query_resp = query_distributable_amount(deps.as_ref(), env.clone()).unwrap();
+        assert_eq!(
+            query_resp,
+            Uint128::new(1),
+            "expected only one token to be distributed"
+        );
+    }
+}
+
+#[test]
+fn distribute_shares_multiple() {
+    let env = mock_env();
+    let mut deps = mock_dependencies();
+    init_with_shares(deps.as_mut(), vec![10, 20, 30, 40]);
+
+    let info = mock_info("random_user", &[]);
+    let msg = ExecuteMsg::Distribute {};
+
+    {
+        deps.querier
+            .update_balance(env.contract.address.clone(), coins(1_000, DENOM));
+        let resp = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone()).unwrap();
+        assert_eq!(
+            resp.attributes[1],
+            Attribute {
+                key: "amount".to_owned(),
+                value: "1000".to_owned()
+            },
+            "expected to succed and return an amount equal to contract balance"
+        );
+
+        let query_resp = query_withdrawable_amount(deps.as_ref());
+        assert_eq!(
+            query_resp,
+            Uint128::new(1000),
+            "expected all initial balance as withdrawable"
+        );
+
+        let query_resp = query_list_contributors(deps.as_ref(), None, None).unwrap();
+        assert_eq!(
+            query_resp.contributors[0].withdrawable_royalties,
+            Uint128::new(100)
+        );
+        let query_resp = query_list_contributors(deps.as_ref(), None, None).unwrap();
+        assert_eq!(
+            query_resp.contributors[1].withdrawable_royalties,
+            Uint128::new(200)
+        );
+        let query_resp = query_list_contributors(deps.as_ref(), None, None).unwrap();
+        assert_eq!(
+            query_resp.contributors[2].withdrawable_royalties,
+            Uint128::new(300)
+        );
+        let query_resp = query_list_contributors(deps.as_ref(), None, None).unwrap();
+        assert_eq!(
+            query_resp.contributors[3].withdrawable_royalties,
+            Uint128::new(400)
+        );
+    }
+
+    {
+        deps.querier
+            .update_balance(env.contract.address.clone(), coins(2_000, DENOM));
+        execute(deps.as_mut(), env.clone(), info.clone(), msg.clone()).unwrap();
+        let err = execute(deps.as_mut(), env.clone(), info, msg.clone()).unwrap_err();
+        assert_eq!(
+            err,
+            ContractError::NothingToDistribute {},
+            "expected to fail since after first distribution the contract has no more funds"
+        );
+
+        let query_resp = query_distributable_amount(deps.as_ref(), env.clone()).unwrap();
+        assert_eq!(
+            query_resp,
+            Uint128::zero(),
+            "expected nothing to distribute"
+        );
     }
 }

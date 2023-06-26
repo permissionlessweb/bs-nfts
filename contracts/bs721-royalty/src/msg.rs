@@ -104,6 +104,8 @@ pub struct ContributorResponse {
     pub initial_shares: u32,
     /// Shares of the contributor in terms of percentage of total shares
     pub percentage_shares: Decimal,
+    /// Amount of royalties that can be withdrawn
+    pub withdrawable_royalties: Uint128,
 }
 
 // -------------------------------------------------------------------------------------------------
