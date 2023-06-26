@@ -83,7 +83,6 @@ pub fn execute(
     match msg {
         ExecuteMsg::Distribute {} => execute_distribute(deps, env),
         ExecuteMsg::Withdraw {} => execute_withdraw(deps, info),
-        ExecuteMsg::WithdrawForAll {} => unimplemented!(), //execute_withdraw_for_all(deps.as_ref(), env, info),
     }
 }
 
@@ -183,45 +182,6 @@ pub fn execute_withdraw(deps: DepsMut, info: MessageInfo) -> Result<Response, Co
         ])
         .add_message(msg))
 }
-
-/* /// Diatribute contract denom balance to all contributors according to their shares.
-pub fn execute_withdraw_for_all(
-    deps: Deps,
-    env: Env,
-    info: MessageInfo,
-) -> Result<Response, ContractError> {
-    // check if the sender is a contributor
-    let sender_addr = info.sender;
-    let _sender = CONTRIBUTORS.load(deps.storage, &sender_addr);
-    _sender.map_err(|_| ContractError::Unauthorized {})?;
-
-    // get contract funds
-    let funds = deps
-        .querier
-        .query_balance(env.contract.address, DENOM.load(deps.storage)?)?;
-
-    let multiplier = compute_shares_multiplier(deps, funds.amount)?;
-
-    // compute bank messages for all contributors
-    let bank_msgs = CONTRIBUTORS
-        .range(deps.storage, None, None, Order::Ascending)
-        .map(|item| {
-            let (addr, data) = item.unwrap();
-            let amount = Uint128::from(data.share) * multiplier;
-            BankMsg::Send {
-                to_address: addr.into(),
-                amount: vec![Coin {
-                    denom: funds.denom.clone(),
-                    amount,
-                }],
-            }
-        })
-        .collect::<Vec<_>>();
-
-    Ok(Response::new()
-        .add_attribute("action", "withdraw_for_all")
-        .add_messages(bank_msgs))
-} */
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {

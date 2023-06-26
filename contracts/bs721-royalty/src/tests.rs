@@ -69,66 +69,13 @@ fn init_with_shares(deps: DepsMut, shares: Vec<u32>) {
     instantiate(deps, mock_env(), info, msg).unwrap();
 }
 
+// -------------------------------------------------------------------------------------------------
+// Instantiate
+// -------------------------------------------------------------------------------------------------
 #[test]
 fn test_instantiate() {
     let mut deps = mock_dependencies();
     init(deps.as_mut());
-}
-
-#[test]
-fn test_execute_withdraw_for_all() {
-    let env = mock_env();
-    let mut deps = mock_dependencies();
-    init(deps.as_mut());
-
-    let msg = ExecuteMsg::WithdrawForAll {};
-
-    let unauthorized_info = mock_info("unauthorized", &[]);
-    let err_res = execute(deps.as_mut(), env.clone(), unauthorized_info, msg.clone());
-    match err_res {
-        Err(ContractError::Unauthorized {}) => {}
-        _ => panic!("expected error"),
-    }
-
-    let info = mock_info(CONTRIBUTOR1, &[]);
-
-    let no_fund_res = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone());
-    match no_fund_res {
-        Err(ContractError::NoFunds {}) => {}
-        _ => panic!("expected error"),
-    }
-
-    deps.querier.update_balance(
-        env.contract.address.clone(),
-        vec![coin(1000u128, DENOM.to_string())],
-    );
-
-    let res = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone()).unwrap();
-    assert_eq!(res.messages.len(), 3);
-
-    assert_eq!(
-        res.messages[0].msg,
-        CosmosMsg::Bank(BankMsg::Send {
-            to_address: CONTRIBUTOR1.into(),
-            amount: vec![coin(330u128, DENOM.to_string())],
-        })
-    );
-
-    assert_eq!(
-        res.messages[1].msg,
-        CosmosMsg::Bank(BankMsg::Send {
-            to_address: CONTRIBUTOR2.into(),
-            amount: vec![coin(330u128, DENOM.to_string())],
-        })
-    );
-
-    assert_eq!(
-        res.messages[2].msg,
-        CosmosMsg::Bank(BankMsg::Send {
-            to_address: CONTRIBUTOR3.into(),
-            amount: vec![coin(330u128, DENOM.to_string())],
-        })
-    );
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -448,7 +395,13 @@ fn withdraw_royalties_multiple() {
     )
     .unwrap();
 
-    let resp = execute(deps.as_mut(), env.clone(), info.clone(), withdraw_msg.clone()).unwrap();
+    let resp = execute(
+        deps.as_mut(),
+        env.clone(),
+        info.clone(),
+        withdraw_msg.clone(),
+    )
+    .unwrap();
     assert_eq!(
         resp.messages[0].msg,
         CosmosMsg::Bank(BankMsg::Send {
@@ -522,7 +475,13 @@ fn mixed_distribute_and_withdraw() {
     .unwrap();
 
     // first withdraw from contributor0
-    execute(deps.as_mut(), env.clone(), info.clone(), withdraw_msg.clone()).unwrap();
+    execute(
+        deps.as_mut(),
+        env.clone(),
+        info.clone(),
+        withdraw_msg.clone(),
+    )
+    .unwrap();
 
     // we have to update contract balance since bank messages are not executed. We will have:
     // 1_000 (initial) - 500 (address0 withdraw) + 1_000 (new royalties to distribtue)
@@ -539,7 +498,13 @@ fn mixed_distribute_and_withdraw() {
     .unwrap();
 
     // second withdraw from contributor0
-    let resp = execute(deps.as_mut(), env.clone(), info.clone(), withdraw_msg.clone()).unwrap();
+    let resp = execute(
+        deps.as_mut(),
+        env.clone(),
+        info.clone(),
+        withdraw_msg.clone(),
+    )
+    .unwrap();
     assert_eq!(
         resp.messages[0].msg,
         CosmosMsg::Bank(BankMsg::Send {
