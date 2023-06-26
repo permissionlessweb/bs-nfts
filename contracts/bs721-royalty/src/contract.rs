@@ -1,14 +1,14 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    coins, to_binary, Addr, BalanceResponse, BankMsg, Binary, Coin, Decimal, Deps, DepsMut, Env,
+    to_binary, Addr, BankMsg, Binary, Coin, Decimal, Deps, DepsMut, Env,
     MessageInfo, Order, Response, StdResult, Storage, Uint128,
 };
 use cw2::set_contract_version;
 use cw_storage_plus::Bound;
 use cw_utils::maybe_addr;
 
-use crate::msg::{ContributorMsg, ExecuteMsg};
+use crate::msg::ExecuteMsg;
 use crate::state::{DENOM, WITHDRAWABLE_AMOUNT};
 use crate::{
     msg::{ContributorListResponse, ContributorResponse, InstantiateMsg, QueryMsg},
