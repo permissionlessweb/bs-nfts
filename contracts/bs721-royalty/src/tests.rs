@@ -3,11 +3,13 @@ use std::fmt::format;
 use cosmwasm_std::{
     coin, coins,
     testing::{mock_dependencies, mock_env, mock_info},
-    Attribute, BankMsg, CosmosMsg, Decimal, DepsMut, Uint128,
+    Attribute, BankMsg, CosmosMsg, Decimal, DepsMut, Uint128, Storage,
 };
 
-use crate::msg::ExecuteMsg;
+use crate::{msg::ExecuteMsg, state::WITHDRAWABLE_AMOUNT};
 use crate::{
+
+    state::DENOM as STATE_DENOM,
     contract::{execute, query, query_distributable_amount, query_withdrawable_amount},
     msg::QueryMsg,
 };
@@ -74,72 +76,7 @@ fn test_instantiate() {
     init(deps.as_mut());
 }
 
-#[test]
-fn test_query_list_contributors() {
-    let mut deps = mock_dependencies();
-    init(deps.as_mut());
 
-    let contributors = query_list_contributors(deps.as_ref(), None, None).unwrap();
-    assert_eq!(contributors.contributors.len(), 3);
-
-    assert_eq!(
-        contributors,
-        ContributorListResponse {
-            contributors: vec![
-                ContributorResponse {
-                    address: CONTRIBUTOR1.into(),
-                    role: "role".into(),
-                    initial_shares: 10,
-                    percentage_shares: Decimal::from_ratio(10u128, 60u128),
-                    withdrawable_royalties: Uint128::zero(),
-                },
-                ContributorResponse {
-                    address: CONTRIBUTOR2.into(),
-                    role: "role".into(),
-                    initial_shares: 20,
-                    percentage_shares: Decimal::from_ratio(20u128, 60u128),
-                    withdrawable_royalties: Uint128::zero(),
-                },
-                ContributorResponse {
-                    address: CONTRIBUTOR3.into(),
-                    role: "role".into(),
-                    initial_shares: 30,
-                    percentage_shares: Decimal::from_ratio(30u128, 60u128),
-                    withdrawable_royalties: Uint128::zero(),
-                },
-            ]
-        }
-    );
-
-    let contributors =
-        query_list_contributors(deps.as_ref(), Some(CONTRIBUTOR1.into()), None).unwrap();
-    assert_eq!(contributors.contributors.len(), 2);
-
-    let contributors =
-        query_list_contributors(deps.as_ref(), Some(CONTRIBUTOR2.into()), None).unwrap();
-    assert_eq!(contributors.contributors.len(), 1);
-
-    let contributors =
-        query_list_contributors(deps.as_ref(), Some(CONTRIBUTOR3.into()), None).unwrap();
-    assert_eq!(contributors.contributors.len(), 0);
-
-    let contributors =
-        query_list_contributors(deps.as_ref(), Some(CONTRIBUTOR1.into()), Some(1)).unwrap();
-    assert_eq!(contributors.contributors.len(), 1);
-
-    assert_eq!(
-        contributors,
-        ContributorListResponse {
-            contributors: vec![ContributorResponse {
-                address: CONTRIBUTOR2.into(),
-                role: "role".into(),
-                initial_shares: 20,
-                percentage_shares: Decimal::from_ratio(20u128, 60u128),
-                withdrawable_royalties: Uint128::zero(),
-            }]
-        }
-    )
-}
 
 #[test]
 fn test_execute_withdraw_for_all() {
@@ -411,4 +348,162 @@ fn distribute_shares_multiple() {
             "expected nothing to distribute"
         );
     }
+}
+
+// -------------------------------------------------------------------------------------------------
+// Withdraw royalties
+// -------------------------------------------------------------------------------------------------
+#[test]
+fn withdraw_royalties_unauthorized() {
+    let env = mock_env();
+    let mut deps = mock_dependencies();
+    init(deps.as_mut());
+
+    let info = mock_info("random_user", &[]);
+    let withdraw_msg = ExecuteMsg::Withdraw {};
+
+    {
+        let err = execute(deps.as_mut(), env.clone(), info.clone(), withdraw_msg).unwrap_err();
+        assert_eq!(err, ContractError::Unauthorized { }, "expected to fail since only contributors can withdraw")
+    }
+}
+
+#[test]
+fn withdraw_royalties_single() {
+    let env = mock_env();
+    let mut deps = mock_dependencies();
+    init_with_shares(deps.as_mut(), vec![1]);
+
+    let info = mock_info("random_user", &[]);
+    let distribute_msg = ExecuteMsg::Distribute {};
+    let withdraw_msg = ExecuteMsg::Withdraw {};
+
+    {
+        // update contract balance a contributor can withdraw
+        deps.querier
+            .update_balance(env.contract.address.clone(), coins(1_000, DENOM));
+        execute(deps.as_mut(), env.clone(), info.clone(), distribute_msg.clone()).unwrap();
+
+        let resp = execute(deps.as_mut(), env.clone(), info.clone(), withdraw_msg).unwrap();
+    }
+}
+
+// -------------------------------------------------------------------------------------------------
+// Queries
+// -------------------------------------------------------------------------------------------------
+#[test]
+fn query_withdrawable_amount_works() {
+    let mut deps = mock_dependencies();
+    
+    {
+        WITHDRAWABLE_AMOUNT.save(deps.as_mut().storage, &Uint128::zero()).unwrap();
+
+        let query_resp = query_withdrawable_amount(deps.as_ref());
+        assert_eq!(query_resp, Uint128::zero(), "expected zero since just initialized");
+    }
+
+    {
+        WITHDRAWABLE_AMOUNT.save(deps.as_mut().storage, &Uint128::new(1_000)).unwrap();
+
+        let query_resp = query_withdrawable_amount(deps.as_ref());
+        assert_eq!(query_resp, Uint128::new(1_000), "expected 1_000");
+    }
+}
+
+#[test]
+fn query_distributable_amount_works() {
+    let mut deps = mock_dependencies();
+    let env = mock_env();
+    
+    {
+        STATE_DENOM.save(deps.as_mut().storage, &String::from(DENOM)).unwrap();
+        WITHDRAWABLE_AMOUNT.save(deps.as_mut().storage, &Uint128::zero()).unwrap();
+
+        let query_resp = query_distributable_amount(deps.as_ref(), env.clone()).unwrap();
+        assert_eq!(query_resp, Uint128::zero(), "expected zero since contract as no funds");
+    }
+
+    {
+        WITHDRAWABLE_AMOUNT.save(deps.as_mut().storage, &Uint128::new(1)).unwrap();
+
+        let query_resp = query_distributable_amount(deps.as_ref(), env.clone()).unwrap();
+        assert_eq!(query_resp, Uint128::zero(), "expected zero also if contract has less funds than distributable");
+    }
+
+    {
+        deps.querier
+            .update_balance(env.contract.address.clone(), coins(1_000, DENOM));
+        WITHDRAWABLE_AMOUNT.save(deps.as_mut().storage, &Uint128::zero()).unwrap();
+
+        let query_resp = query_distributable_amount(deps.as_ref(), env.clone()).unwrap();
+        assert_eq!(query_resp, Uint128::new(1_000), "expected the difference between balance and withdrawable amount");
+    }
+}
+
+// TODO: should we test query without execution
+#[test]
+fn test_query_list_contributors() {
+    let mut deps = mock_dependencies();
+    init(deps.as_mut());
+
+    let contributors = query_list_contributors(deps.as_ref(), None, None).unwrap();
+    assert_eq!(contributors.contributors.len(), 3);
+
+    assert_eq!(
+        contributors,
+        ContributorListResponse {
+            contributors: vec![
+                ContributorResponse {
+                    address: CONTRIBUTOR1.into(),
+                    role: "role".into(),
+                    initial_shares: 10,
+                    percentage_shares: Decimal::from_ratio(10u128, 60u128),
+                    withdrawable_royalties: Uint128::zero(),
+                },
+                ContributorResponse {
+                    address: CONTRIBUTOR2.into(),
+                    role: "role".into(),
+                    initial_shares: 20,
+                    percentage_shares: Decimal::from_ratio(20u128, 60u128),
+                    withdrawable_royalties: Uint128::zero(),
+                },
+                ContributorResponse {
+                    address: CONTRIBUTOR3.into(),
+                    role: "role".into(),
+                    initial_shares: 30,
+                    percentage_shares: Decimal::from_ratio(30u128, 60u128),
+                    withdrawable_royalties: Uint128::zero(),
+                },
+            ]
+        }
+    );
+
+    let contributors =
+        query_list_contributors(deps.as_ref(), Some(CONTRIBUTOR1.into()), None).unwrap();
+    assert_eq!(contributors.contributors.len(), 2);
+
+    let contributors =
+        query_list_contributors(deps.as_ref(), Some(CONTRIBUTOR2.into()), None).unwrap();
+    assert_eq!(contributors.contributors.len(), 1);
+
+    let contributors =
+        query_list_contributors(deps.as_ref(), Some(CONTRIBUTOR3.into()), None).unwrap();
+    assert_eq!(contributors.contributors.len(), 0);
+
+    let contributors =
+        query_list_contributors(deps.as_ref(), Some(CONTRIBUTOR1.into()), Some(1)).unwrap();
+    assert_eq!(contributors.contributors.len(), 1);
+
+    assert_eq!(
+        contributors,
+        ContributorListResponse {
+            contributors: vec![ContributorResponse {
+                address: CONTRIBUTOR2.into(),
+                role: "role".into(),
+                initial_shares: 20,
+                percentage_shares: Decimal::from_ratio(20u128, 60u128),
+                withdrawable_royalties: Uint128::zero(),
+            }]
+        }
+    )
 }

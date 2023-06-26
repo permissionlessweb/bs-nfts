@@ -161,6 +161,7 @@ pub fn execute_withdraw(deps: DepsMut, info: MessageInfo) -> Result<Response, Co
             tokens_to_send.amount = tokens_to_send
                 .amount
                 .checked_add(contributor.withdrawable_amount)?;
+            // set contributor withdrawable amount to zero since the contract will send their royalties
             contributor.withdrawable_amount = Uint128::zero();
             Ok(contributor)
         },
@@ -179,7 +180,7 @@ pub fn execute_withdraw(deps: DepsMut, info: MessageInfo) -> Result<Response, Co
         .add_attributes(vec![
             ("action", "withdraw"),
             ("contributor", info.sender.as_ref()),
-            ("amount", &format!("{}", tokens_to_send.amount)),
+            ("amount", &tokens_to_send.amount.to_string()),
         ])
         .add_message(msg))
 }

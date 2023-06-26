@@ -80,6 +80,7 @@ pub enum QueryMsg {
         /// Number of contributors to receive.
         limit: Option<u32>,
     },
+    /// Returns the total amount of royalties that can be withdrawn from the contract.
     #[returns(Uint128)]
     WithdrawableAmount {},
     /// Retrieves amount of denom that can be distributed.
@@ -87,7 +88,7 @@ pub enum QueryMsg {
     DistributableAmount {},
 }
 
-/// Retrieved contributors response
+/// Retrieved contributors response.
 #[cw_serde]
 pub struct ContributorListResponse {
     pub contributors: Vec<ContributorResponse>,
