@@ -3,21 +3,20 @@ use std::fmt::format;
 use cosmwasm_std::{
     coin, coins,
     testing::{mock_dependencies, mock_env, mock_info},
-    Attribute, BankMsg, CosmosMsg, Decimal, DepsMut, Uint128, Storage,
+    Attribute, BankMsg, CosmosMsg, Decimal, DepsMut, Storage, Uint128,
 };
 
-use crate::{msg::ExecuteMsg, state::WITHDRAWABLE_AMOUNT};
 use crate::{
-
-    state::DENOM as STATE_DENOM,
     contract::{execute, query, query_distributable_amount, query_withdrawable_amount},
     msg::QueryMsg,
+    state::DENOM as STATE_DENOM,
 };
 use crate::{
     contract::{instantiate, query_list_contributors},
     msg::{ContributorListResponse, ContributorMsg, ContributorResponse, InstantiateMsg},
     ContractError,
 };
+use crate::{msg::ExecuteMsg, state::WITHDRAWABLE_AMOUNT};
 
 const DENOM: &str = "ubtsg";
 const CONTRIBUTOR1: &str = "contributor1";
@@ -75,8 +74,6 @@ fn test_instantiate() {
     let mut deps = mock_dependencies();
     init(deps.as_mut());
 }
-
-
 
 #[test]
 fn test_execute_withdraw_for_all() {
@@ -354,17 +351,31 @@ fn distribute_shares_multiple() {
 // Withdraw royalties
 // -------------------------------------------------------------------------------------------------
 #[test]
-fn withdraw_royalties_unauthorized() {
+fn withdraw_royalties_fails() {
     let env = mock_env();
     let mut deps = mock_dependencies();
     init(deps.as_mut());
 
-    let info = mock_info("random_user", &[]);
     let withdraw_msg = ExecuteMsg::Withdraw {};
 
     {
+        let info = mock_info("random_user", &[]);
+        let err = execute(deps.as_mut(), env.clone(), info, withdraw_msg.clone()).unwrap_err();
+        assert_eq!(
+            err,
+            ContractError::Unauthorized {},
+            "expected to fail since only contributors can withdraw"
+        )
+    }
+
+    {
+        let info = mock_info(CONTRIBUTOR1, &[]);
         let err = execute(deps.as_mut(), env.clone(), info.clone(), withdraw_msg).unwrap_err();
-        assert_eq!(err, ContractError::Unauthorized { }, "expected to fail since only contributors can withdraw")
+        assert_eq!(
+            err,
+            ContractError::NothingToWithdraw {},
+            "expected to fail since contributors has nothing to withdraw"
+        )
     }
 }
 
@@ -374,7 +385,7 @@ fn withdraw_royalties_single() {
     let mut deps = mock_dependencies();
     init_with_shares(deps.as_mut(), vec![1]);
 
-    let info = mock_info("random_user", &[]);
+    let info = mock_info("address0", &[]);
     let distribute_msg = ExecuteMsg::Distribute {};
     let withdraw_msg = ExecuteMsg::Withdraw {};
 
@@ -382,10 +393,179 @@ fn withdraw_royalties_single() {
         // update contract balance a contributor can withdraw
         deps.querier
             .update_balance(env.contract.address.clone(), coins(1_000, DENOM));
-        execute(deps.as_mut(), env.clone(), info.clone(), distribute_msg.clone()).unwrap();
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            info.clone(),
+            distribute_msg.clone(),
+        )
+        .unwrap();
 
         let resp = execute(deps.as_mut(), env.clone(), info.clone(), withdraw_msg).unwrap();
+        assert_eq!(
+            resp.messages[0].msg,
+            CosmosMsg::Bank(BankMsg::Send {
+                to_address: "address0".into(),
+                amount: vec![coin(1_000, DENOM.to_string())],
+            })
+        );
+
+        let query_resp = query_withdrawable_amount(deps.as_ref());
+        assert_eq!(
+            query_resp,
+            Uint128::zero(),
+            "expected withdrawable amount zero after withdraw"
+        );
+
+        let query_resp = query_list_contributors(deps.as_ref(), None, None).unwrap();
+        assert_eq!(
+            query_resp.contributors[0].withdrawable_royalties,
+            Uint128::zero(),
+            "expected withdrawable royalties zero after withdraw"
+        )
     }
+}
+
+#[test]
+fn withdraw_royalties_multiple() {
+    let env = mock_env();
+    let mut deps = mock_dependencies();
+    init_with_shares(deps.as_mut(), vec![10, 10]);
+
+    let distribute_msg = ExecuteMsg::Distribute {};
+    let withdraw_msg = ExecuteMsg::Withdraw {};
+
+    // update contract balance a contributor can withdraw
+    deps.querier
+        .update_balance(env.contract.address.clone(), coins(1_000, DENOM));
+
+    let info = mock_info("address0", &[]);
+    execute(
+        deps.as_mut(),
+        env.clone(),
+        info.clone(),
+        distribute_msg.clone(),
+    )
+    .unwrap();
+
+    let resp = execute(deps.as_mut(), env.clone(), info.clone(), withdraw_msg.clone()).unwrap();
+    assert_eq!(
+        resp.messages[0].msg,
+        CosmosMsg::Bank(BankMsg::Send {
+            to_address: "address0".into(),
+            amount: vec![coin(500, DENOM.to_string())],
+        })
+    );
+
+    let query_resp = query_withdrawable_amount(deps.as_ref());
+    assert_eq!(
+        query_resp,
+        Uint128::new(500),
+        "expected withdrawable amount half initial amount"
+    );
+
+    let query_resp = query_list_contributors(deps.as_ref(), None, None).unwrap();
+    assert_eq!(
+        query_resp.contributors[0].withdrawable_royalties,
+        Uint128::zero(),
+        "expected withdrawable royalties of address0 zero after withdraw"
+    );
+
+    // we can still withdraw from second contributor
+    let info = mock_info("address1", &[]);
+
+    let resp = execute(deps.as_mut(), env.clone(), info.clone(), withdraw_msg).unwrap();
+    assert_eq!(
+        resp.messages[0].msg,
+        CosmosMsg::Bank(BankMsg::Send {
+            to_address: "address1".into(),
+            amount: vec![coin(500, DENOM.to_string())],
+        })
+    );
+
+    let query_resp = query_withdrawable_amount(deps.as_ref());
+    assert_eq!(
+        query_resp,
+        Uint128::zero(),
+        "expected withdrawable amount zero after all contributors withdraw"
+    );
+
+    let query_resp = query_list_contributors(deps.as_ref(), None, None).unwrap();
+    assert_eq!(
+        query_resp.contributors[1].withdrawable_royalties,
+        Uint128::zero(),
+        "expected withdrawable royalties of address1 zero after withdraw"
+    );
+}
+
+#[test]
+fn mixed_distribute_and_withdraw() {
+    let env = mock_env();
+    let mut deps = mock_dependencies();
+    init_with_shares(deps.as_mut(), vec![10, 10]);
+
+    let distribute_msg = ExecuteMsg::Distribute {};
+    let withdraw_msg = ExecuteMsg::Withdraw {};
+
+    // update contract balance a contributor can withdraw
+    deps.querier
+        .update_balance(env.contract.address.clone(), coins(1_000, DENOM));
+
+    // first distribution
+    let info = mock_info("address0", &[]);
+    execute(
+        deps.as_mut(),
+        env.clone(),
+        info.clone(),
+        distribute_msg.clone(),
+    )
+    .unwrap();
+
+    // first withdraw from contributor0
+    execute(deps.as_mut(), env.clone(), info.clone(), withdraw_msg.clone()).unwrap();
+
+    // we have to update contract balance since bank messages are not executed. We will have:
+    // 1_000 (initial) - 500 (address0 withdraw) + 1_000 (new royalties to distribtue)
+    deps.querier
+        .update_balance(env.contract.address.clone(), coins(1_500, DENOM));
+
+    // second distribution
+    execute(
+        deps.as_mut(),
+        env.clone(),
+        info.clone(),
+        distribute_msg.clone(),
+    )
+    .unwrap();
+
+    // second withdraw from contributor0
+    let resp = execute(deps.as_mut(), env.clone(), info.clone(), withdraw_msg.clone()).unwrap();
+    assert_eq!(
+        resp.messages[0].msg,
+        CosmosMsg::Bank(BankMsg::Send {
+            to_address: "address0".into(),
+            amount: vec![coin(500, DENOM.to_string())],
+        })
+    );
+
+    let info = mock_info("address1", &[]);
+
+    // first withdraw from contributor1
+    let resp = execute(deps.as_mut(), env.clone(), info.clone(), withdraw_msg).unwrap();
+    assert_eq!(
+        resp.messages[0].msg,
+        CosmosMsg::Bank(BankMsg::Send {
+            to_address: "address1".into(),
+            amount: vec![coin(1_000, DENOM.to_string())],
+        })
+    );
+
+    let query_resp = query_withdrawable_amount(deps.as_ref());
+    assert_eq!(
+        query_resp,
+        Uint128::zero(),
+        "expected withdrawable amount zero after all contributors withdraw"
+    );
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -394,16 +574,24 @@ fn withdraw_royalties_single() {
 #[test]
 fn query_withdrawable_amount_works() {
     let mut deps = mock_dependencies();
-    
+
     {
-        WITHDRAWABLE_AMOUNT.save(deps.as_mut().storage, &Uint128::zero()).unwrap();
+        WITHDRAWABLE_AMOUNT
+            .save(deps.as_mut().storage, &Uint128::zero())
+            .unwrap();
 
         let query_resp = query_withdrawable_amount(deps.as_ref());
-        assert_eq!(query_resp, Uint128::zero(), "expected zero since just initialized");
+        assert_eq!(
+            query_resp,
+            Uint128::zero(),
+            "expected zero since just initialized"
+        );
     }
 
     {
-        WITHDRAWABLE_AMOUNT.save(deps.as_mut().storage, &Uint128::new(1_000)).unwrap();
+        WITHDRAWABLE_AMOUNT
+            .save(deps.as_mut().storage, &Uint128::new(1_000))
+            .unwrap();
 
         let query_resp = query_withdrawable_amount(deps.as_ref());
         assert_eq!(query_resp, Uint128::new(1_000), "expected 1_000");
@@ -414,29 +602,49 @@ fn query_withdrawable_amount_works() {
 fn query_distributable_amount_works() {
     let mut deps = mock_dependencies();
     let env = mock_env();
-    
+
     {
-        STATE_DENOM.save(deps.as_mut().storage, &String::from(DENOM)).unwrap();
-        WITHDRAWABLE_AMOUNT.save(deps.as_mut().storage, &Uint128::zero()).unwrap();
+        STATE_DENOM
+            .save(deps.as_mut().storage, &String::from(DENOM))
+            .unwrap();
+        WITHDRAWABLE_AMOUNT
+            .save(deps.as_mut().storage, &Uint128::zero())
+            .unwrap();
 
         let query_resp = query_distributable_amount(deps.as_ref(), env.clone()).unwrap();
-        assert_eq!(query_resp, Uint128::zero(), "expected zero since contract as no funds");
+        assert_eq!(
+            query_resp,
+            Uint128::zero(),
+            "expected zero since contract as no funds"
+        );
     }
 
     {
-        WITHDRAWABLE_AMOUNT.save(deps.as_mut().storage, &Uint128::new(1)).unwrap();
+        WITHDRAWABLE_AMOUNT
+            .save(deps.as_mut().storage, &Uint128::new(1))
+            .unwrap();
 
         let query_resp = query_distributable_amount(deps.as_ref(), env.clone()).unwrap();
-        assert_eq!(query_resp, Uint128::zero(), "expected zero also if contract has less funds than distributable");
+        assert_eq!(
+            query_resp,
+            Uint128::zero(),
+            "expected zero also if contract has less funds than distributable"
+        );
     }
 
     {
         deps.querier
             .update_balance(env.contract.address.clone(), coins(1_000, DENOM));
-        WITHDRAWABLE_AMOUNT.save(deps.as_mut().storage, &Uint128::zero()).unwrap();
+        WITHDRAWABLE_AMOUNT
+            .save(deps.as_mut().storage, &Uint128::zero())
+            .unwrap();
 
         let query_resp = query_distributable_amount(deps.as_ref(), env.clone()).unwrap();
-        assert_eq!(query_resp, Uint128::new(1_000), "expected the difference between balance and withdrawable amount");
+        assert_eq!(
+            query_resp,
+            Uint128::new(1_000),
+            "expected the difference between balance and withdrawable amount"
+        );
     }
 }
 

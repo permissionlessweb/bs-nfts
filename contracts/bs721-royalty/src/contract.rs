@@ -153,19 +153,18 @@ pub fn execute_withdraw(deps: DepsMut, info: MessageInfo) -> Result<Response, Co
     }
 
     let mut tokens_to_send: Coin = Coin::new(0u128, DENOM.load(deps.storage)?);
-    CONTRIBUTORS.update(
-        deps.storage,
-        &info.sender,
-        |c| -> Result<_, ContractError> {
-            let mut contributor = c.unwrap();
-            tokens_to_send.amount = tokens_to_send
-                .amount
-                .checked_add(contributor.withdrawable_amount)?;
-            // set contributor withdrawable amount to zero since the contract will send their royalties
-            contributor.withdrawable_amount = Uint128::zero();
-            Ok(contributor)
-        },
-    )?;
+    CONTRIBUTORS.update(deps.storage, &info.sender, |c| {
+        let mut contributor = c.unwrap();
+        if contributor.withdrawable_amount.is_zero() {
+            return Err(ContractError::NothingToWithdraw {});
+        }
+        tokens_to_send.amount = tokens_to_send
+            .amount
+            .checked_add(contributor.withdrawable_amount)?;
+        // set contributor withdrawable amount to zero since the contract will send their royalties
+        contributor.withdrawable_amount = Uint128::zero();
+        Ok(contributor)
+    })?;
 
     WITHDRAWABLE_AMOUNT.update(deps.storage, |amount| -> Result<_, ContractError> {
         Ok(amount.checked_sub(tokens_to_send.amount)?)

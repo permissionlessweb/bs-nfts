@@ -29,4 +29,7 @@ pub enum ContractError {
 
     #[error("not enough royalties to distribute")]
     NotEnoughToDistribute {},
+
+    #[error("nothing to withdraw")]
+    NothingToWithdraw {},
 }
