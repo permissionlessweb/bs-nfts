@@ -1,7 +1,9 @@
+use std::fmt::format;
+
 use cosmwasm_std::{
     coin,
     testing::{mock_dependencies, mock_env, mock_info},
-    BankMsg, CosmosMsg, Decimal, DepsMut,
+    BankMsg, CosmosMsg, Decimal, DepsMut, coins, Attribute,
 };
 
 use crate::contract::execute;
@@ -37,6 +39,26 @@ fn init(deps: DepsMut) {
                 shares: 30,
             },
         ],
+    };
+
+    let info = mock_info("creator", &[]);
+    instantiate(deps, mock_env(), info, msg).unwrap();
+}
+
+/// Helper function to initialize the contract with a number of contributors equal to the number of shares
+/// passed as input.
+fn init_with_shares(deps: DepsMut, shares: Vec<u32>) {
+    let mut contributors: Vec<ContributorMsg> = Vec::with_capacity(shares.len());
+    for (idx, curr_shares) in shares.into_iter().enumerate() {
+        contributors.push(ContributorMsg {
+            role: String::from(""),
+            shares: curr_shares,
+            address: format!("address{}", idx),
+        })
+    }
+    let msg = InstantiateMsg {
+        denom: DENOM.into(),
+        contributors,
     };
 
     let info = mock_info("creator", &[]);
@@ -166,4 +188,61 @@ fn test_execute_withdraw_for_all() {
             amount: vec![coin(330u128, DENOM.to_string())],
         })
     );
+}
+
+// -------------------------------------------------------------------------------------------------
+// Distribute shares
+// -------------------------------------------------------------------------------------------------
+#[test]
+fn distribute_shares_fails() {
+    let env = mock_env();
+    let mut deps = mock_dependencies();
+    init_with_shares(deps.as_mut(), vec![10]);
+
+    let info = mock_info("random_user", &[]);
+    let msg = ExecuteMsg::Distribute {};
+
+    {
+        let err = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone()).unwrap_err();
+        assert_eq!(
+            ContractError::NothingToDistribute {},
+            err,
+            "expected error since contract has not funds to distribute"
+        );
+    }
+
+    {
+        deps.querier.update_balance(env.contract.address.clone(), coins(1_000, "NOT_DENOM"));
+        let err = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone()).unwrap_err();
+        assert_eq!(
+            ContractError::NothingToDistribute {},
+            err,
+            "expected error since contract has not funds of correct denom to distribute"
+        );
+    }
+
+
+}
+
+#[test]
+fn distribute_shares_single() {
+    let env = mock_env();
+    let mut deps = mock_dependencies();
+    init_with_shares(deps.as_mut(), vec![10]);
+
+    let info = mock_info("random_user", &[]);
+    let msg = ExecuteMsg::Distribute {};
+
+    {
+        deps.querier.update_balance(env.contract.address.clone(), coins(1_000, DENOM));
+        let resp = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone()).unwrap();
+        assert_eq!(resp.attributes[1], Attribute {key: "amount".to_owned(), value: "1000".to_owned()})
+    }
+
+    {
+        deps.querier.update_balance(env.contract.address.clone(), coins(2_000, DENOM));
+        execute(deps.as_mut(), env.clone(), info.clone(), msg.clone()).unwrap();
+        let err = execute(deps.as_mut(), env.clone(), info, msg.clone()).unwrap_err();
+        assert_eq!(err, ContractError::NothingToDistribute {}, "expected to fail since after first distribution the contract has no more funds")
+    }
 }

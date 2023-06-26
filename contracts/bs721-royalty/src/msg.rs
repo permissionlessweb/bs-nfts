@@ -24,8 +24,13 @@ pub struct InstantiateMsg {
 }
 
 impl InstantiateMsg {
-    /// Checks that each contributor has non-zero shares, that there are no duplicated contributors
-    /// and returns the total shares if checks pass.
+    /// Validates the contributor shares and computes the total shares.
+    ///
+    /// This function checks the following conditions:
+    /// - Each contributor must have a non-zero share.
+    /// - There should be no duplicate contributors.
+    ///
+    /// If all checks pass, the function returns the total shares as a `Uint128` value.
     pub fn validate_and_compute_total_shares(&mut self) -> Result<Uint128, ContractError> {
         // cannot instantiate a royality contract without at least one contributor
         if self.contributors.is_empty() {
@@ -55,7 +60,8 @@ impl InstantiateMsg {
 
 #[cw_serde]
 pub enum ExecuteMsg {
-    /// Update contributors withdrawable amount.
+    /// Update contributors withdrawable amount by computing each contributors percentage of the
+    /// total distributable contract balance. This function will consider only coins of the stored denom.
     Distribute {},
     /// Withdraw accrued royalties. This message can only be sent by a contributor.
     Withdraw {},

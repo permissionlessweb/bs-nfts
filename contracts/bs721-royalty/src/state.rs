@@ -2,16 +2,16 @@ use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, Decimal, Uint128};
 use cw_storage_plus::{Item, Map};
 
-/// Contributor's information
+/// Contributor's information.
 #[cw_serde]
 pub struct Contributor {
-    /// Contributor's role
+    /// Contributor's role.
     pub role: String,
-    /// Contributor shares sent during instantiation
+    /// Contributor shares.
     pub initial_shares: u32,
-    /// Contributor shares in percentage of totale shares
+    /// Contributor shares in percentage of totale shares.
     pub percentage_shares: Decimal,
-    /// Contributor withdrawable royalties
+    /// Contributor withdrawable royalties.
     pub withdrawable_amount: Uint128,
 }
 
