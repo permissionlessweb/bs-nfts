@@ -33,8 +33,13 @@ impl InstantiateMsg {
     /// If all checks pass, the function returns the total shares as a `Uint128` value.
     pub fn validate_and_compute_total_shares(&mut self) -> Result<Uint128, ContractError> {
         // cannot instantiate a royality contract without at least one contributor
-        if self.contributors.is_empty() {
-            return Err(ContractError::EmptyContributors {});
+        const MAX_CONTRIBUTORS: u64 = 50;
+        const MAX_CHARACTERS: u64 = 50;
+
+        match self.contributors.len() {
+            0 => return Err(ContractError::EmptyContributors {}),
+            x if x > 50 => return Err(ContractError::MaximumContributors {max_contributors: MAX_CONTRIBUTORS}),
+            _ => (),
         }
 
         let mut addresses = Vec::with_capacity(self.contributors.len());
@@ -42,6 +47,9 @@ impl InstantiateMsg {
         for contributor in &self.contributors {
             if contributor.shares == 0 {
                 return Err(ContractError::InvalidShares {});
+            }
+            if contributor.role.len() > 50 {
+                return Err(ContractError::MaximumCharacters {max_characters:MAX_CHARACTERS});
             }
             addresses.push(contributor.address.clone());
             total_shares = total_shares.checked_add(Uint128::from(contributor.shares))?;
@@ -123,9 +131,9 @@ mod test {
         };
 
         {
-            let val = msg.validate_and_compute_total_shares().unwrap_err();
+            let err = msg.validate_and_compute_total_shares().unwrap_err();
             assert_eq!(
-                val,
+                err,
                 ContractError::EmptyContributors {},
                 "expected to fail since at least one contributor is requried"
             )
@@ -140,13 +148,35 @@ mod test {
 
             msg.contributors.push(contributor);
 
-            let val = msg.validate_and_compute_total_shares().unwrap_err();
+            let err = msg.validate_and_compute_total_shares().unwrap_err();
             assert_eq!(
-                val,
+                err,
                 ContractError::InvalidShares {},
                 "expected to fail since zero shares is not allowed"
             )
         }
+
+        {
+            let contributor = ContributorMsg {
+                // 51 characters role
+                role: String::from("Pizzaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"),
+                shares: 10,
+                address: String::from("bitsong0000"),
+            };
+
+            msg = InstantiateMsg {
+                contributors: vec![contributor],
+                ..msg
+            };
+
+            let err = msg.validate_and_compute_total_shares().unwrap_err();
+            assert_eq!(
+                err,
+                ContractError::MaximumCharacters { max_characters: 50 },
+                "expected to fails since role has more than max allowed characters"
+            )
+        }
+
         {
             let contributor = ContributorMsg {
                 role: String::from("dj"),
@@ -213,6 +243,32 @@ mod test {
                 val,
                 ContractError::InvalidShares {},
                 "expected to fail since all contributors must have shares"
+            )
+        }
+
+        {
+            let mut contributors: Vec<ContributorMsg> = Vec::with_capacity(51);
+            for i in 0..51 {
+                contributors.push(
+                    ContributorMsg {
+                        // 51 characters role
+                        role: String::from("drawer"),
+                        shares: 10,
+                        address: format!("bitsong000{}", i),
+                    }
+                )
+            };
+
+            let mut msg = InstantiateMsg {
+                contributors,
+                denom: "bitsong".to_owned(),        
+            };
+
+            let err = msg.validate_and_compute_total_shares().unwrap_err();
+            assert_eq!(
+                err,
+                ContractError::MaximumContributors { max_contributors: 50 },
+                "expected to fail since maximum number of contributors reached"
             )
         }
 
