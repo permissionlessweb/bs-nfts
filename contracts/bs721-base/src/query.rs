@@ -6,7 +6,7 @@ use cosmwasm_std::{
 };
 
 use bs721::{
-    AllNftInfoResponse, ApprovalResponse, ApprovalsResponse, ContractInfoResponse, Bs721Query,
+    AllNftInfoResponse, ApprovalResponse, ApprovalsResponse, Bs721Query, ContractInfoResponse,
     Expiration, NftInfoResponse, NumTokensResponse, OperatorsResponse, OwnerOfResponse,
     TokensResponse,
 };

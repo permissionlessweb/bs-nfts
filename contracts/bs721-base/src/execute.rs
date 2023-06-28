@@ -3,9 +3,9 @@ use serde::Serialize;
 
 use cosmwasm_std::{Binary, CustomMsg, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
 
+use bs721::{Bs721Execute, Bs721ReceiveMsg, ContractInfoResponse, Expiration};
 use cw2::set_contract_version;
 use cw_utils::maybe_addr;
-use bs721::{ContractInfoResponse, Bs721Execute, Bs721ReceiveMsg, Expiration};
 
 use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InstantiateMsg, MintMsg};
