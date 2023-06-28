@@ -36,6 +36,6 @@ pub enum ContractError {
     #[error("maxmimum number of contirbutors is {max_contributors}")]
     MaximumContributors { max_contributors: u64 },
 
-    #[error("maxmimum number of characters is {max_characters}")] 
+    #[error("maxmimum number of characters is {max_characters}")]
     MaximumCharacters { max_characters: u64 },
 }

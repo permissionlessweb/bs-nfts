@@ -10,42 +10,42 @@ pub enum ContractError {
     #[error("{0}")]
     Payment(#[from] PaymentError),
 
-    #[error("Unauthorized")]
+    #[error("unauthorized")]
     Unauthorized {},
 
-    #[error("Price cannot be zero")]
-    ZeroPrice {},
-
-    #[error("Max editions cannot be zero")]
+    #[error("max editions cannot be zero")]
     ZeroEditions {},
 
-    #[error("Party duration cannot be zero")]
+    #[error("party duration cannot be zero")]
     ZeroDuration {},
 
     #[error("BS721 contract already linked")]
     Bs721AlreadyLinked {},
 
-    #[error("Royalty contract already linked")]
-    RoyaltyAlreadyLinked {},
+    #[error("royalties contract already linked")]
+    RoyaltiesAlreadyLinked {},
 
     #[error("BS721 contract not linked")]
     Bs721NotLinked {},
 
-    #[error("Unknown reply id")]
+    #[error("unknown reply id")]
     UnknownReplyId {},
 
-    #[error("Contract is sold out")]
+    #[error("contract is sold out")]
     SoldOut {},
 
-    #[error("Coins sent are invalid")]
+    #[error("coins sent are invalid")]
     InvalidFunds {},
 
-    #[error("Invalid payment amount {0} != {1}")]
+    #[error("invalid payment amount {0} != {1}")]
     InvalidPaymentAmount(Coin, Coin),
 
-    #[error("Launchpad not started")]
+    #[error("launchpad not started")]
     NotStarted {},
 
-    #[error("Party has ended")]
+    #[error("party has ended")]
     PartyEnded {},
+
+    #[error("{profile} fee bps must be less than 10000")]
+    FeeBps { profile: String},
 }

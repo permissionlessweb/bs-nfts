@@ -38,7 +38,11 @@ impl InstantiateMsg {
 
         match self.contributors.len() {
             0 => return Err(ContractError::EmptyContributors {}),
-            x if x > 50 => return Err(ContractError::MaximumContributors {max_contributors: MAX_CONTRIBUTORS}),
+            x if x > 50 => {
+                return Err(ContractError::MaximumContributors {
+                    max_contributors: MAX_CONTRIBUTORS,
+                })
+            }
             _ => (),
         }
 
@@ -49,7 +53,9 @@ impl InstantiateMsg {
                 return Err(ContractError::InvalidShares {});
             }
             if contributor.role.len() > 50 {
-                return Err(ContractError::MaximumCharacters {max_characters:MAX_CHARACTERS});
+                return Err(ContractError::MaximumCharacters {
+                    max_characters: MAX_CHARACTERS,
+                });
             }
             addresses.push(contributor.address.clone());
             total_shares = total_shares.checked_add(Uint128::from(contributor.shares))?;
@@ -249,25 +255,25 @@ mod test {
         {
             let mut contributors: Vec<ContributorMsg> = Vec::with_capacity(51);
             for i in 0..51 {
-                contributors.push(
-                    ContributorMsg {
-                        // 51 characters role
-                        role: String::from("drawer"),
-                        shares: 10,
-                        address: format!("bitsong000{}", i),
-                    }
-                )
-            };
+                contributors.push(ContributorMsg {
+                    // 51 characters role
+                    role: String::from("drawer"),
+                    shares: 10,
+                    address: format!("bitsong000{}", i),
+                })
+            }
 
             let mut msg = InstantiateMsg {
                 contributors,
-                denom: "bitsong".to_owned(),        
+                denom: "bitsong".to_owned(),
             };
 
             let err = msg.validate_and_compute_total_shares().unwrap_err();
             assert_eq!(
                 err,
-                ContractError::MaximumContributors { max_contributors: 50 },
+                ContractError::MaximumContributors {
+                    max_contributors: 50
+                },
                 "expected to fail since maximum number of contributors reached"
             )
         }

@@ -22,12 +22,6 @@ pub enum ContractError {
     #[error("Referral fee bps must be less than 10000")]
     ReferralFeeBps {},
 
-    #[error("Contributors must not be empty")]
-    ContributorsEmpty {},
-
-    #[error("Contributors must not be greater than 100")]
-    ContributorsTooMany {},
-
     #[error("Bs721 already linked")]
     Bs721AlreadyLinked {},
 

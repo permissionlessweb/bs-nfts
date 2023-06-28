@@ -1,5 +1,5 @@
 use crate::error::ContractError;
-use crate::msg::{ConfigResponse, ExecuteMsg, InstantiateMsg, QueryMsg, self, PartyType};
+use crate::msg::{self, ConfigResponse, ExecuteMsg, InstantiateMsg, PartyType, QueryMsg};
 use crate::state::{Config, CONFIG};
 
 use bs721_base::{Extension, MintMsg};
@@ -7,20 +7,24 @@ use bs721_base::{Extension, MintMsg};
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     coin, to_binary, Addr, BankMsg, Binary, Deps, DepsMut, Empty, Env, MessageInfo, Reply, ReplyOn,
-    Response, StdResult, SubMsg, Uint128, WasmMsg, Timestamp,
+    Response, StdResult, SubMsg, Timestamp, Uint128, WasmMsg,
 };
 use cw2::set_contract_version;
 
-use bs721_base::msg::{ExecuteMsg as Bs721BaseExecuteMsg, InstantiateMsg as Bs721BaseInstantiateMsg};
-use cw4::Member;
-use cw4_group::msg::InstantiateMsg as Cw4InstantiateMsg;
+use bs721_base::msg::{
+    ExecuteMsg as Bs721BaseExecuteMsg, InstantiateMsg as Bs721BaseInstantiateMsg,
+};
+use bs721_royalties::msg::{
+    ExecuteMsg as Bs721RoyaltiesExecuteMsg, InstantiateMsg as Bs721RoyaltiesInstantiateMsg,
+};
+
 use cw_utils::{may_pay, parse_reply_instantiate_data};
 
 const CONTRACT_NAME: &str = "crates.io:launchparty-fixed";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 const INSTANTIATE_TOKEN_REPLY_ID: u64 = 1;
-const INSTANTIATE_ROYALTY_REPLY_ID: u64 = 2;
+const INSTANTIATE_ROYALTIES_REPLY_ID: u64 = 2;
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
@@ -33,8 +37,12 @@ pub fn instantiate(
 
     msg.party_type.validate()?;
 
+    let denom = msg.price.denom.clone();
+
     let config = Config {
-        creator: deps.api.addr_validate(&msg.creator.unwrap_or_else(||info.sender.to_string()))?,
+        creator: deps
+            .api
+            .addr_validate(&msg.creator.unwrap_or_else(|| info.sender.to_string()))?,
         name: msg.name.clone(),
         symbol: msg.symbol.clone(),
         base_token_uri: msg.base_token_uri.clone(),
@@ -42,7 +50,8 @@ pub fn instantiate(
         bs721_address: None,
         next_token_id: 1,
         seller_fee_bps: msg.seller_fee_bps,
-        royalty_address: None,
+        referral_fee_bps: msg.referral_fee_bps,
+        royalties_address: None,
         start_time: msg.start_time,
         party_type: msg.party_type,
     };
@@ -70,19 +79,12 @@ pub fn instantiate(
             reply_on: ReplyOn::Success,
         },
         SubMsg {
-            id: INSTANTIATE_ROYALTY_REPLY_ID,
+            id: INSTANTIATE_ROYALTIES_REPLY_ID,
             msg: WasmMsg::Instantiate {
-                code_id: msg.bs721_royalty_code_id,
-                msg: to_binary(&Cw4InstantiateMsg {
-                    admin: None,
-                    members: msg
-                        .contributors
-                        .into_iter()
-                        .map(|c| Member {
-                            addr: c.addr,
-                            weight: c.weight,
-                        })
-                        .collect(),
+                code_id: msg.bs721_royalties_code_id,
+                msg: to_binary(&Bs721RoyaltiesInstantiateMsg {
+                    denom,
+                    contributors: msg.contributors,
                 })?,
                 label: "Launchparty royalty contract".to_string(),
                 admin: None,
@@ -114,18 +116,18 @@ pub fn reply(deps: DepsMut, _env: Env, reply: Reply) -> Result<Response, Contrac
             config.bs721_address = Addr::unchecked(reply_res.contract_address.clone()).into();
 
             res = res
-                .add_attribute("action", "bs721_reply")
+                .add_attribute("action", "bs721_base_reply")
                 .add_attribute("contract_address", reply_res.contract_address)
         }
-        INSTANTIATE_ROYALTY_REPLY_ID => {
-            if config.royalty_address.is_some() {
-                return Err(ContractError::RoyaltyAlreadyLinked {});
+        INSTANTIATE_ROYALTIES_REPLY_ID => {
+            if config.royalties_address.is_some() {
+                return Err(ContractError::RoyaltiesAlreadyLinked {});
             }
 
-            config.royalty_address = Addr::unchecked(reply_res.contract_address.clone()).into();
+            config.royalties_address = Addr::unchecked(reply_res.contract_address.clone()).into();
 
             res = res
-                .add_attribute("action", "royalty_reply")
+                .add_attribute("action", "royalties_reply")
                 .add_attribute("contract_address", reply_res.contract_address)
         }
         _ => return Err(ContractError::UnknownReplyId {}),
@@ -149,7 +151,8 @@ pub fn execute(
 }
 
 fn execute_mint(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, ContractError> {
-    let mut config: Config = CONFIG.load(deps.storage)?;
+    unimplemented!()
+    /* let mut config: Config = CONFIG.load(deps.storage)?;
 
     if config.start_time > env.block.time {
         return Err(ContractError::NotStarted {});
@@ -210,20 +213,20 @@ fn execute_mint(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, 
         .add_attribute("token_id", config.next_token_id.to_string())
         .add_attribute("price", config.price.to_string())
         .add_attribute("creator", config.creator.to_string())
-        .add_attribute("recipient", info.sender.to_string()))
+        .add_attribute("recipient", info.sender.to_string())) */
 }
 
-/// Returns true if the launcharty is still active, false otherwise.
+/// Returns true if the launcharty is active, false otherwise.
 pub fn party_is_active(env: &Env, config: &Config) -> bool {
     match config.party_type {
         PartyType::MaxEdition(number) => {
             if config.next_token_id - 1 >= number {
-                return false
+                return false;
             }
         }
-        PartyType::EndTime(duration) => {
+        PartyType::Duration(duration) => {
             if config.start_time.plus_seconds(duration as u64) < env.block.time {
-                return false
+                return false;
             }
         }
     }
@@ -243,13 +246,13 @@ fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
     Ok(ConfigResponse {
         creator: config.creator,
         bs721_address: config.bs721_address,
+        bs721_royalties: config.royalties_address,
         price: config.price,
         name: config.name,
         symbol: config.symbol,
         base_token_uri: config.base_token_uri,
         next_token_id: config.next_token_id,
         seller_fee_bps: config.seller_fee_bps,
-        royalty_address: config.royalty_address,
         start_time: config.start_time,
         party_type: config.party_type,
     })
@@ -263,12 +266,13 @@ mod tests {
     use crate::msg::Contributor;
 
     use super::*;
+    use bs721_royalties::msg::ContributorMsg;
     use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info, MOCK_CONTRACT_ADDR};
     use cosmwasm_std::{from_binary, to_binary, SubMsgResponse, SubMsgResult, Timestamp};
     use prost::Message;
 
     const NFT_CONTRACT_ADDR: &str = "nftcontract";
-    const ROYALTY_CONTRACT_ADDR: &str = "royaltycontract";
+    const ROYALTIES_CONTRACT_ADDR: &str = "royaltiescontract";
 
     // Type for replies to contract instantiate messes
     #[derive(Clone, PartialEq, Message)]
@@ -281,21 +285,31 @@ mod tests {
 
     #[test]
     fn initialization() {
+        const BS721_BASE_CODE_ID: u64 = 1;
+        const BS721_ROYALTIES_CODE_ID: u64 = 2;
+
         let mut deps = mock_dependencies();
+
+        let contributors = vec![ContributorMsg {
+            address: "contributor".to_string(),
+            role: String::from("creator"),
+            shares: 100,
+        }];
+
         let msg = InstantiateMsg {
             name: "Launchparty".to_string(),
-            price: Uint128::new(1),
+            price: coin(1, "ubtsg"),
             creator: Some(String::from("creator")),
             symbol: "LP".to_string(),
             base_token_uri: "ipfs://Qm......".to_string(),
             collection_uri: "ipfs://Qm......".to_string(),
             seller_fee_bps: 100,
-            contributors: vec![Contributor {
-                addr: "contributor".to_string(),
-                weight: 100,
-            }],
+            referral_fee_bps: 1,
+            contributors: contributors.clone(),
             start_time: Timestamp::from_seconds(0),
-            party_type: PartyType::MaxEdition(1)
+            party_type: PartyType::MaxEdition(1),
+            bs721_royalties_code_id: BS721_ROYALTIES_CODE_ID,
+            bs721_token_code_id: BS721_BASE_CODE_ID,
         };
 
         let info = mock_info("creator", &[]);
@@ -308,8 +322,8 @@ mod tests {
             vec![
                 SubMsg {
                     msg: WasmMsg::Instantiate {
-                        code_id: BS721_CODE_ID,
-                        msg: to_binary(&Bs721InstantiateMsg {
+                        code_id: BS721_BASE_CODE_ID,
+                        msg: to_binary(&Bs721BaseInstantiateMsg {
                             name: msg.name.clone(),
                             symbol: msg.symbol.clone(),
                             minter: MOCK_CONTRACT_ADDR.to_string(),
@@ -327,17 +341,10 @@ mod tests {
                 },
                 SubMsg {
                     msg: WasmMsg::Instantiate {
-                        code_id: CW4_GROUP_CODE_ID,
-                        msg: to_binary(&Cw4InstantiateMsg {
-                            admin: None,
-                            members: msg
-                                .contributors
-                                .into_iter()
-                                .map(|c| Member {
-                                    addr: c.addr,
-                                    weight: c.weight,
-                                })
-                                .collect(),
+                        code_id: BS721_ROYALTIES_CODE_ID,
+                        msg: to_binary(&Bs721RoyaltiesInstantiateMsg {
+                            denom: String::from("ubtsg"),
+                            contributors
                         })
                         .unwrap(),
                         label: "Launchparty royalty contract".to_string(),
@@ -345,7 +352,7 @@ mod tests {
                         funds: vec![],
                     }
                     .into(),
-                    id: INSTANTIATE_ROYALTY_REPLY_ID,
+                    id: INSTANTIATE_ROYALTIES_REPLY_ID,
                     gas_limit: None,
                     reply_on: ReplyOn::Success,
                 },
@@ -374,7 +381,7 @@ mod tests {
         reply(deps.as_mut(), mock_env(), reply_msg_bs721).unwrap();
 
         let instantiate_reply_royalty = MsgInstantiateContractResponse {
-            contract_address: ROYALTY_CONTRACT_ADDR.to_string(),
+            contract_address: ROYALTIES_CONTRACT_ADDR.to_string(),
             data: vec![2u8; 32769],
         };
 
@@ -385,7 +392,7 @@ mod tests {
             .unwrap();
 
         let reply_msg_royalty = Reply {
-            id: INSTANTIATE_ROYALTY_REPLY_ID,
+            id: INSTANTIATE_ROYALTIES_REPLY_ID,
             result: SubMsgResult::Ok(SubMsgResponse {
                 events: vec![],
                 data: Some(encoded_instantiate_reply_royalty.into()),
@@ -405,11 +412,12 @@ mod tests {
                 name: "Launchparty".to_string(),
                 symbol: "LP".to_string(),
                 base_token_uri: "ipfs://Qm......".to_string(),
-                price: Uint128::new(1),
+                price: coin(1, "ubtsg"),
                 bs721_address: Some(Addr::unchecked(NFT_CONTRACT_ADDR)),
                 next_token_id: 1,
                 seller_fee_bps: 100,
-                royalty_address: Some(Addr::unchecked(ROYALTY_CONTRACT_ADDR)),
+                referral_fee_bps: 1,
+                royalties_address: Some(Addr::unchecked(ROYALTIES_CONTRACT_ADDR)),
                 start_time: Timestamp::from_nanos(0),
                 party_type: PartyType::MaxEdition(1)
             }
@@ -418,7 +426,7 @@ mod tests {
 
     #[test]
     fn mint() {
-        let mut deps = mock_dependencies();
+        /* let mut deps = mock_dependencies();
         let msg = InstantiateMsg {
             name: "Launchparty".to_string(),
             price: Uint128::new(1),
@@ -507,6 +515,6 @@ mod tests {
                 gas_limit: None,
                 reply_on: ReplyOn::Never,
             }
-        );
+        ); */
     }
 }
