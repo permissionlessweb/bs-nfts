@@ -19,9 +19,6 @@ use cw_utils::{may_pay, parse_reply_instantiate_data};
 const CONTRACT_NAME: &str = "crates.io:launchparty-fixed";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
-const BS721_CODE_ID: u64 = 6;
-const CW4_GROUP_CODE_ID: u64 = 8;
-
 const INSTANTIATE_TOKEN_REPLY_ID: u64 = 1;
 const INSTANTIATE_ROYALTY_REPLY_ID: u64 = 2;
 
@@ -33,10 +30,6 @@ pub fn instantiate(
     msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
-
-    if msg.price == Uint128::zero() {
-        return Err(ContractError::ZeroPrice {});
-    }
 
     msg.party_type.validate()?;
 
@@ -56,6 +49,7 @@ pub fn instantiate(
 
     CONFIG.save(deps.storage, &config)?;
 
+    // create submessages to instantiate token and royalties contracts
     let sub_msgs: Vec<SubMsg> = vec![
         SubMsg {
             id: INSTANTIATE_TOKEN_REPLY_ID,
@@ -261,6 +255,9 @@ fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
     })
 }
 
+// -------------------------------------------------------------------------------------------------
+// Unit test
+// -------------------------------------------------------------------------------------------------
 #[cfg(test)]
 mod tests {
     use crate::msg::Contributor;

@@ -1,5 +1,5 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Addr, Timestamp, Uint128, StdResult};
+use cosmwasm_std::{Addr, Timestamp, Uint128, StdResult, Coin};
 
 use crate::ContractError;
 
@@ -22,10 +22,10 @@ pub enum PartyType {
 
 #[cw_serde]
 pub struct InstantiateMsg {
-    /// Creator of the collection.
+    /// Creator of the collection. If not provided it will be the sender.
     pub creator: Option<String>,
     /// Price of single nft minting
-    pub price: Uint128,
+    pub price: Coin,
     /// BS721 token name
     pub name: String,
     /// BS721 token symbol
@@ -34,9 +34,16 @@ pub struct InstantiateMsg {
     pub base_token_uri: String,
     pub collection_uri: String,
     pub seller_fee_bps: u16,
+    /// Contributors to the collection.
     pub contributors: Vec<Contributor>,
+    /// Start time of the launchparty
     pub start_time: Timestamp,
+    /// End condition of the collection launchparty.
     pub party_type: PartyType,
+    /// Code id to be usede to instantiate a bs721 token contract.
+    pub bs721_token_code_id: u64,
+    /// Code id to be used to instantiate bs721 royalty contract
+    pub bs721_royalty_code_id: u64,
 }
 
 #[cw_serde]
