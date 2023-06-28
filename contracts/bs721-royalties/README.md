@@ -1,10 +1,10 @@
-# BS721 Royalty
+# BS721 Royalties
 
 This contract allows for the distribution of its balance to a list of contributors proportionally based on their shares.
 
 The flowchart below describes the components of the contract and how they interact:
 
-![bs721-royalty](./assets/bs721-royalty.png)
+![bs721-royalties](./assets/bs721-royalties.png)
 
 ## Instantiate
 

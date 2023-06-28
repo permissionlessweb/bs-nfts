@@ -11,7 +11,7 @@ use cosmwasm_std::{
 };
 use cw2::set_contract_version;
 
-use bs721_base::msg::{ExecuteMsg as Bs721ExecuteMsg, InstantiateMsg as Bs721InstantiateMsg};
+use bs721_base::msg::{ExecuteMsg as Bs721BaseExecuteMsg, InstantiateMsg as Bs721BaseInstantiateMsg};
 use cw4::Member;
 use cw4_group::msg::InstantiateMsg as Cw4InstantiateMsg;
 use cw_utils::{may_pay, parse_reply_instantiate_data};
@@ -54,8 +54,8 @@ pub fn instantiate(
         SubMsg {
             id: INSTANTIATE_TOKEN_REPLY_ID,
             msg: WasmMsg::Instantiate {
-                code_id: BS721_CODE_ID,
-                msg: to_binary(&Bs721InstantiateMsg {
+                code_id: msg.bs721_token_code_id,
+                msg: to_binary(&Bs721BaseInstantiateMsg {
                     name: msg.name.clone(),
                     symbol: msg.symbol.clone(),
                     minter: env.contract.address.to_string(),
@@ -72,7 +72,7 @@ pub fn instantiate(
         SubMsg {
             id: INSTANTIATE_ROYALTY_REPLY_ID,
             msg: WasmMsg::Instantiate {
-                code_id: CW4_GROUP_CODE_ID,
+                code_id: msg.bs721_royalty_code_id,
                 msg: to_binary(&Cw4InstantiateMsg {
                     admin: None,
                     members: msg

@@ -17,7 +17,7 @@ use crate::{
 };
 
 // version and name info for migration
-const CONTRACT_NAME: &str = "crates.io:bs721-royalty";
+const CONTRACT_NAME: &str = "crates.io:bs721-royalties";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[cfg_attr(not(feature = "library"), entry_point)]

@@ -1,6 +1,6 @@
 [package]
-name          = "bs721-royalty"
-description   = "A simple royalty contract for bs721 smart contract"
+name          = "bs721-royalties"
+description   = "A simple royalties contract for bs721 smart contract"
 authors       = [
   "Angelo Recca <angelorc@users.noreply.github.com>",
 ]

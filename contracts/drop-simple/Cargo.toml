@@ -26,7 +26,7 @@ cosmwasm-std    = { workspace = true }
 cw-utils        = { workspace = true }
 cw2             = { workspace = true }
 bs721-base      = { workspace = true, features = ["library"] }
-bs721-royalty   = { workspace = true }
+bs721-royalties   = { workspace = true }
 cw-storage-plus = { workspace = true }
 cw4             = "0.16.0"
 cw4-group       = "0.16.0"
