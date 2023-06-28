@@ -5,8 +5,8 @@ use cosmwasm_schema::{export_schema, export_schema_with_title, remove_schemas, s
 use cosmwasm_std::Empty;
 
 use bs721::{
-    AllNftInfoResponse, ApprovalResponse, ApprovalsResponse, ContractInfoResponse, Bs721ExecuteMsg,
-    Bs721QueryMsg, Bs721ReceiveMsg, NftInfoResponse, NumTokensResponse, OperatorsResponse,
+    AllNftInfoResponse, ApprovalResponse, ApprovalsResponse, Bs721ExecuteMsg, Bs721QueryMsg,
+    Bs721ReceiveMsg, ContractInfoResponse, NftInfoResponse, NumTokensResponse, OperatorsResponse,
     OwnerOfResponse, TokensResponse,
 };
 

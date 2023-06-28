@@ -1,6 +1,6 @@
+use bs721::Expiration;
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::Binary;
-use bs721::Expiration;
 use schemars::JsonSchema;
 
 #[cw_serde]

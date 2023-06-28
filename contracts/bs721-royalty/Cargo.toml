@@ -33,3 +33,6 @@ thiserror       = { workspace = true }
 
 [dev-dependencies]
 prost = "0.10"
+cw-multi-test = "0.16"
+derivative = "2.2"
+anyhow = "1"
