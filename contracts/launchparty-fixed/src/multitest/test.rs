@@ -6,7 +6,7 @@ use crate::msg::ConfigResponse;
 use super::suite::TestSuiteBuilder;
 
 #[test]
-fn test_instantiate() {
+fn instantiate() {
     let contributors = vec![ContributorMsg {
         role: String::from("creator"),
         shares: 100,
@@ -30,4 +30,9 @@ fn test_instantiate() {
         Some(Addr::unchecked("contract2")),
         "expected bs721 royalties as third contract stored and saved in the state"
     )
+}
+
+#[test]
+fn mint() {
+    
 }

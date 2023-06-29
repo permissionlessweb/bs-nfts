@@ -1,7 +1,8 @@
 use bs721_royalties::msg::ContributorMsg;
 use cosmwasm_std::{Addr, Coin, Empty, Timestamp};
-use cw_multi_test::{App, Contract, ContractWrapper, Executor};
+use cw_multi_test::{App, Contract, ContractWrapper, Executor, AppResponse};
 use derivative::Derivative;
+use anyhow::{anyhow, Result as AnyResult};
 
 use bs721_base::msg::{
     ExecuteMsg as Bs721BaseExecuteMsg, InstantiateMsg as Bs721BaseInstantiateMsg,
@@ -10,9 +11,10 @@ use bs721_royalties::msg::{
     ExecuteMsg as Bs721RoyaltiesExecuteMsg, InstantiateMsg as Bs721RoyaltiesInstantiateMsg,
 };
 
-use crate::msg::{ConfigResponse, InstantiateMsg, PartyType, QueryMsg};
+use crate::msg::{ConfigResponse, InstantiateMsg, PartyType, QueryMsg, ExecuteMsg};
 
 pub const CREATOR: &str = "creator";
+pub const SENDER: &str = "sender";
 
 /// Helper function to create a wrapper around the bs721 base contract
 pub fn contract_bs721_base() -> Box<dyn Contract<Empty>> {
@@ -183,11 +185,23 @@ impl Suite {
         &mut self.app
     }
 
+    fn contract_address(&self) -> Addr {
+        self.contract_address.clone()
+    }
+
+    /// Helper function to mint a bs721 token. The sender is defined as a const.
+    pub fn mint(&mut self, referral: Option<String>) -> AnyResult<AppResponse> {
+
+        let msg = ExecuteMsg::Mint { referral };
+
+        self.app.execute_contract(Addr::unchecked(SENDER), self.contract_address(), &msg, &[])
+    } 
+
     /// Helper function to query launchparty contract configuration.
     pub fn query_config(&self) -> ConfigResponse {
         self.app
             .wrap()
-            .query_wasm_smart(self.contract_address.clone(), &QueryMsg::GetConfig {})
+            .query_wasm_smart(self.contract_address(), &QueryMsg::GetConfig {})
             .unwrap()
     }
 }

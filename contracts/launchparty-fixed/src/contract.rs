@@ -146,37 +146,33 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
-        ExecuteMsg::Mint {} => execute_mint(deps, env, info),
+        ExecuteMsg::Mint { referral } => {
+            let referral = match referral {
+                Some(address) => Some(deps.api.addr_validate(address.as_str())?),
+                None => None,
+            };
+            execute_mint(deps, env, info, referral)
+        },
     }
 }
 
-fn execute_mint(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, ContractError> {
-    unimplemented!()
-    /* let mut config: Config = CONFIG.load(deps.storage)?;
+fn execute_mint(deps: DepsMut, env: Env, info: MessageInfo, referral: Option<Addr>) -> Result<Response, ContractError> {
+    let mut config: Config = CONFIG.load(deps.storage)?;
+    let accepted_denom = config.price.denom.clone();
+    
+    before_mint_checks(&env, &config)?;
 
-    if config.start_time > env.block.time {
-        return Err(ContractError::NotStarted {});
-    }
-
-    if config.bs721_address.is_none() {
-        return Err(ContractError::Bs721NotLinked {});
-    }
-
-    if !party_is_active(&env, &config) {
-        return Err(ContractError::PartyEnded {})
-    }
-
-    let payment = may_pay(&info, &"ubtsg")?;
-    if payment != config.price {
+    let payment = may_pay(&info, &accepted_denom)?;
+    if payment != config.price.amount {
         return Err(ContractError::InvalidPaymentAmount(
-            coin(payment.u128(), "ubtsg"),
-            coin(config.price.u128(), "ubtsg"),
+            coin(payment.u128(), accepted_denom),
+            config.price,
         ));
     }
 
     let mut res = Response::new();
 
-    let mint_msg = Bs721ExecuteMsg::<Extension, Empty>::Mint(MintMsg::<Extension> {
+    let mint_msg = Bs721BaseExecuteMsg::<Extension, Empty>::Mint(MintMsg::<Extension> {
         owner: info.sender.to_string(),
         token_id: config.next_token_id.to_string(),
         token_uri: Some(format!(
@@ -185,7 +181,7 @@ fn execute_mint(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, 
             config.next_token_id.to_string()
         )),
         extension: None,
-        payment_addr: Some(config.royalty_address.clone().unwrap().to_string()),
+        payment_addr: Some(config.royalties_address.clone().unwrap().to_string()),
         seller_fee_bps: Some(config.seller_fee_bps),
     });
 
@@ -197,10 +193,10 @@ fn execute_mint(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, 
 
     res = res.add_message(msg);
 
-    if config.price > Uint128::zero() {
+    if !config.price.amount.is_zero() {
         let bank_msg = BankMsg::Send {
-            to_address: config.royalty_address.clone().unwrap().to_string(),
-            amount: vec![coin(config.price.u128(), "ubtsg")],
+            to_address: config.royalties_address.clone().unwrap().to_string(),
+            amount: vec![config.price.clone()],
         };
         res = res.add_message(bank_msg);
     }
@@ -211,21 +207,63 @@ fn execute_mint(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, 
     Ok(res
         .add_attribute("action", "nft_minted")
         .add_attribute("token_id", config.next_token_id.to_string())
-        .add_attribute("price", config.price.to_string())
+        .add_attribute("price", config.price.amount)
         .add_attribute("creator", config.creator.to_string())
-        .add_attribute("recipient", info.sender.to_string())) */
+        .add_attribute("recipient", info.sender.to_string()))
+}
+
+/// Basic checks performed before minting a token
+///
+/// ## Validation Checks
+///
+/// - start time older than current time.
+/// - bs721 base address is stored in the contract.
+/// - royalties address is stored in the contract
+pub fn before_mint_checks(env: &Env, config: &Config) -> Result<(), ContractError> {
+    if config.start_time > env.block.time {
+        return Err(ContractError::NotStarted {});
+    }
+
+    if config.bs721_address.is_none() {
+        return Err(ContractError::Bs721NotLinked {});
+    }
+
+    if config.royalties_address.is_none() {
+        return Err(ContractError::RoyaltiesNotLined {});
+    }
+
+    if !party_is_active(
+        env,
+        &config.party_type,
+        config.next_token_id,
+        config.start_time,
+    ) {
+        return Err(ContractError::PartyEnded {});
+    }
+
+    Ok(())
 }
 
 /// Returns true if the launcharty is active, false otherwise.
-pub fn party_is_active(env: &Env, config: &Config) -> bool {
-    match config.party_type {
+///
+/// A party is active if:
+///
+/// - maxmimum number of editions have been not already minted.
+/// - current time is less than starting time plus party duration.
+pub fn party_is_active(
+    env: &Env,
+    party_type: &PartyType,
+    next_token_id: u32,
+    start_time: Timestamp,
+) -> bool {
+    match party_type {
         PartyType::MaxEdition(number) => {
-            if config.next_token_id - 1 >= number {
+            if next_token_id - 1 >= *number {
                 return false;
             }
         }
         PartyType::Duration(duration) => {
-            if config.start_time.plus_seconds(duration as u64) < env.block.time {
+            if start_time.plus_seconds(*duration as u64) < env.block.time {
                 return false;
             }
         }
@@ -253,6 +291,7 @@ fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
         base_token_uri: config.base_token_uri,
         next_token_id: config.next_token_id,
         seller_fee_bps: config.seller_fee_bps,
+        referral_fee_bps: config.referral_fee_bps,
         start_time: config.start_time,
         party_type: config.party_type,
     })
@@ -263,7 +302,6 @@ fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
 // -------------------------------------------------------------------------------------------------
 #[cfg(test)]
 mod tests {
-    use crate::msg::Contributor;
 
     use super::*;
     use bs721_royalties::msg::ContributorMsg;
@@ -281,6 +319,93 @@ mod tests {
         pub contract_address: ::prost::alloc::string::String,
         #[prost(bytes, tag = "2")]
         pub data: ::prost::alloc::vec::Vec<u8>,
+    }
+
+    #[test]
+    fn party_is_active_works() {
+        let env = mock_env();
+
+        {
+            let curr_block_time = env.block.time;
+            let mut start_time = curr_block_time.minus_seconds(1);
+            assert_eq!(
+                party_is_active(&env, &PartyType::Duration(1), 1, start_time),
+                true,
+                "expected true since current time equal to start time + party duration is still valid for minting"
+            );
+
+            start_time = curr_block_time.minus_seconds(2);
+            assert_eq!(
+                party_is_active(&env, &PartyType::Duration(1), 1, start_time),
+                false,
+                "expected false since current time 1s less then start time + party duration"
+            )
+        }
+    }
+
+    #[test]
+    fn before_mint_checks_works() {
+        let env = mock_env();
+
+        let mut config = Config {
+            creator: Addr::unchecked("creator"),
+            name: String::from(""),
+            symbol: String::from(""),
+            price: coin(1, "ubtsg"),
+            base_token_uri: String::from(""),
+            next_token_id: 1,
+            seller_fee_bps: 1_000,
+            referral_fee_bps: 1_000,
+            start_time: Timestamp::from_seconds(1),
+            party_type: PartyType::MaxEdition(2),
+            bs721_address: Some(Addr::unchecked("contract1")),
+            royalties_address: Some(Addr::unchecked("contract2")),
+        };
+
+        {
+            config.start_time = env.block.time.plus_seconds(1);
+            let resp = before_mint_checks(&env, &config).unwrap_err();
+            assert_eq!(
+                resp,
+                ContractError::NotStarted {},
+                "expected to fail since start time > current time"
+            );
+            config.start_time = env.block.time.minus_seconds(1);
+        }
+
+        {
+            config.bs721_address = None;
+            let resp = before_mint_checks(&env, &config).unwrap_err();
+            assert_eq!(
+                resp,
+                ContractError::Bs721NotLinked {},
+                "expected to fail since cw721 base contract not linked"
+            );
+            config.bs721_address = Some(Addr::unchecked("contract1"));
+        }
+
+        {
+            config.royalties_address = None;
+            let resp = before_mint_checks(&env, &config).unwrap_err();
+            assert_eq!(
+                resp,
+                ContractError::RoyaltiesNotLined {},
+                "expected to fail since royalties contract not linked"
+            );
+            config.royalties_address = Some(Addr::unchecked("contract2"));
+        }
+
+        {
+            // PartyType type has already tests, here we check for the error raised.
+            config.party_type = PartyType::Duration(0);
+            config.start_time = env.block.time.minus_seconds(1);
+            let resp = before_mint_checks(&env, &config).unwrap_err();
+            assert_eq!(
+                resp,
+                ContractError::PartyEnded {},
+                "expected to fail since royalties contract not linked"
+            );
+        }
     }
 
     #[test]
@@ -436,21 +561,21 @@ mod tests {
 
         let query_msg = QueryMsg::GetConfig {};
         let res = query(deps.as_ref(), mock_env(), query_msg).unwrap();
-        let config: Config = from_binary(&res).unwrap();
+        let config: ConfigResponse = from_binary(&res).unwrap();
 
         assert_eq!(
             config,
-            Config {
+            ConfigResponse {
                 creator: Addr::unchecked("creator"),
                 name: "Launchparty".to_string(),
                 symbol: "LP".to_string(),
                 base_token_uri: "ipfs://Qm......".to_string(),
                 price: coin(1, "ubtsg"),
-                bs721_address: Some(Addr::unchecked(NFT_CONTRACT_ADDR)),
+                bs721_base: Some(Addr::unchecked(NFT_CONTRACT_ADDR)),
                 next_token_id: 1,
                 seller_fee_bps: 100,
                 referral_fee_bps: 1,
-                royalties_address: Some(Addr::unchecked(ROYALTIES_CONTRACT_ADDR)),
+                bs721_royalties: Some(Addr::unchecked(ROYALTIES_CONTRACT_ADDR)),
                 start_time: Timestamp::from_nanos(0),
                 party_type: PartyType::MaxEdition(1)
             }
@@ -459,18 +584,19 @@ mod tests {
 
     #[test]
     fn mint() {
-        /* let mut deps = mock_dependencies();
+        let mut deps = mock_dependencies();
         let msg = InstantiateMsg {
             name: "Launchparty".to_string(),
-            price: Uint128::new(1),
+            price: coin(1, "ubtsg"),
             creator: Some(String::from("creator")),
             symbol: "LP".to_string(),
             base_token_uri: "ipfs://Qm......".to_string(),
             collection_uri: "ipfs://Qm......".to_string(),
             seller_fee_bps: 100,
-            contributors: vec![Contributor {
-                addr: "contributor".to_string(),
-                weight: 100,
+            contributors: vec![ContributorMsg {
+                address: "contributor".to_string(),
+                role: "creator".to_string(),
+                shares: 100,
             }],
             start_time: Timestamp::from_nanos(0),
             party_type: PartyType::MaxEdition(1),
@@ -548,6 +674,6 @@ mod tests {
                 gas_limit: None,
                 reply_on: ReplyOn::Never,
             }
-        ); */
+        );
     }
 }

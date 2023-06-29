@@ -28,6 +28,9 @@ pub enum ContractError {
     #[error("BS721 contract not linked")]
     Bs721NotLinked {},
 
+    #[error("Royalties contract not linked")]
+    RoyaltiesNotLined {},
+
     #[error("unknown reply id")]
     UnknownReplyId {},
 

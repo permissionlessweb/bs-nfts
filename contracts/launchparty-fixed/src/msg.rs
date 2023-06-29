@@ -51,7 +51,11 @@ pub struct InstantiateMsg {
 
 #[cw_serde]
 pub enum ExecuteMsg {
-    Mint {},
+    /// Allows to mint a bs721 token and, optionally, to refer an address.
+    Mint {
+        /// Referral address used for minting.
+        referral: Option<String>
+    },
 }
 
 #[cw_serde]
@@ -73,6 +77,7 @@ pub struct ConfigResponse {
     pub base_token_uri: String,
     pub next_token_id: u32,
     pub seller_fee_bps: u16,
+    pub referral_fee_bps: u16,
     pub start_time: Timestamp,
     pub party_type: PartyType,
 }
