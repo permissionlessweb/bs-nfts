@@ -11,17 +11,17 @@ const BS721_ROYALTY_CODE_ID: u64 = 8;
 
 #[cw_serde]
 pub struct InstantiateMsg {
-    pub name: String, //
-    pub symbol: String, // 
-    pub max_editions: u32, //
-    pub price: Coin, //
+    pub name: String,           //
+    pub symbol: String,         //
+    pub max_editions: u32,      //
+    pub price: Coin,            //
     pub base_token_uri: String, //
     pub collection_uri: String, //
-    pub seller_fee_bps: u16, //
+    pub seller_fee_bps: u16,    //
     pub referral_fee_bps: u16,
     pub contributors: Vec<ContributorMsg>, //
-    pub start_time: Timestamp, //
-    pub duration: Duration, //
+    pub start_time: Timestamp,             //
+    pub duration: Duration,                //
 }
 
 impl InstantiateMsg {

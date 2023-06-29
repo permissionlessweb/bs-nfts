@@ -2,7 +2,7 @@ use cosmwasm_std::{Coin, StdError};
 use cw_utils::PaymentError;
 use thiserror::Error;
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug, PartialEq)]
 pub enum ContractError {
     #[error("{0}")]
     Std(#[from] StdError),
@@ -47,5 +47,5 @@ pub enum ContractError {
     PartyEnded {},
 
     #[error("{profile} fee bps must be less than 10000")]
-    FeeBps { profile: String},
+    FeeBps { profile: String },
 }

@@ -35,7 +35,7 @@ pub fn instantiate(
 ) -> Result<Response, ContractError> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
-    msg.party_type.validate()?;
+    msg.validate()?;
 
     let denom = msg.price.denom.clone();
 
@@ -245,7 +245,7 @@ fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
 
     Ok(ConfigResponse {
         creator: config.creator,
-        bs721_address: config.bs721_address,
+        bs721_base: config.bs721_address,
         bs721_royalties: config.royalties_address,
         price: config.price,
         name: config.name,
@@ -281,6 +281,39 @@ mod tests {
         pub contract_address: ::prost::alloc::string::String,
         #[prost(bytes, tag = "2")]
         pub data: ::prost::alloc::vec::Vec<u8>,
+    }
+
+    #[test]
+    fn initialization_fails() {
+        const BS721_BASE_CODE_ID: u64 = 1;
+        const BS721_ROYALTIES_CODE_ID: u64 = 2;
+
+        let mut deps = mock_dependencies();
+
+        let contributors = vec![ContributorMsg {
+            address: "contributor".to_string(),
+            role: String::from("creator"),
+            shares: 100,
+        }];
+
+        let msg = InstantiateMsg {
+            name: "Launchparty".to_string(),
+            price: coin(1, "ubtsg"),
+            creator: Some(String::from("creator")),
+            symbol: "LP".to_string(),
+            base_token_uri: "ipfs://Qm......".to_string(),
+            collection_uri: "ipfs://Qm......".to_string(),
+            seller_fee_bps: 100,
+            referral_fee_bps: 1,
+            contributors: contributors.clone(),
+            start_time: Timestamp::from_seconds(0),
+            party_type: PartyType::MaxEdition(1),
+            bs721_royalties_code_id: BS721_ROYALTIES_CODE_ID,
+            bs721_token_code_id: BS721_BASE_CODE_ID,
+        };
+
+        let info = mock_info("creator", &[]);
+        let res = instantiate(deps.as_mut(), mock_env(), info.clone(), msg.clone()).unwrap();
     }
 
     #[test]

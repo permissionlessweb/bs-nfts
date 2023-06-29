@@ -65,7 +65,7 @@ pub enum QueryMsg {
 #[cw_serde]
 pub struct ConfigResponse {
     pub creator: Addr,
-    pub bs721_address: Option<Addr>,
+    pub bs721_base: Option<Addr>,
     pub bs721_royalties: Option<Addr>,
     pub price: Coin,
     pub name: String,
@@ -81,18 +81,22 @@ impl InstantiateMsg {
     /// Performs basic validation checks on the InstantiateMsg type.
     ///
     /// # Validation Checks:
-    /// 
+    ///
     /// - maximum bps allowed for both seller and referral.
     /// - end condition of the launchparty.
     pub fn validate(&self) -> Result<(), ContractError> {
         // validate seller_fee_bps
-        if self.seller_fee_bps > 10000 {
-            return Err(ContractError::FeeBps { profile: String::from("seller")});
+        if self.seller_fee_bps > 10_000 {
+            return Err(ContractError::FeeBps {
+                profile: String::from("seller"),
+            });
         }
 
         // validate referral_fee_bps
-        if self.referral_fee_bps > 10000 {
-            return Err(ContractError::FeeBps { profile: String::from("referral")});
+        if self.referral_fee_bps > 10_000 {
+            return Err(ContractError::FeeBps {
+                profile: String::from("referral"),
+            });
         }
 
         self.party_type.validate()?;
@@ -105,7 +109,7 @@ impl PartyType {
     /// Performs basic validation checks on the party type.
     ///
     /// # Validation Checks
-    /// 
+    ///
     /// - the number of maximum edition cannot be zero.
     /// - or, the party cannot end in the same time of the instantiation.
     pub fn validate(&self) -> Result<(), ContractError> {
@@ -122,5 +126,85 @@ impl PartyType {
             }
         }
         Ok(())
+    }
+}
+
+// -------------------------------------------------------------------------------------------------
+// Unit tests
+// -------------------------------------------------------------------------------------------------
+#[cfg(test)]
+mod test {
+    use cosmwasm_std::coin;
+
+    use super::*;
+
+    #[test]
+    fn party_type_validate_works() {
+        {
+            let party_type = PartyType::Duration(0);
+            let err = party_type.validate().unwrap_err();
+
+            assert_eq!(
+                err,
+                ContractError::ZeroDuration {},
+                "expected to fail since no zero duration party is allowed"
+            );
+        }
+
+        {
+            let party_type = PartyType::MaxEdition(0);
+            let err = party_type.validate().unwrap_err();
+
+            assert_eq!(
+                err,
+                ContractError::ZeroEditions {},
+                "expected to fail since no party with zero editions is allowed"
+            );
+        }
+    }
+
+    #[test]
+    fn instantiate_msg_validate_works() {
+        let mut msg = InstantiateMsg {
+            name: "Launchparty".to_string(),
+            price: coin(1, "ubtsg"),
+            creator: Some(String::from("creator")),
+            symbol: "LP".to_string(),
+            base_token_uri: "ipfs://Qm......".to_string(),
+            collection_uri: "ipfs://Qm......".to_string(),
+            seller_fee_bps: 100,
+            referral_fee_bps: 1,
+            contributors: vec![],
+            start_time: Timestamp::from_seconds(0),
+            party_type: PartyType::MaxEdition(1),
+            bs721_royalties_code_id: 0,
+            bs721_token_code_id: 1,
+        };
+
+        {
+            msg.seller_fee_bps = 10_001;
+            let err = msg.validate().unwrap_err();
+            assert_eq!(
+                err,
+                ContractError::FeeBps {
+                    profile: String::from("seller")
+                },
+                "expected to fail since fee bps higher than maximum allowed"
+            );
+            msg.seller_fee_bps = 1_000;
+        }
+
+        {
+            msg.referral_fee_bps = 10_001;
+            let err = msg.validate().unwrap_err();
+            assert_eq!(
+                err,
+                ContractError::FeeBps {
+                    profile: String::from("referral")
+                },
+                "expected to fail since fee bps higher than maximum allowed"
+            );
+            msg.referral_fee_bps = 1_000;
+        }
     }
 }
