@@ -156,6 +156,7 @@ pub fn execute(
     }
 }
 
+// TODO: hown to use referral?
 fn execute_mint(deps: DepsMut, env: Env, info: MessageInfo, referral: Option<Addr>) -> Result<Response, ContractError> {
     let mut config: Config = CONFIG.load(deps.storage)?;
     let accepted_denom = config.price.denom.clone();
@@ -311,6 +312,8 @@ mod tests {
 
     const NFT_CONTRACT_ADDR: &str = "nftcontract";
     const ROYALTIES_CONTRACT_ADDR: &str = "royaltiescontract";
+    const BS721_BASE_CODE_ID: u64 = 1;
+    const BS721_ROYALTIES_CODE_ID: u64 = 2;
 
     // Type for replies to contract instantiate messes
     #[derive(Clone, PartialEq, Message)]
@@ -410,9 +413,6 @@ mod tests {
 
     #[test]
     fn initialization_fails() {
-        const BS721_BASE_CODE_ID: u64 = 1;
-        const BS721_ROYALTIES_CODE_ID: u64 = 2;
-
         let mut deps = mock_dependencies();
 
         let contributors = vec![ContributorMsg {
@@ -438,14 +438,11 @@ mod tests {
         };
 
         let info = mock_info("creator", &[]);
-        let res = instantiate(deps.as_mut(), mock_env(), info.clone(), msg.clone()).unwrap();
+        instantiate(deps.as_mut(), mock_env(), info.clone(), msg.clone()).unwrap();
     }
 
     #[test]
     fn initialization() {
-        const BS721_BASE_CODE_ID: u64 = 1;
-        const BS721_ROYALTIES_CODE_ID: u64 = 2;
-
         let mut deps = mock_dependencies();
 
         let contributors = vec![ContributorMsg {
@@ -593,6 +590,7 @@ mod tests {
             base_token_uri: "ipfs://Qm......".to_string(),
             collection_uri: "ipfs://Qm......".to_string(),
             seller_fee_bps: 100,
+            referral_fee_bps: 100,
             contributors: vec![ContributorMsg {
                 address: "contributor".to_string(),
                 role: "creator".to_string(),
@@ -600,6 +598,8 @@ mod tests {
             }],
             start_time: Timestamp::from_nanos(0),
             party_type: PartyType::MaxEdition(1),
+            bs721_royalties_code_id: 1,
+            bs721_token_code_id: 2,
         };
 
         let info = mock_info("creator", &[coin(1, "ubtsg")]);
@@ -627,7 +627,7 @@ mod tests {
         reply(deps.as_mut(), mock_env(), reply_msg_bs721).unwrap();
 
         let instantiate_reply_royalty = MsgInstantiateContractResponse {
-            contract_address: ROYALTY_CONTRACT_ADDR.to_string(),
+            contract_address: ROYALTIES_CONTRACT_ADDR.to_string(),
             data: vec![2u8; 32769],
         };
 
@@ -638,7 +638,7 @@ mod tests {
             .unwrap();
 
         let reply_msg_royalty = Reply {
-            id: INSTANTIATE_ROYALTY_REPLY_ID,
+            id: INSTANTIATE_ROYALTIES_REPLY_ID,
             result: SubMsgResult::Ok(SubMsgResponse {
                 events: vec![],
                 data: Some(encoded_instantiate_reply_royalty.into()),
@@ -647,16 +647,16 @@ mod tests {
 
         reply(deps.as_mut(), mock_env(), reply_msg_royalty).unwrap();
 
-        let msg = ExecuteMsg::Mint {};
+        let msg = ExecuteMsg::Mint {referral: None};
         let info = mock_info(MOCK_CONTRACT_ADDR, &[coin(1, "ubtsg")]);
 
         let res = execute(deps.as_mut(), mock_env(), info.clone(), msg.clone()).unwrap();
 
-        let mint_msg = Bs721ExecuteMsg::<Extension, Empty>::Mint(MintMsg::<Extension> {
+        let mint_msg = Bs721BaseExecuteMsg::<Extension, Empty>::Mint(MintMsg::<Extension> {
             token_id: "1".to_string(),
             extension: None,
             owner: info.sender.to_string(),
-            payment_addr: Some(ROYALTY_CONTRACT_ADDR.to_string()),
+            payment_addr: Some(ROYALTIES_CONTRACT_ADDR.to_string()),
             seller_fee_bps: Some(100),
             token_uri: Some("ipfs://Qm....../1.json".to_string()),
         });

@@ -8,11 +8,10 @@ The flowchart below describes the components of the contract and how they intera
 
 ## Instantiate
 
-Contract instantiation requires the specification two types:
+Contract instantiation requires the specification of two types:
 
 * `denom`: the native token denom used as contract royalties.
-
-* `contributors`: the list of contributors that will participare in royalties distributions.
+* `contributors`: the list of contributors that will participate in royalties distributions.
 
 Each contributor is described by a custom type, `ContributorMsg`, composed by:
 
@@ -32,13 +31,13 @@ The contract handles two possible state-changing messages:
 
 ## Query
 
-Below the list of queries that can be resolved by the contract:
+Below the list of queries that can be resolved by the contract is reported:
 
-* `ListContributors`: allows to retrieve information associated to each contributor.
+* `ListContributors`: allows to retrieve information associated with each contributor.
 
 * `WithdrawableAmount`: returns the sum of the royalties all contributors can withdraw.
 
-* `DistributableAmount`: returns the difference between contract balance and the amount of tokens that can be withdrawn as royalties.
+* `DistributableAmount`: returns the difference between the contract's balance and the number of tokens that can be withdrawn as royalties.
 
 ## License
 

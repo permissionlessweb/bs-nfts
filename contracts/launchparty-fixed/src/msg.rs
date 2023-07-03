@@ -4,14 +4,6 @@ use cosmwasm_std::{Addr, Coin, StdResult, Timestamp, Uint128};
 
 use crate::ContractError;
 
-/// Contributor info.
-#[cw_serde]
-pub struct Contributor {
-    /// Address of the contributor.
-    pub addr: String,
-    pub weight: u64,
-}
-
 /// Possible launchparty type. Each type defines how the party end.
 #[cw_serde]
 pub enum PartyType {
