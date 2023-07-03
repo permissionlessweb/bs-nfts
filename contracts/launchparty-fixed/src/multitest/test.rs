@@ -34,5 +34,9 @@ fn instantiate() {
 
 #[test]
 fn mint() {
-    
+    let mut suite = TestSuiteBuilder::new()
+        .with_default_contributors(vec![1, 2, 3])
+        .build();
+
+    suite.mint(None).unwrap();
 }

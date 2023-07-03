@@ -1,8 +1,8 @@
+use anyhow::{anyhow, Result as AnyResult};
 use bs721_royalties::msg::ContributorMsg;
 use cosmwasm_std::{Addr, Coin, Empty, Timestamp};
-use cw_multi_test::{App, Contract, ContractWrapper, Executor, AppResponse};
+use cw_multi_test::{App, AppResponse, Contract, ContractWrapper, Executor};
 use derivative::Derivative;
-use anyhow::{anyhow, Result as AnyResult};
 
 use bs721_base::msg::{
     ExecuteMsg as Bs721BaseExecuteMsg, InstantiateMsg as Bs721BaseInstantiateMsg,
@@ -11,7 +11,7 @@ use bs721_royalties::msg::{
     ExecuteMsg as Bs721RoyaltiesExecuteMsg, InstantiateMsg as Bs721RoyaltiesInstantiateMsg,
 };
 
-use crate::msg::{ConfigResponse, InstantiateMsg, PartyType, QueryMsg, ExecuteMsg};
+use crate::msg::{ConfigResponse, ExecuteMsg, InstantiateMsg, PartyType, QueryMsg};
 
 pub const CREATOR: &str = "creator";
 pub const SENDER: &str = "sender";
@@ -108,6 +108,17 @@ impl TestSuiteBuilder {
         self
     }
 
+    /// Helper function to add default contributors to the contract.
+    pub fn with_default_contributors(mut self, ids: impl IntoIterator<Item = u32>) -> Self {
+        self.contributors
+            .extend(ids.into_iter().map(|id| ContributorMsg {
+                role: "worker".to_string(),
+                shares: 1,
+                address: format!("address{}", id),
+            }));
+        self
+    }
+
     /// Helper function to instantiate the launchparty contract with parameters defined by the TestSuiteBuilder
     pub fn instantiate_launchparty(
         self,
@@ -191,11 +202,11 @@ impl Suite {
 
     /// Helper function to mint a bs721 token. The sender is defined as a const.
     pub fn mint(&mut self, referral: Option<String>) -> AnyResult<AppResponse> {
-
         let msg = ExecuteMsg::Mint { referral };
 
-        self.app.execute_contract(Addr::unchecked(SENDER), self.contract_address(), &msg, &[])
-    } 
+        self.app
+            .execute_contract(Addr::unchecked(SENDER), self.contract_address(), &msg, &[])
+    }
 
     /// Helper function to query launchparty contract configuration.
     pub fn query_config(&self) -> ConfigResponse {

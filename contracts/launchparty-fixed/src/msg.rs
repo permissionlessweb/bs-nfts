@@ -46,7 +46,7 @@ pub enum ExecuteMsg {
     /// Allows to mint a bs721 token and, optionally, to refer an address.
     Mint {
         /// Referral address used for minting.
-        referral: Option<String>
+        referral: Option<String>,
     },
 }
 

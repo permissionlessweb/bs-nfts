@@ -147,20 +147,24 @@ pub fn execute(
 ) -> Result<Response, ContractError> {
     match msg {
         ExecuteMsg::Mint { referral } => {
-            let referral = match referral {
-                Some(address) => Some(deps.api.addr_validate(address.as_str())?),
-                None => None,
-            };
+            let referral = referral
+                .map(|address| deps.api.addr_validate(address.as_str()))
+                .transpose()?;
             execute_mint(deps, env, info, referral)
-        },
+        }
     }
 }
 
 // TODO: hown to use referral?
-fn execute_mint(deps: DepsMut, env: Env, info: MessageInfo, referral: Option<Addr>) -> Result<Response, ContractError> {
+fn execute_mint(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    referral: Option<Addr>,
+) -> Result<Response, ContractError> {
     let mut config: Config = CONFIG.load(deps.storage)?;
     let accepted_denom = config.price.denom.clone();
-    
+
     before_mint_checks(&env, &config)?;
 
     let payment = may_pay(&info, &accepted_denom)?;
@@ -647,7 +651,7 @@ mod tests {
 
         reply(deps.as_mut(), mock_env(), reply_msg_royalty).unwrap();
 
-        let msg = ExecuteMsg::Mint {referral: None};
+        let msg = ExecuteMsg::Mint { referral: None };
         let info = mock_info(MOCK_CONTRACT_ADDR, &[coin(1, "ubtsg")]);
 
         let res = execute(deps.as_mut(), mock_env(), info.clone(), msg.clone()).unwrap();

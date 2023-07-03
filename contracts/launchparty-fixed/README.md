@@ -1,41 +1,9 @@
 # LaunchParty Fixed
 
-## Commands
+A smart contract to create an incredible launch party for NFTs sale.
 
-### Instantiate
-Instantiate the contract with the following parameters:
-```json
-{
-  "name": "Launchparty",
-  "price": "1",
-  "creator": "bitsong1h882ezq7dyewld6gfv2e06qymvjxnu842586h2",
-  "symbol": "LP",
-  "base_token_uri": "ipfs://Qm......",
-  "collection_uri": "ipfs://Qm......",
-  "max_editions": 1,
-  "seller_fee_bps": 100,
-  "contributors": [
-    {
-      "addr": "bitsong1h882ezq7dyewld6gfv2e06qymvjxnu842586h2",
-      "weight": 100
-    }
-  ],
-  "start_time": "0"
-}
-```
+## Execute
 
-### Query
-Query the contract with the following parameters:
-```json
-{
-  "get_config": {}
-}
-```
+The contract handles the following state-changing messages:
 
-### Mint
-Mint the contract with the following parameters:
-```json
-{
-  "mint": {}
-}
-```
+* `Mint`: this message allows a user to mint an NFT if the party is active. The mint message can contain a `referral` address used to [???]. The contract requires that the user send along with the tx the correct amount of tokens required by the party. The contract will create a BS721ExecuteMsg to Mint a token from the base contract.
