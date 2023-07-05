@@ -71,7 +71,7 @@ pub fn reply(deps: DepsMut, _env: Env, reply: Reply) -> Result<Response, Contrac
         INSTANTIATE_TOKEN_REPLY_ID => {
             let res = parse_reply_instantiate_data(reply).unwrap();
             if config.bs721_address.is_some() {
-                return Err(ContractError::Bs721AlreadyLinked {});
+                return Err(ContractError::Bs721BaseAlreadyLinked {});
             }
 
             let bs721_address = deps.api.addr_validate(&res.contract_address)?;

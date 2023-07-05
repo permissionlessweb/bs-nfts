@@ -20,7 +20,7 @@ pub enum ContractError {
     ZeroDuration {},
 
     #[error("BS721 contract already linked")]
-    Bs721AlreadyLinked {},
+    Bs721BaseAlreadyLinked {},
 
     #[error("royalties contract already linked")]
     RoyaltiesAlreadyLinked {},

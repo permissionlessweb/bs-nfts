@@ -23,8 +23,13 @@ use cw_utils::{may_pay, parse_reply_instantiate_data};
 const CONTRACT_NAME: &str = "crates.io:launchparty-fixed";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
+/// ID used to recognize the instantiate token reply in the reply entry point.
 const INSTANTIATE_TOKEN_REPLY_ID: u64 = 1;
+/// ID used to recognize the instantiate the royalties contract reply in the reply entry point.
 const INSTANTIATE_ROYALTIES_REPLY_ID: u64 = 2;
+/// Maximum tokens that can be minted in both cases of the `PartyType`. 
+// TODO: investigate how this can be removed by adding metadata to NFTs.
+const OVERAL_MAXIMUM_MINTABLE: u32 = 10_000;
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
@@ -47,8 +52,9 @@ pub fn instantiate(
         symbol: msg.symbol.clone(),
         base_token_uri: msg.base_token_uri.clone(),
         price: msg.price,
-        bs721_address: None,
-        next_token_id: 1,
+        max_per_address: msg.max_per_address,
+        bs721_base_address: None,
+        next_token_id: 1, // first token ID is 1
         seller_fee_bps: msg.seller_fee_bps,
         referral_fee_bps: msg.referral_fee_bps,
         royalties_address: None,
@@ -63,7 +69,7 @@ pub fn instantiate(
         SubMsg {
             id: INSTANTIATE_TOKEN_REPLY_ID,
             msg: WasmMsg::Instantiate {
-                code_id: msg.bs721_token_code_id,
+                code_id: msg.bs721_base_code_id,
                 msg: to_binary(&Bs721BaseInstantiateMsg {
                     name: msg.name.clone(),
                     symbol: msg.symbol.clone(),
@@ -86,7 +92,7 @@ pub fn instantiate(
                     denom,
                     contributors: msg.contributors,
                 })?,
-                label: "Launchparty royalty contract".to_string(),
+                label: "Launchparty royalties contract".to_string(),
                 admin: None,
                 funds: vec![],
             }
@@ -109,11 +115,11 @@ pub fn reply(deps: DepsMut, _env: Env, reply: Reply) -> Result<Response, Contrac
 
     match reply.id {
         INSTANTIATE_TOKEN_REPLY_ID => {
-            if config.bs721_address.is_some() {
-                return Err(ContractError::Bs721AlreadyLinked {});
+            if config.bs721_base_address.is_some() {
+                return Err(ContractError::Bs721BaseAlreadyLinked {});
             }
 
-            config.bs721_address = Addr::unchecked(reply_res.contract_address.clone()).into();
+            config.bs721_base_address = Addr::unchecked(reply_res.contract_address.clone()).into();
 
             res = res
                 .add_attribute("action", "bs721_base_reply")
@@ -146,20 +152,20 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
-        ExecuteMsg::Mint { referral } => {
+        ExecuteMsg::Mint { amount, referral } => {
             let referral = referral
                 .map(|address| deps.api.addr_validate(address.as_str()))
                 .transpose()?;
-            execute_mint(deps, env, info, referral)
+            execute_mint(deps, env, info, amount, referral)
         }
     }
 }
 
-// TODO: hown to use referral?
 fn execute_mint(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
+    amount: u32,
     referral: Option<Addr>,
 ) -> Result<Response, ContractError> {
     let mut config: Config = CONFIG.load(deps.storage)?;
@@ -167,6 +173,7 @@ fn execute_mint(
 
     before_mint_checks(&env, &config)?;
 
+    // check that the user has sent exactly the required amount.
     let payment = may_pay(&info, &accepted_denom)?;
     if payment != config.price.amount {
         return Err(ContractError::InvalidPaymentAmount(
@@ -191,7 +198,7 @@ fn execute_mint(
     });
 
     let msg = WasmMsg::Execute {
-        contract_addr: config.bs721_address.clone().unwrap().to_string(),
+        contract_addr: config.bs721_base_address.clone().unwrap().to_string(),
         msg: to_binary(&mint_msg)?,
         funds: vec![],
     };
@@ -229,7 +236,7 @@ pub fn before_mint_checks(env: &Env, config: &Config) -> Result<(), ContractErro
         return Err(ContractError::NotStarted {});
     }
 
-    if config.bs721_address.is_none() {
+    if config.bs721_base_address.is_none() {
         return Err(ContractError::Bs721NotLinked {});
     }
 
@@ -288,7 +295,7 @@ fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
 
     Ok(ConfigResponse {
         creator: config.creator,
-        bs721_base: config.bs721_address,
+        bs721_base: config.bs721_base_address,
         bs721_royalties: config.royalties_address,
         price: config.price,
         name: config.name,
@@ -438,7 +445,7 @@ mod tests {
             start_time: Timestamp::from_seconds(0),
             party_type: PartyType::MaxEdition(1),
             bs721_royalties_code_id: BS721_ROYALTIES_CODE_ID,
-            bs721_token_code_id: BS721_BASE_CODE_ID,
+            bs721_base_code_id: BS721_BASE_CODE_ID,
         };
 
         let info = mock_info("creator", &[]);
@@ -468,7 +475,7 @@ mod tests {
             start_time: Timestamp::from_seconds(0),
             party_type: PartyType::MaxEdition(1),
             bs721_royalties_code_id: BS721_ROYALTIES_CODE_ID,
-            bs721_token_code_id: BS721_BASE_CODE_ID,
+            bs721_base_code_id: BS721_BASE_CODE_ID,
         };
 
         let info = mock_info("creator", &[]);
@@ -603,7 +610,7 @@ mod tests {
             start_time: Timestamp::from_nanos(0),
             party_type: PartyType::MaxEdition(1),
             bs721_royalties_code_id: 1,
-            bs721_token_code_id: 2,
+            bs721_base_code_id: 2,
         };
 
         let info = mock_info("creator", &[coin(1, "ubtsg")]);

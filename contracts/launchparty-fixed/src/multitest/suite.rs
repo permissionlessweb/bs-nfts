@@ -124,7 +124,7 @@ impl TestSuiteBuilder {
         self,
         app: &mut App,
         code_id: u64,
-        bs721_token_code_id: u64,
+        bs721_base_code_id: u64,
         bs721_royalties_code_id: u64,
     ) -> Addr {
         // could we also use mem to optimize code and avoid clone
@@ -140,7 +140,7 @@ impl TestSuiteBuilder {
             contributors: self.contributors.clone(),
             start_time: self.start_time,
             party_type: self.party_type.clone(),
-            bs721_token_code_id,
+            bs721_base_code_id,
             bs721_royalties_code_id,
         };
 

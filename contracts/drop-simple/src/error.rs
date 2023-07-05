@@ -23,7 +23,7 @@ pub enum ContractError {
     ReferralFeeBps {},
 
     #[error("Bs721 already linked")]
-    Bs721AlreadyLinked {},
+    Bs721BaseAlreadyLinked {},
 
     #[error("Unknown reply id")]
     UnknownReplyId {},
