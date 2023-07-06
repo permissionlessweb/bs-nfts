@@ -43,7 +43,8 @@ pub struct InstantiateMsg {
     pub party_type: PartyType,
     /// Code id used to instantiate a bs721 token contract.
     pub bs721_base_code_id: u64,
-    /// Code id used to instantiate bs721 royalties contract.
+    /// Code id used to instantiate bs721 royalties contract. The address of this contract will be used
+    /// as the payment address for the NFT mint.
     pub bs721_royalties_code_id: u64,
 }
 
@@ -78,7 +79,7 @@ pub struct ConfigResponse {
     /// Price of single nft minting.
     pub price: Coin,
     /// Maximum amount of token an address can mint.
-    pub max_per_address: Option<u32>,
+    pub max_per_address: Option<u16>,
     /// BS721 token name.
     pub name: String,
     /// BS721 token symbol.
@@ -186,6 +187,7 @@ mod test {
             name: "Launchparty".to_string(),
             price: coin(1, "ubtsg"),
             creator: Some(String::from("creator")),
+            max_per_address: Some(100),
             symbol: "LP".to_string(),
             base_token_uri: "ipfs://Qm......".to_string(),
             collection_uri: "ipfs://Qm......".to_string(),

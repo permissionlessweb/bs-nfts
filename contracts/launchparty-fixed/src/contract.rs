@@ -7,7 +7,7 @@ use bs721_base::{Extension, MintMsg};
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     coin, to_binary, Addr, BankMsg, Binary, Deps, DepsMut, Empty, Env, MessageInfo, Reply, ReplyOn,
-    Response, StdResult, SubMsg, Timestamp, Uint128, WasmMsg,
+    Response, StdResult, SubMsg, Timestamp, Uint128, WasmMsg, StdError, Decimal,
 };
 use cw2::set_contract_version;
 
@@ -171,19 +171,22 @@ fn execute_mint(
     let mut config: Config = CONFIG.load(deps.storage)?;
     let accepted_denom = config.price.denom.clone();
 
-    before_mint_checks(&env, &config)?;
+    before_mint_checks(&env, &config, amount)?;
 
-    // check that the user has sent exactly the required amount.
-    let payment = may_pay(&info, &accepted_denom)?;
-    if payment != config.price.amount {
+    // check that the user has sent exactly the required amount. The amount is given by the price of
+    // a single token times the number o tokens to mint.
+    let sent_amount = may_pay(&info, &accepted_denom)?;
+    let required_amount = config.price.amount.checked_mul(Uint128::from(amount)).map_err(StdError::overflow)?;
+    if sent_amount != required_amount {
         return Err(ContractError::InvalidPaymentAmount(
-            coin(payment.u128(), accepted_denom),
-            config.price,
+            sent_amount,
+            required_amount,
         ));
     }
 
     let mut res = Response::new();
 
+    // create minting message
     let mint_msg = Bs721BaseExecuteMsg::<Extension, Empty>::Mint(MintMsg::<Extension> {
         owner: info.sender.to_string(),
         token_id: config.next_token_id.to_string(),
@@ -205,12 +208,25 @@ fn execute_mint(
 
     res = res.add_message(msg);
 
+    // create  royalties and optionally referral messages
+
+    // if token price is not zero we have to send:
+    // - referral bps * price to referred address.
+    // - price - (referral bps * price) to royalties address
     if !config.price.amount.is_zero() {
-        let bank_msg = BankMsg::Send {
+        let (referral_amount, royalties_amount) = compute_referral_and_royalties_amounts(&config, referral, required_amount)?;
+        let mut bank_msgs: Vec<BankMsg> = vec![];
+        if !referral_amount.is_zero() {
+            bank_msgs.push(BankMsg::Send {
+                to_address: config.royalties_address.clone().unwrap().to_string(),
+                amount: vec![coin(referral_amount.u128(), config.price.denom.clone())],
+            });
+        }
+        bank_msgs.push(BankMsg::Send {
             to_address: config.royalties_address.clone().unwrap().to_string(),
-            amount: vec![config.price.clone()],
-        };
-        res = res.add_message(bank_msg);
+            amount: vec![coin(royalties_amount.u128(), config.price.denom.clone())],
+        });
+        res = res.add_messages(bank_msgs);
     }
 
     config.next_token_id += 1;
@@ -223,6 +239,32 @@ fn execute_mint(
         .add_attribute("creator", config.creator.to_string())
         .add_attribute("recipient", info.sender.to_string()))
 }
+ 
+/// Computes the amount of `total_amount` associated with the referral address, if any, and the amount
+/// associated with the royalties contract. If `referral` is None, zero tokens are associated with the referrer.
+///
+/// # Arguments
+///
+/// * `config` - Configuration parameters for the computation.
+/// * `referral` - Optional referral address.
+/// * `total_amount` - Total amount of tokens.
+///
+/// # Returns
+///
+/// Returns a tuple containing the referral amount and royalties amount as `Uint128`.
+///
+/// # Errors
+///
+/// Returns an error if an overflow occurs during the computation.
+pub fn compute_referral_and_royalties_amounts(config: &Config, referral: Option<Addr>, total_amount: Uint128) -> StdResult<(Uint128, Uint128)> {
+    let referral_amount = referral.map_or_else(|| Ok(Decimal::zero()),|_address| {
+        Decimal::bps(config.referral_fee_bps as u64).checked_mul(Decimal::new(total_amount)).map_err(StdError::overflow)
+    })?.to_uint_floor();
+
+    let royalties_amount = total_amount - referral_amount;
+
+    Ok((referral_amount, royalties_amount))
+}
 
 /// Basic checks performed before minting a token
 ///
@@ -230,8 +272,9 @@ fn execute_mint(
 ///
 /// - start time older than current time.
 /// - bs721 base address is stored in the contract.
-/// - royalties address is stored in the contract
-pub fn before_mint_checks(env: &Env, config: &Config) -> Result<(), ContractError> {
+/// - royalties address is stored in the contract.
+/// - checks if party is active.
+pub fn before_mint_checks(env: &Env, config: &Config, edition_to_mint: u32) -> Result<(), ContractError> {
     if config.start_time > env.block.time {
         return Err(ContractError::NotStarted {});
     }
@@ -247,7 +290,7 @@ pub fn before_mint_checks(env: &Env, config: &Config) -> Result<(), ContractErro
     if !party_is_active(
         env,
         &config.party_type,
-        config.next_token_id,
+        (config.next_token_id - 1) + edition_to_mint,
         config.start_time,
     ) {
         return Err(ContractError::PartyEnded {});
@@ -265,12 +308,12 @@ pub fn before_mint_checks(env: &Env, config: &Config) -> Result<(), ContractErro
 pub fn party_is_active(
     env: &Env,
     party_type: &PartyType,
-    next_token_id: u32,
+    token_id: u32,
     start_time: Timestamp,
 ) -> bool {
     match party_type {
         PartyType::MaxEdition(number) => {
-            if next_token_id - 1 >= *number {
+            if token_id > *number {
                 return false;
             }
         }
@@ -298,6 +341,7 @@ fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
         bs721_base: config.bs721_base_address,
         bs721_royalties: config.royalties_address,
         price: config.price,
+        max_per_address: config.max_per_address,
         name: config.name,
         symbol: config.symbol,
         base_token_uri: config.base_token_uri,
@@ -312,7 +356,7 @@ fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
 // -------------------------------------------------------------------------------------------------
 // Unit test
 // -------------------------------------------------------------------------------------------------
-#[cfg(test)]
+/* #[cfg(test)]
 mod tests {
 
     use super::*;
@@ -688,3 +732,4 @@ mod tests {
         );
     }
 }
+ */

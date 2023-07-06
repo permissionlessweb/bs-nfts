@@ -1,4 +1,4 @@
-use cosmwasm_std::{Coin, StdError};
+use cosmwasm_std::{Coin, StdError, Uint128};
 use cw_utils::PaymentError;
 use thiserror::Error;
 
@@ -40,8 +40,8 @@ pub enum ContractError {
     #[error("coins sent are invalid")]
     InvalidFunds {},
 
-    #[error("invalid payment amount {0} != {1}")]
-    InvalidPaymentAmount(Coin, Coin),
+    #[error("invalid payment amount. Sent is {0} but required is {1}")]
+    InvalidPaymentAmount(Uint128, Uint128),
 
     #[error("launchpad not started")]
     NotStarted {},
