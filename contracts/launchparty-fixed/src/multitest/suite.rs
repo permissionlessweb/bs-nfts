@@ -65,6 +65,9 @@ pub struct TestSuiteBuilder {
     pub symbol: String,
     /// Price of single nft minting.
     pub price: Coin,
+    /// Maximum numer of tokens an address can mint
+    #[derivative(Default(value = "Some(1)"))]
+    pub max_per_address: Option<u16>,
     /// BS721 token uri.
     pub base_token_uri: String,
     /// BS721 collection uri.
@@ -90,6 +93,12 @@ impl TestSuiteBuilder {
     /// Helper function to define the price of the bs721 collection.
     pub fn with_starttime(mut self, start_time: Timestamp) -> Self {
         self.start_time = start_time;
+        self
+    }
+
+    /// Helper function to define the maximum mintable token per address.
+    pub fn with_max_per_address(mut self, max_per_address: Option<u16>) -> Self {
+        self.max_per_address = max_per_address;
         self
     }
 
@@ -133,6 +142,7 @@ impl TestSuiteBuilder {
             name: self.name.clone(),
             symbol: self.symbol.clone(),
             price: self.price.clone(),
+            max_per_address: self.max_per_address.clone(),
             base_token_uri: self.base_token_uri.clone(),
             collection_uri: self.collection_uri.clone(),
             seller_fee_bps: self.seller_fee_bps.clone(),
@@ -201,8 +211,8 @@ impl Suite {
     }
 
     /// Helper function to mint a bs721 token. The sender is defined as a const.
-    pub fn mint(&mut self, referral: Option<String>) -> AnyResult<AppResponse> {
-        let msg = ExecuteMsg::Mint { referral };
+    pub fn mint(&mut self, referral: Option<String>, amount: u32) -> AnyResult<AppResponse> {
+        let msg = ExecuteMsg::Mint { referral, amount };
 
         self.app
             .execute_contract(Addr::unchecked(SENDER), self.contract_address(), &msg, &[])
