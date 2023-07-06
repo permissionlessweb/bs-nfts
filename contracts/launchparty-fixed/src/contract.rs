@@ -356,7 +356,7 @@ fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
 // -------------------------------------------------------------------------------------------------
 // Unit test
 // -------------------------------------------------------------------------------------------------
-/* #[cfg(test)]
+#[cfg(test)]
 mod tests {
 
     use super::*;
@@ -410,19 +410,20 @@ mod tests {
             name: String::from(""),
             symbol: String::from(""),
             price: coin(1, "ubtsg"),
+            max_per_address: None,
             base_token_uri: String::from(""),
             next_token_id: 1,
             seller_fee_bps: 1_000,
             referral_fee_bps: 1_000,
             start_time: Timestamp::from_seconds(1),
             party_type: PartyType::MaxEdition(2),
-            bs721_address: Some(Addr::unchecked("contract1")),
+            bs721_base_address: Some(Addr::unchecked("contract1")),
             royalties_address: Some(Addr::unchecked("contract2")),
         };
 
         {
             config.start_time = env.block.time.plus_seconds(1);
-            let resp = before_mint_checks(&env, &config).unwrap_err();
+            let resp = before_mint_checks(&env, &config, 1).unwrap_err();
             assert_eq!(
                 resp,
                 ContractError::NotStarted {},
@@ -432,19 +433,19 @@ mod tests {
         }
 
         {
-            config.bs721_address = None;
-            let resp = before_mint_checks(&env, &config).unwrap_err();
+            config.bs721_base_address = None;
+            let resp = before_mint_checks(&env, &config, 1).unwrap_err();
             assert_eq!(
                 resp,
                 ContractError::Bs721NotLinked {},
                 "expected to fail since cw721 base contract not linked"
             );
-            config.bs721_address = Some(Addr::unchecked("contract1"));
+            config.bs721_base_address = Some(Addr::unchecked("contract1"));
         }
 
         {
             config.royalties_address = None;
-            let resp = before_mint_checks(&env, &config).unwrap_err();
+            let resp = before_mint_checks(&env, &config, 1).unwrap_err();
             assert_eq!(
                 resp,
                 ContractError::RoyaltiesNotLined {},
@@ -457,7 +458,7 @@ mod tests {
             // PartyType type has already tests, here we check for the error raised.
             config.party_type = PartyType::Duration(0);
             config.start_time = env.block.time.minus_seconds(1);
-            let resp = before_mint_checks(&env, &config).unwrap_err();
+            let resp = before_mint_checks(&env, &config, 1).unwrap_err();
             assert_eq!(
                 resp,
                 ContractError::PartyEnded {},
@@ -479,6 +480,7 @@ mod tests {
         let msg = InstantiateMsg {
             name: "Launchparty".to_string(),
             price: coin(1, "ubtsg"),
+            max_per_address: Some(1),
             creator: Some(String::from("creator")),
             symbol: "LP".to_string(),
             base_token_uri: "ipfs://Qm......".to_string(),
@@ -509,6 +511,7 @@ mod tests {
         let msg = InstantiateMsg {
             name: "Launchparty".to_string(),
             price: coin(1, "ubtsg"),
+            max_per_address: Some(1),
             creator: Some(String::from("creator")),
             symbol: "LP".to_string(),
             base_token_uri: "ipfs://Qm......".to_string(),
@@ -557,7 +560,7 @@ mod tests {
                             contributors
                         })
                         .unwrap(),
-                        label: "Launchparty royalty contract".to_string(),
+                        label: "Launchparty royalties contract".to_string(),
                         admin: None,
                         funds: vec![],
                     }
@@ -623,6 +626,7 @@ mod tests {
                 symbol: "LP".to_string(),
                 base_token_uri: "ipfs://Qm......".to_string(),
                 price: coin(1, "ubtsg"),
+                max_per_address: Some(1),
                 bs721_base: Some(Addr::unchecked(NFT_CONTRACT_ADDR)),
                 next_token_id: 1,
                 seller_fee_bps: 100,
@@ -640,6 +644,7 @@ mod tests {
         let msg = InstantiateMsg {
             name: "Launchparty".to_string(),
             price: coin(1, "ubtsg"),
+            max_per_address: Some(1),
             creator: Some(String::from("creator")),
             symbol: "LP".to_string(),
             base_token_uri: "ipfs://Qm......".to_string(),
@@ -702,7 +707,7 @@ mod tests {
 
         reply(deps.as_mut(), mock_env(), reply_msg_royalty).unwrap();
 
-        let msg = ExecuteMsg::Mint { referral: None };
+        let msg = ExecuteMsg::Mint { referral: None, amount: 1 };
         let info = mock_info(MOCK_CONTRACT_ADDR, &[coin(1, "ubtsg")]);
 
         let res = execute(deps.as_mut(), mock_env(), info.clone(), msg.clone()).unwrap();
@@ -732,4 +737,3 @@ mod tests {
         );
     }
 }
- */

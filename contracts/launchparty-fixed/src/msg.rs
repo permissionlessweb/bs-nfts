@@ -88,6 +88,7 @@ pub struct ConfigResponse {
     /// ID that will be associated to the next NFT minted.
     pub next_token_id: u32,
     pub seller_fee_bps: u16,
+    /// BPS of the token price associated to the referral address.
     pub referral_fee_bps: u16,
     /// Start time of the launchparty.
     pub start_time: Timestamp,
