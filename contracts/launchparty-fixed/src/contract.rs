@@ -47,7 +47,7 @@ pub fn instantiate(
     let config = Config {
         creator: deps
             .api
-            .addr_validate(&msg.creator.unwrap_or_else(|| info.sender.to_string()))?,
+            .addr_validate(&msg.creator.unwrap_or_else(|| info.sender.to_string()))?, // creator is in instantiate message or the sender
         name: msg.name.clone(),
         symbol: msg.symbol.clone(),
         base_token_uri: msg.base_token_uri.clone(),
@@ -175,7 +175,7 @@ fn execute_mint(
     before_mint_checks(&env, &config, amount)?;
 
     // check that the user has sent exactly the required amount. The amount is given by the price of
-    // a single token times the number o tokens to mint.
+    // a single token times the number of tokens to mint.
     let sent_amount = may_pay(&info, &accepted_denom)?;
     let required_amount = config.price.amount.checked_mul(Uint128::from(amount)).map_err(StdError::overflow)?;
     if sent_amount != required_amount {
@@ -260,7 +260,9 @@ fn execute_mint(
 pub fn compute_referral_and_royalties_amounts(config: &Config, referral: Option<Addr>, total_amount: Uint128) -> StdResult<(Uint128, Uint128)> {
     let referral_amount = referral.map_or_else(|| Ok(Decimal::zero()),|_address| {
         Decimal::bps(config.referral_fee_bps as u64).checked_mul(Decimal::new(total_amount)).map_err(StdError::overflow)
-    })?.to_uint_floor();
+    });
+
+    let referral_amount = referral_amount?.atomics();
 
     let royalties_amount = total_amount - referral_amount;
 
@@ -365,6 +367,8 @@ fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
 // -------------------------------------------------------------------------------------------------
 #[cfg(test)]
 mod tests {
+
+    use std::str::FromStr;
 
     use super::*;
     use bs721_royalties::msg::ContributorMsg;
@@ -483,6 +487,44 @@ mod tests {
                 ContractError::MaxMetadataReached {},
                 "expected to fail since next token id is higher than overal maximum mintable tokens"
             );
+        }
+    }
+
+    #[test]
+    fn compute_referral_and_royalties_amounts_works() {
+
+        let config = Config {
+            creator: Addr::unchecked("creator"),
+            name: String::from(""),
+            symbol: String::from(""),
+            price: coin(1, "ubtsg"),
+            max_per_address: None,
+            base_token_uri: String::from(""),
+            next_token_id: 1,
+            seller_fee_bps: 1_000,
+            referral_fee_bps: 1_000,
+            start_time: Timestamp::from_seconds(1),
+            party_type: PartyType::MaxEdition(2),
+            bs721_base_address: Some(Addr::unchecked("contract1")),
+            royalties_address: Some(Addr::unchecked("contract2")),
+        };
+
+        {
+            let (referral_amt, royalties_amt) = compute_referral_and_royalties_amounts(&config, None, Uint128::new(1_000)).unwrap();
+            assert_eq!(Uint128::zero(), referral_amt, "expected zero referral amount since no referral address");
+            assert_eq!(Uint128::new(1_000), royalties_amt, "expected royalties amount equal to total amount");
+        }
+
+        {
+            let (referral_amt, royalties_amt) = compute_referral_and_royalties_amounts(&config, Some(Addr::unchecked("referrral".to_string())), Uint128::new(1_000)).unwrap();
+            assert_eq!(Uint128::new(100), referral_amt, "expected 10% as referral amount");
+            assert_eq!(Uint128::new(900), royalties_amt, "expected 90% as royalties amount");
+        }
+
+        {
+            let (referral_amt, royalties_amt) = compute_referral_and_royalties_amounts(&config, Some(Addr::unchecked("referrral".to_string())), Uint128::zero()).unwrap();
+            assert_eq!(Uint128::new(0), referral_amt, "expected zero since zero amount");
+            assert_eq!(Uint128::new(0), royalties_amt, "expected zero since zero amount");
         }
     }
 
