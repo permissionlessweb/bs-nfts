@@ -53,7 +53,7 @@ pub enum ExecuteMsg {
     /// Allows to mint a bs721 token and, optionally, to refer an address.
     Mint {
         /// Amount of token to mint. The maximum number an address can mint can be limited by the field
-        /// `maximum_per_address` defined in the `Config`. 
+        /// `maximum_per_address` defined in the `Config`.
         amount: u32,
         /// Referral address used for minting.
         referral: Option<String>,

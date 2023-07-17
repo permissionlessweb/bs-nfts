@@ -6,8 +6,8 @@ use bs721_base::{Extension, MintMsg};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    coin, to_binary, Addr, BankMsg, Binary, Deps, DepsMut, Empty, Env, MessageInfo, Reply, ReplyOn,
-    Response, StdResult, SubMsg, Timestamp, Uint128, WasmMsg, StdError, Decimal,
+    coin, to_binary, Addr, BankMsg, Binary, Decimal, Deps, DepsMut, Empty, Env, MessageInfo, Reply,
+    ReplyOn, Response, StdError, StdResult, SubMsg, Timestamp, Uint128, WasmMsg,
 };
 use cw2::set_contract_version;
 
@@ -27,7 +27,7 @@ const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 const INSTANTIATE_TOKEN_REPLY_ID: u64 = 1;
 /// ID used to recognize the instantiate the royalties contract reply in the reply entry point.
 const INSTANTIATE_ROYALTIES_REPLY_ID: u64 = 2;
-/// Maximum tokens that can be minted in both cases of the `PartyType`. 
+/// Maximum tokens that can be minted in both cases of the `PartyType`.
 // TODO: investigate how this can be removed by adding metadata to NFTs.
 const OVERAL_MAXIMUM_MINTABLE: u32 = 10_000;
 
@@ -177,7 +177,11 @@ fn execute_mint(
     // check that the user has sent exactly the required amount. The amount is given by the price of
     // a single token times the number of tokens to mint.
     let sent_amount = may_pay(&info, &accepted_denom)?;
-    let required_amount = config.price.amount.checked_mul(Uint128::from(amount)).map_err(StdError::overflow)?;
+    let required_amount = config
+        .price
+        .amount
+        .checked_mul(Uint128::from(amount))
+        .map_err(StdError::overflow)?;
     if sent_amount != required_amount {
         return Err(ContractError::InvalidPaymentAmount(
             sent_amount,
@@ -188,26 +192,32 @@ fn execute_mint(
     let mut res = Response::new();
 
     // create minting message
-    let mint_msg = Bs721BaseExecuteMsg::<Extension, Empty>::Mint(MintMsg::<Extension> {
-        owner: info.sender.to_string(),
-        token_id: config.next_token_id.to_string(),
-        token_uri: Some(format!(
-            "{}/{}.json",
-            config.base_token_uri.to_string(),
-            config.next_token_id.to_string()
-        )),
-        extension: None,
-        payment_addr: Some(config.royalties_address.clone().unwrap().to_string()),
-        seller_fee_bps: Some(config.seller_fee_bps),
-    });
+    for _ in 0..amount {
+        let token_id = config.next_token_id.clone();
+        let token_uri = format!("{}{}", config.base_token_uri.clone(), token_id);
 
-    let msg = WasmMsg::Execute {
-        contract_addr: config.bs721_base_address.clone().unwrap().to_string(),
-        msg: to_binary(&mint_msg)?,
-        funds: vec![],
-    };
+        let mint_msg = Bs721BaseExecuteMsg::<Extension, Empty>::Mint(MintMsg::<Extension> {
+            owner: info.sender.to_string(),
+            token_id: token_id.to_string(),
+            token_uri: Some(token_uri),
+            extension: None,
+            payment_addr: Some(config.royalties_address.clone().unwrap().to_string()),
+            seller_fee_bps: Some(config.seller_fee_bps),
+        });
 
-    res = res.add_message(msg);
+        let msg = WasmMsg::Execute {
+            contract_addr: config.bs721_base_address.clone().unwrap().to_string(),
+            msg: to_binary(&mint_msg)?,
+            funds: vec![],
+        };
+
+        res = res
+            .add_message(msg)
+            .add_attribute("token_id", token_id.to_string());
+
+        config.next_token_id += 1;
+        CONFIG.save(deps.storage, &config)?;
+    }
 
     // create  royalties and optionally referral messages
 
@@ -215,7 +225,8 @@ fn execute_mint(
     // - referral bps * price to referred address.
     // - price - (referral bps * price) to royalties address
     if !config.price.amount.is_zero() {
-        let (referral_amount, royalties_amount) = compute_referral_and_royalties_amounts(&config, referral, required_amount)?;
+        let (referral_amount, royalties_amount) =
+            compute_referral_and_royalties_amounts(&config, referral, required_amount)?;
         let mut bank_msgs: Vec<BankMsg> = vec![];
         if !referral_amount.is_zero() {
             bank_msgs.push(BankMsg::Send {
@@ -234,13 +245,12 @@ fn execute_mint(
     CONFIG.save(deps.storage, &config)?;
 
     Ok(res
-        .add_attribute("action", "nft_minted")
-        .add_attribute("token_id", config.next_token_id.to_string())
+        .add_attribute("action", "mint_nft")
         .add_attribute("price", config.price.amount)
         .add_attribute("creator", config.creator.to_string())
         .add_attribute("recipient", info.sender.to_string()))
 }
- 
+
 /// Computes the amount of `total_amount` associated with the referral address, if any, and the amount
 /// associated with the royalties contract. If `referral` is None, zero tokens are associated with the referrer.
 ///
@@ -257,12 +267,21 @@ fn execute_mint(
 /// # Errors
 ///
 /// Returns an error if an overflow occurs during the computation.
-pub fn compute_referral_and_royalties_amounts(config: &Config, referral: Option<Addr>, total_amount: Uint128) -> StdResult<(Uint128, Uint128)> {
-    let referral_amount = referral.map_or_else(|| Ok(Decimal::zero()),|_address| {
-        Decimal::bps(config.referral_fee_bps as u64).checked_mul(Decimal::new(total_amount)).map_err(StdError::overflow)
-    });
-
-    let referral_amount = referral_amount?.atomics();
+pub fn compute_referral_and_royalties_amounts(
+    config: &Config,
+    referral: Option<Addr>,
+    total_amount: Uint128,
+) -> StdResult<(Uint128, Uint128)> {
+    let referral_amount = referral.map_or_else(
+        || Ok(Uint128::zero()),
+        |_address| -> Result<Uint128, _> {
+            total_amount
+                .checked_mul(Uint128::from(config.referral_fee_bps))
+                .map_err(StdError::overflow)?
+                .checked_div(Uint128::new(1_000))
+                .map_err(StdError::divide_by_zero)
+        },
+    )?;
 
     let royalties_amount = total_amount - referral_amount;
 
@@ -278,7 +297,11 @@ pub fn compute_referral_and_royalties_amounts(config: &Config, referral: Option<
 /// - royalties address is stored in the contract.
 /// - checks if party is active.
 /// - check that maximum number of pre-generated metadata is not reched.
-pub fn before_mint_checks(env: &Env, config: &Config, edition_to_mint: u32) -> Result<(), ContractError> {
+pub fn before_mint_checks(
+    env: &Env,
+    config: &Config,
+    edition_to_mint: u32,
+) -> Result<(), ContractError> {
     if config.start_time > env.block.time {
         return Err(ContractError::NotStarted {});
     }
@@ -492,7 +515,6 @@ mod tests {
 
     #[test]
     fn compute_referral_and_royalties_amounts_works() {
-
         let config = Config {
             creator: Addr::unchecked("creator"),
             name: String::from(""),
@@ -510,21 +532,56 @@ mod tests {
         };
 
         {
-            let (referral_amt, royalties_amt) = compute_referral_and_royalties_amounts(&config, None, Uint128::new(1_000)).unwrap();
-            assert_eq!(Uint128::zero(), referral_amt, "expected zero referral amount since no referral address");
-            assert_eq!(Uint128::new(1_000), royalties_amt, "expected royalties amount equal to total amount");
+            let (referral_amt, royalties_amt) =
+                compute_referral_and_royalties_amounts(&config, None, Uint128::new(1_000)).unwrap();
+            assert_eq!(
+                Uint128::zero(),
+                referral_amt,
+                "expected zero referral amount since no referral address"
+            );
+            assert_eq!(
+                Uint128::new(1_000),
+                royalties_amt,
+                "expected royalties amount equal to total amount"
+            );
         }
 
         {
-            let (referral_amt, royalties_amt) = compute_referral_and_royalties_amounts(&config, Some(Addr::unchecked("referrral".to_string())), Uint128::new(1_000)).unwrap();
-            assert_eq!(Uint128::new(100), referral_amt, "expected 10% as referral amount");
-            assert_eq!(Uint128::new(900), royalties_amt, "expected 90% as royalties amount");
+            let (referral_amt, royalties_amt) = compute_referral_and_royalties_amounts(
+                &config,
+                Some(Addr::unchecked("referrral".to_string())),
+                Uint128::new(1_000),
+            )
+            .unwrap();
+            assert_eq!(
+                Uint128::new(100),
+                referral_amt,
+                "expected 10% as referral amount"
+            );
+            assert_eq!(
+                Uint128::new(900),
+                royalties_amt,
+                "expected 90% as royalties amount"
+            );
         }
 
         {
-            let (referral_amt, royalties_amt) = compute_referral_and_royalties_amounts(&config, Some(Addr::unchecked("referrral".to_string())), Uint128::zero()).unwrap();
-            assert_eq!(Uint128::new(0), referral_amt, "expected zero since zero amount");
-            assert_eq!(Uint128::new(0), royalties_amt, "expected zero since zero amount");
+            let (referral_amt, royalties_amt) = compute_referral_and_royalties_amounts(
+                &config,
+                Some(Addr::unchecked("referrral".to_string())),
+                Uint128::zero(),
+            )
+            .unwrap();
+            assert_eq!(
+                Uint128::new(0),
+                referral_amt,
+                "expected zero since zero amount"
+            );
+            assert_eq!(
+                Uint128::new(0),
+                royalties_amt,
+                "expected zero since zero amount"
+            );
         }
     }
 
@@ -768,7 +825,10 @@ mod tests {
 
         reply(deps.as_mut(), mock_env(), reply_msg_royalty).unwrap();
 
-        let msg = ExecuteMsg::Mint { referral: None, amount: 1 };
+        let msg = ExecuteMsg::Mint {
+            referral: None,
+            amount: 1,
+        };
         let info = mock_info(MOCK_CONTRACT_ADDR, &[coin(1, "ubtsg")]);
 
         let res = execute(deps.as_mut(), mock_env(), info.clone(), msg.clone()).unwrap();

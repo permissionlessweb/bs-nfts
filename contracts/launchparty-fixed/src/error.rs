@@ -53,5 +53,5 @@ pub enum ContractError {
     FeeBps { profile: String },
 
     #[error("max number of pre-generated metadata reached")]
-    MaxMetadataReached {  },
+    MaxMetadataReached {},
 }
