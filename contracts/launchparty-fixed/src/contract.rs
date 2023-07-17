@@ -757,7 +757,7 @@ mod tests {
     }
 
     #[test]
-    fn mint() {
+    fn mint_single() {
         let mut deps = mock_dependencies();
         let msg = InstantiateMsg {
             name: "Launchparty".to_string(),
@@ -844,6 +844,156 @@ mod tests {
 
         assert_eq!(
             res.messages[0],
+            SubMsg {
+                msg: WasmMsg::Execute {
+                    contract_addr: NFT_CONTRACT_ADDR.to_string(),
+                    funds: vec![],
+                    msg: to_binary(&mint_msg).unwrap(),
+                }
+                .into(),
+                id: 0,
+                gas_limit: None,
+                reply_on: ReplyOn::Never,
+            }
+        );
+    }
+
+    #[test]
+    fn mint_multiple() {
+        let mut deps = mock_dependencies();
+        let msg = InstantiateMsg {
+            name: "Launchparty".to_string(),
+            price: coin(1, "ubtsg"),
+            max_per_address: Some(3),
+            creator: Some(String::from("creator")),
+            symbol: "LP".to_string(),
+            base_token_uri: "ipfs://Qm......".to_string(),
+            collection_uri: "ipfs://Qm......".to_string(),
+            seller_fee_bps: 100,
+            referral_fee_bps: 100,
+            contributors: vec![ContributorMsg {
+                address: "contributor".to_string(),
+                role: "creator".to_string(),
+                shares: 100,
+            }],
+            start_time: Timestamp::from_nanos(0),
+            party_type: PartyType::MaxEdition(3),
+            bs721_royalties_code_id: 1,
+            bs721_base_code_id: 2,
+        };
+
+        let info = mock_info("creator", &[coin(3, "ubtsg")]);
+        instantiate(deps.as_mut(), mock_env(), info.clone(), msg.clone()).unwrap();
+
+        let instantiate_reply_bs721 = MsgInstantiateContractResponse {
+            contract_address: NFT_CONTRACT_ADDR.to_string(),
+            data: vec![2u8; 32769],
+        };
+
+        let mut encoded_instantiate_reply_bs721 =
+            Vec::<u8>::with_capacity(instantiate_reply_bs721.encoded_len());
+        instantiate_reply_bs721
+            .encode(&mut encoded_instantiate_reply_bs721)
+            .unwrap();
+
+        let reply_msg_bs721 = Reply {
+            id: INSTANTIATE_TOKEN_REPLY_ID,
+            result: SubMsgResult::Ok(SubMsgResponse {
+                events: vec![],
+                data: Some(encoded_instantiate_reply_bs721.into()),
+            }),
+        };
+
+        reply(deps.as_mut(), mock_env(), reply_msg_bs721).unwrap();
+
+        let instantiate_reply_royalty = MsgInstantiateContractResponse {
+            contract_address: ROYALTIES_CONTRACT_ADDR.to_string(),
+            data: vec![2u8; 32769],
+        };
+
+        let mut encoded_instantiate_reply_royalty =
+            Vec::<u8>::with_capacity(instantiate_reply_royalty.encoded_len());
+        instantiate_reply_royalty
+            .encode(&mut encoded_instantiate_reply_royalty)
+            .unwrap();
+
+        let reply_msg_royalty = Reply {
+            id: INSTANTIATE_ROYALTIES_REPLY_ID,
+            result: SubMsgResult::Ok(SubMsgResponse {
+                events: vec![],
+                data: Some(encoded_instantiate_reply_royalty.into()),
+            }),
+        };
+
+        reply(deps.as_mut(), mock_env(), reply_msg_royalty).unwrap();
+
+        let msg = ExecuteMsg::Mint {
+            referral: None,
+            amount: 3,
+        };
+        let info = mock_info(MOCK_CONTRACT_ADDR, &[coin(3, "ubtsg")]);
+
+        let res = execute(deps.as_mut(), mock_env(), info.clone(), msg.clone()).unwrap();
+
+        let mint_msg = Bs721BaseExecuteMsg::<Extension, Empty>::Mint(MintMsg::<Extension> {
+            token_id: "1".to_string(),
+            extension: None,
+            owner: info.sender.to_string(),
+            payment_addr: Some(ROYALTIES_CONTRACT_ADDR.to_string()),
+            seller_fee_bps: Some(100),
+            token_uri: Some("ipfs://Qm....../1".to_string()),
+        });
+
+        assert_eq!(
+            res.messages[0],
+            SubMsg {
+                msg: WasmMsg::Execute {
+                    contract_addr: NFT_CONTRACT_ADDR.to_string(),
+                    funds: vec![],
+                    msg: to_binary(&mint_msg).unwrap(),
+                }
+                .into(),
+                id: 0,
+                gas_limit: None,
+                reply_on: ReplyOn::Never,
+            }
+        );
+
+        let mint_msg = Bs721BaseExecuteMsg::<Extension, Empty>::Mint(MintMsg::<Extension> {
+            token_id: "2".to_string(),
+            extension: None,
+            owner: info.sender.to_string(),
+            payment_addr: Some(ROYALTIES_CONTRACT_ADDR.to_string()),
+            seller_fee_bps: Some(100),
+            token_uri: Some("ipfs://Qm....../2".to_string()),
+        });
+
+        assert_eq!(
+            res.messages[1],
+            SubMsg {
+                msg: WasmMsg::Execute {
+                    contract_addr: NFT_CONTRACT_ADDR.to_string(),
+                    funds: vec![],
+                    msg: to_binary(&mint_msg).unwrap(),
+                }
+                .into(),
+                id: 0,
+                gas_limit: None,
+                reply_on: ReplyOn::Never,
+            }
+        );
+
+        let mint_msg = Bs721BaseExecuteMsg::<Extension, Empty>::Mint(MintMsg::<Extension> {
+            token_id: "3".to_string(),
+            extension: None,
+            owner: info.sender.to_string(),
+            payment_addr: Some(ROYALTIES_CONTRACT_ADDR.to_string()),
+            seller_fee_bps: Some(100),
+            token_uri: Some("ipfs://Qm....../3".to_string()),
+        });
+
+        assert_eq!(
+            res.messages[2],
             SubMsg {
                 msg: WasmMsg::Execute {
                     contract_addr: NFT_CONTRACT_ADDR.to_string(),
