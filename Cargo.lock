@@ -240,21 +240,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "cw-controllers"
-version = "0.16.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "24bd6738c3fd59c87d2f84911c1cad1e4f2d1c58ecaa6e52549b4f78f4ed6f07"
-dependencies = [
- "cosmwasm-schema",
- "cosmwasm-std",
- "cw-storage-plus 0.16.0",
- "cw-utils 0.16.0",
- "schemars",
- "serde",
- "thiserror",
-]
-
-[[package]]
 name = "cw-multi-test"
 version = "0.16.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -353,37 +338,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "cw4"
-version = "0.16.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "86a93c2764ddb44038b948d9a9a8aadc9f92f5ef3e61249af2fad16091e43412"
-dependencies = [
- "cosmwasm-schema",
- "cosmwasm-std",
- "cw-storage-plus 0.16.0",
- "schemars",
- "serde",
-]
-
-[[package]]
-name = "cw4-group"
-version = "0.16.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dba1d15bff40b97bde05f36a0d44ac3369a085a4bda6c4673e33a9359513fdd2"
-dependencies = [
- "cosmwasm-schema",
- "cosmwasm-std",
- "cw-controllers",
- "cw-storage-plus 0.16.0",
- "cw-utils 0.16.0",
- "cw2 0.16.0",
- "cw4",
- "schemars",
- "serde",
- "thiserror",
-]
-
-[[package]]
 name = "der"
 version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -422,25 +376,6 @@ dependencies = [
  "block-buffer 0.10.4",
  "crypto-common",
  "subtle",
-]
-
-[[package]]
-name = "drop-simple"
-version = "0.1.0-alpha.1"
-dependencies = [
- "bs721-base",
- "bs721-royalties",
- "cosmwasm-schema",
- "cosmwasm-std",
- "cw-storage-plus 0.16.0",
- "cw-utils 0.16.0",
- "cw2 0.16.0",
- "cw4",
- "cw4-group",
- "prost 0.10.4",
- "schemars",
- "serde",
- "thiserror",
 ]
 
 [[package]]
@@ -670,16 +605,6 @@ dependencies = [
 
 [[package]]
 name = "prost"
-version = "0.10.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "71adf41db68aa0daaefc69bb30bcd68ded9b9abaad5d1fbb6304c4fb390e083e"
-dependencies = [
- "bytes",
- "prost-derive 0.10.1",
-]
-
-[[package]]
-name = "prost"
 version = "0.11.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0b82eaa1d779e9a4bc1c3217db8ffbeabaae1dca241bf70183242128d48681cd"
@@ -693,19 +618,6 @@ name = "prost-derive"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f9cc1a3263e07e0bf68e96268f37665207b49560d98739662cdfaae215c720fe"
-dependencies = [
- "anyhow",
- "itertools",
- "proc-macro2",
- "quote",
- "syn 1.0.109",
-]
-
-[[package]]
-name = "prost-derive"
-version = "0.10.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7b670f45da57fb8542ebdbb6105a925fe571b67f9e7ed9f47a06a84e72b4e7cc"
 dependencies = [
  "anyhow",
  "itertools",
