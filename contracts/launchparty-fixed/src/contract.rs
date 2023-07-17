@@ -194,7 +194,7 @@ fn execute_mint(
     // create minting message
     for _ in 0..amount {
         let token_id = config.next_token_id.clone();
-        let token_uri = format!("{}{}", config.base_token_uri.clone(), token_id);
+        let token_uri = format!("{}/{}", config.base_token_uri.clone(), token_id);
 
         let mint_msg = Bs721BaseExecuteMsg::<Extension, Empty>::Mint(MintMsg::<Extension> {
             owner: info.sender.to_string(),
@@ -839,7 +839,7 @@ mod tests {
             owner: info.sender.to_string(),
             payment_addr: Some(ROYALTIES_CONTRACT_ADDR.to_string()),
             seller_fee_bps: Some(100),
-            token_uri: Some("ipfs://Qm....../1.json".to_string()),
+            token_uri: Some("ipfs://Qm....../1".to_string()),
         });
 
         assert_eq!(
