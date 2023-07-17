@@ -278,7 +278,7 @@ pub fn compute_referral_and_royalties_amounts(
             total_amount
                 .checked_mul(Uint128::from(config.referral_fee_bps))
                 .map_err(StdError::overflow)?
-                .checked_div(Uint128::new(1_000))
+                .checked_div(Uint128::new(10_000))
                 .map_err(StdError::divide_by_zero)
         },
     )?;
