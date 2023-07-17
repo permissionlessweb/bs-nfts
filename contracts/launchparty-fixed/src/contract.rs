@@ -153,6 +153,7 @@ pub fn execute(
 ) -> Result<Response, ContractError> {
     match msg {
         ExecuteMsg::Mint { amount, referral } => {
+            // check if referral address is valid
             let referral = referral
                 .map(|address| deps.api.addr_validate(address.as_str()))
                 .transpose()?;
@@ -274,6 +275,7 @@ pub fn compute_referral_and_royalties_amounts(config: &Config, referral: Option<
 /// - bs721 base address is stored in the contract.
 /// - royalties address is stored in the contract.
 /// - checks if party is active.
+/// - check that maximum number of pre-generated metadata is not reched.
 pub fn before_mint_checks(env: &Env, config: &Config, edition_to_mint: u32) -> Result<(), ContractError> {
     if config.start_time > env.block.time {
         return Err(ContractError::NotStarted {});
@@ -284,7 +286,7 @@ pub fn before_mint_checks(env: &Env, config: &Config, edition_to_mint: u32) -> R
     }
 
     if config.royalties_address.is_none() {
-        return Err(ContractError::RoyaltiesNotLined {});
+        return Err(ContractError::RoyaltiesNotLinked {});
     }
 
     if !party_is_active(
@@ -294,6 +296,11 @@ pub fn before_mint_checks(env: &Env, config: &Config, edition_to_mint: u32) -> R
         config.start_time,
     ) {
         return Err(ContractError::PartyEnded {});
+    }
+
+    // TODO: remove this check
+    if (config.next_token_id - 1) + edition_to_mint > OVERAL_MAXIMUM_MINTABLE {
+        return Err(ContractError::MaxMetadataReached {});
     }
 
     Ok(())
@@ -448,7 +455,7 @@ mod tests {
             let resp = before_mint_checks(&env, &config, 1).unwrap_err();
             assert_eq!(
                 resp,
-                ContractError::RoyaltiesNotLined {},
+                ContractError::RoyaltiesNotLinked {},
                 "expected to fail since royalties contract not linked"
             );
             config.royalties_address = Some(Addr::unchecked("contract2"));
@@ -462,7 +469,19 @@ mod tests {
             assert_eq!(
                 resp,
                 ContractError::PartyEnded {},
-                "expected to fail since royalties contract not linked"
+                "expected to fail since party is ended"
+            );
+        }
+
+        {
+            config.party_type = PartyType::Duration(1);
+            config.start_time = env.block.time.minus_seconds(1);
+            config.next_token_id = OVERAL_MAXIMUM_MINTABLE + 1;
+            let resp = before_mint_checks(&env, &config, 1).unwrap_err();
+            assert_eq!(
+                resp,
+                ContractError::MaxMetadataReached {},
+                "expected to fail since next token id is higher than overal maximum mintable tokens"
             );
         }
     }

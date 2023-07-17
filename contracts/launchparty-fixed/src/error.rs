@@ -29,7 +29,7 @@ pub enum ContractError {
     Bs721NotLinked {},
 
     #[error("Royalties contract not linked")]
-    RoyaltiesNotLined {},
+    RoyaltiesNotLinked {},
 
     #[error("unknown reply id")]
     UnknownReplyId {},
@@ -51,4 +51,7 @@ pub enum ContractError {
 
     #[error("{profile} fee bps must be less than 10000")]
     FeeBps { profile: String },
+
+    #[error("max number of pre-generated metadata reached")]
+    MaxMetadataReached {  },
 }
