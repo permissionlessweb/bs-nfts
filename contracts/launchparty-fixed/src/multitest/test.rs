@@ -60,7 +60,9 @@ fn mint_single_no_referral() {
     let royalties_address = suite.query_config().bs721_royalties.unwrap();
 
     assert_eq!(
-        suite.query_address_balance(royalties_address, "ubtsg").amount,
+        suite
+            .query_address_balance(royalties_address, "ubtsg")
+            .amount,
         Uint128::one(),
         "expected to have the royalties contract balance equal to the price of a single NFT"
     );
@@ -88,13 +90,17 @@ fn mint_single_with_referral() {
     let royalties_address = suite.query_config().bs721_royalties.unwrap();
 
     assert_eq!(
-        suite.query_address_balance(referral.unwrap(), "ubtsg").amount,
+        suite
+            .query_address_balance(referral.unwrap(), "ubtsg")
+            .amount,
         Uint128::one(),
         "expected to have the referral address balance equal to the 10% of the NFT price"
     );
 
     assert_eq!(
-        suite.query_address_balance(royalties_address, "ubtsg").amount,
+        suite
+            .query_address_balance(royalties_address, "ubtsg")
+            .amount,
         Uint128::new(9),
         "expected to have the royalties contract balance equal to the 90% of the NFT price"
     );
@@ -118,7 +124,9 @@ fn mint_multiple() {
     let royalties_address = config.bs721_royalties.unwrap();
 
     assert_eq!(
-        suite.query_address_balance(royalties_address, "ubtsg").amount,
+        suite
+            .query_address_balance(royalties_address, "ubtsg")
+            .amount,
         Uint128::new(3),
         "expected to have the royalties contract balance equal to the price of 3 NFT"
     );

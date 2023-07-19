@@ -6,8 +6,8 @@ use bs721_base::{Extension, MintMsg};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    coin, to_binary, Addr, BankMsg, Binary, Deps, DepsMut, Empty, Env, MessageInfo, Reply,
-    ReplyOn, Response, StdError, StdResult, SubMsg, Timestamp, Uint128, WasmMsg,
+    coin, to_binary, Addr, BankMsg, Binary, Deps, DepsMut, Empty, Env, MessageInfo, Reply, ReplyOn,
+    Response, StdError, StdResult, SubMsg, Timestamp, Uint128, WasmMsg,
 };
 use cw2::set_contract_version;
 
