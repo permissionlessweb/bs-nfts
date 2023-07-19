@@ -541,6 +541,7 @@ name = "launchparty-fixed"
 version = "0.1.0-alpha.1"
 dependencies = [
  "anyhow",
+ "bs721",
  "bs721-base",
  "bs721-royalties",
  "cosmwasm-schema",

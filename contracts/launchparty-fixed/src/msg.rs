@@ -13,6 +13,7 @@ pub enum PartyType {
     Duration(u32),
 }
 
+/// Structure required by the launchparty-fixed contract during its instantiation.
 #[cw_serde]
 pub struct InstantiateMsg {
     /// Creator of the collection. If not provided it will be the sender.
@@ -48,6 +49,7 @@ pub struct InstantiateMsg {
     pub bs721_royalties_code_id: u64,
 }
 
+/// Possible state-changing messages that the launchparty-fixed contract can handle.
 #[cw_serde]
 pub enum ExecuteMsg {
     /// Allows to mint a bs721 token and, optionally, to refer an address.
@@ -60,6 +62,7 @@ pub enum ExecuteMsg {
     },
 }
 
+/// Possible query messages that the launchparty-fixed contract can handle.
 #[cw_serde]
 #[derive(QueryResponses)]
 pub enum QueryMsg {
@@ -97,6 +100,8 @@ pub struct ConfigResponse {
 }
 
 impl InstantiateMsg {
+    const MAX_FEE_BPS: u16 = 10_000;
+
     /// Performs basic validation checks on the InstantiateMsg type.
     ///
     /// # Validation Checks:
@@ -105,14 +110,14 @@ impl InstantiateMsg {
     /// - end condition of the launchparty.
     pub fn validate(&self) -> Result<(), ContractError> {
         // validate seller_fee_bps
-        if self.seller_fee_bps > 10_000 {
+        if self.seller_fee_bps > Self::MAX_FEE_BPS {
             return Err(ContractError::FeeBps {
                 profile: String::from("seller"),
             });
         }
 
         // validate referral_fee_bps
-        if self.referral_fee_bps > 10_000 {
+        if self.referral_fee_bps > Self::MAX_FEE_BPS {
             return Err(ContractError::FeeBps {
                 profile: String::from("referral"),
             });

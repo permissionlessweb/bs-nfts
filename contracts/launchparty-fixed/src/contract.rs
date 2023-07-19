@@ -226,11 +226,11 @@ fn execute_mint(
     // - price - (referral bps * price) to royalties address
     if !config.price.amount.is_zero() {
         let (referral_amount, royalties_amount) =
-            compute_referral_and_royalties_amounts(&config, referral, required_amount)?;
+            compute_referral_and_royalties_amounts(&config, &referral, required_amount)?;
         let mut bank_msgs: Vec<BankMsg> = vec![];
         if !referral_amount.is_zero() {
             bank_msgs.push(BankMsg::Send {
-                to_address: config.royalties_address.clone().unwrap().to_string(),
+                to_address: referral.unwrap().to_string(),
                 amount: vec![coin(referral_amount.u128(), config.price.denom.clone())],
             });
         }
@@ -269,10 +269,10 @@ fn execute_mint(
 /// Returns an error if an overflow occurs during the computation.
 pub fn compute_referral_and_royalties_amounts(
     config: &Config,
-    referral: Option<Addr>,
+    referral: &Option<Addr>,
     total_amount: Uint128,
 ) -> StdResult<(Uint128, Uint128)> {
-    let referral_amount = referral.map_or_else(
+    let referral_amount = referral.as_ref().map_or_else(
         || Ok(Uint128::zero()),
         |_address| -> Result<Uint128, _> {
             total_amount
@@ -390,8 +390,6 @@ fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
 // -------------------------------------------------------------------------------------------------
 #[cfg(test)]
 mod tests {
-
-    use std::str::FromStr;
 
     use super::*;
     use bs721_royalties::msg::ContributorMsg;
@@ -533,7 +531,8 @@ mod tests {
 
         {
             let (referral_amt, royalties_amt) =
-                compute_referral_and_royalties_amounts(&config, None, Uint128::new(1_000)).unwrap();
+                compute_referral_and_royalties_amounts(&config, &None, Uint128::new(1_000))
+                    .unwrap();
             assert_eq!(
                 Uint128::zero(),
                 referral_amt,
@@ -549,7 +548,7 @@ mod tests {
         {
             let (referral_amt, royalties_amt) = compute_referral_and_royalties_amounts(
                 &config,
-                Some(Addr::unchecked("referrral".to_string())),
+                &Some(Addr::unchecked("referrral".to_string())),
                 Uint128::new(1_000),
             )
             .unwrap();
@@ -568,7 +567,7 @@ mod tests {
         {
             let (referral_amt, royalties_amt) = compute_referral_and_royalties_amounts(
                 &config,
-                Some(Addr::unchecked("referrral".to_string())),
+                &Some(Addr::unchecked("referrral".to_string())),
                 Uint128::zero(),
             )
             .unwrap();
@@ -581,6 +580,59 @@ mod tests {
                 Uint128::new(0),
                 royalties_amt,
                 "expected zero since zero amount"
+            );
+        }
+
+        {
+            let (referral_amt, royalties_amt) = compute_referral_and_royalties_amounts(
+                &config,
+                &Some(Addr::unchecked("referrral".to_string())),
+                Uint128::new(1),
+            )
+            .unwrap();
+            assert_eq!(
+                Uint128::zero(),
+                referral_amt,
+                "expected zero 10% of 1 is rounded zero"
+            );
+            assert_eq!(
+                Uint128::new(1),
+                royalties_amt,
+                "expected 1 since royalties is 1 minus referral amount"
+            );
+        }
+
+        {
+            let (referral_amt, royalties_amt) = compute_referral_and_royalties_amounts(
+                &config,
+                &Some(Addr::unchecked("referrral".to_string())),
+                Uint128::new(9),
+            )
+            .unwrap();
+            assert_eq!(
+                Uint128::zero(),
+                referral_amt,
+                "expected zero since 10% of 9 is rounded zero"
+            );
+            assert_eq!(
+                Uint128::new(9),
+                royalties_amt,
+                "expected 9 since royalties is 9 minus referral amount"
+            );
+        }
+
+        {
+            let (referral_amt, royalties_amt) = compute_referral_and_royalties_amounts(
+                &config,
+                &Some(Addr::unchecked("referrral".to_string())),
+                Uint128::new(10),
+            )
+            .unwrap();
+            assert_eq!(Uint128::new(1), referral_amt, "expected 1 since 10% of 10");
+            assert_eq!(
+                Uint128::new(9),
+                royalties_amt,
+                "expected 9 since royalties is 10 minus referral amount"
             );
         }
     }

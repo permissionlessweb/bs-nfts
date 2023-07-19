@@ -1,20 +1,14 @@
-use anyhow::{anyhow, Result as AnyResult};
+use anyhow::Result as AnyResult;
 use bs721_royalties::msg::ContributorMsg;
 use cosmwasm_std::{Addr, Coin, Empty, Timestamp};
 use cw_multi_test::{App, AppResponse, Contract, ContractWrapper, Executor};
 use derivative::Derivative;
 
-use bs721_base::msg::{
-    ExecuteMsg as Bs721BaseExecuteMsg, InstantiateMsg as Bs721BaseInstantiateMsg,
-};
-use bs721_royalties::msg::{
-    ExecuteMsg as Bs721RoyaltiesExecuteMsg, InstantiateMsg as Bs721RoyaltiesInstantiateMsg,
-};
+use bs721_base::msg::QueryMsg as Bs721BaseQueryMsg;
 
 use crate::msg::{ConfigResponse, ExecuteMsg, InstantiateMsg, PartyType, QueryMsg};
 
 pub const CREATOR: &str = "creator";
-pub const SENDER: &str = "sender";
 
 /// Helper function to create a wrapper around the bs721 base contract
 pub fn contract_bs721_base() -> Box<dyn Contract<Empty>> {
@@ -81,6 +75,7 @@ pub struct TestSuiteBuilder {
     /// End condition of the collection launchparty.
     #[derivative(Default(value = "PartyType::MaxEdition(1)"))]
     pub party_type: PartyType,
+    pub init_funds: Vec<(Addr, Vec<Coin>)>,
 }
 
 impl TestSuiteBuilder {
@@ -90,15 +85,9 @@ impl TestSuiteBuilder {
         self
     }
 
-    /// Helper function to define the price of the bs721 collection.
-    pub fn with_starttime(mut self, start_time: Timestamp) -> Self {
-        self.start_time = start_time;
-        self
-    }
-
-    /// Helper function to define the maximum mintable token per address.
-    pub fn with_max_per_address(mut self, max_per_address: Option<u16>) -> Self {
-        self.max_per_address = max_per_address;
+    /// Helper function to set referral fee bp.
+    pub fn with_referral_fee_bps(mut self, referral_fee_bps: u16) -> Self {
+        self.referral_fee_bps = referral_fee_bps;
         self
     }
 
@@ -117,7 +106,7 @@ impl TestSuiteBuilder {
         self
     }
 
-    /// Helper function to add default contributors to the contract.
+    /// Helper function to add default contributors to the contract. Default contributors have 1 share each.
     pub fn with_default_contributors(mut self, ids: impl IntoIterator<Item = u32>) -> Self {
         self.contributors
             .extend(ids.into_iter().map(|id| ContributorMsg {
@@ -128,9 +117,15 @@ impl TestSuiteBuilder {
         self
     }
 
+    /// Helper function to initialize the bank module with funds associated to particular addresses.
+    pub fn with_funds(mut self, addr: &str, funds: &[Coin]) -> Self {
+        self.init_funds.push((Addr::unchecked(addr), funds.into()));
+        self
+    }
+
     /// Helper function to instantiate the launchparty contract with parameters defined by the TestSuiteBuilder
     pub fn instantiate_launchparty(
-        self,
+        &self,
         app: &mut App,
         code_id: u64,
         bs721_base_code_id: u64,
@@ -180,11 +175,17 @@ impl TestSuiteBuilder {
             bs721_royalties_code_id,
         );
 
+        app.init_modules(|router, _, storage| -> AnyResult<()> {
+            for (addr, coin) in self.init_funds {
+                router.bank.init_balance(storage, &addr, coin)?;
+            }
+            Ok(())
+        })
+        .unwrap();
+
         Suite {
             app,
             contract_address,
-            bs721_base_code_id,
-            bs721_royalties_code_id,
         }
     }
 }
@@ -195,27 +196,32 @@ pub struct Suite {
     app: App,
     /// Address of the launchparty contract.
     contract_address: Addr,
-    /// Code id used to instantiate a bs721 token contract.
-    bs721_base_code_id: u64,
-    /// Code id used to instantiate bs721 royalties contract.
-    bs721_royalties_code_id: u64,
 }
 
 impl Suite {
-    pub fn app(&mut self) -> &mut App {
-        &mut self.app
-    }
-
+    /// Returns the contract address.
     fn contract_address(&self) -> Addr {
         self.contract_address.clone()
     }
 
     /// Helper function to mint a bs721 token. The sender is defined as a const.
-    pub fn mint(&mut self, referral: Option<String>, amount: u32) -> AnyResult<AppResponse> {
+    pub fn mint(
+        &mut self,
+        sender: impl ToString,
+        referral: Option<String>,
+        amount: u32,
+        funds: Option<Coin>,
+    ) -> AnyResult<AppResponse> {
         let msg = ExecuteMsg::Mint { referral, amount };
 
-        self.app
-            .execute_contract(Addr::unchecked(SENDER), self.contract_address(), &msg, &[])
+        let send_funds: Vec<Coin> = funds.map_or_else(Vec::new, |sent_coin| vec![sent_coin]);
+
+        self.app.execute_contract(
+            Addr::unchecked(sender.to_string()),
+            self.contract_address(),
+            &msg,
+            &send_funds,
+        )
     }
 
     /// Helper function to query launchparty contract configuration.
@@ -224,5 +230,37 @@ impl Suite {
             .wrap()
             .query_wasm_smart(self.contract_address(), &QueryMsg::GetConfig {})
             .unwrap()
+    }
+
+    /// Helper function to query the balance of a specific address.
+    pub fn query_address_balance(
+        &self,
+        address: impl Into<String>,
+        denom: impl Into<String>,
+    ) -> Coin {
+        self.app
+            .wrap()
+            .query_balance(address.into(), denom.into())
+            .unwrap()
+    }
+
+    pub fn query_nft_token(
+        &self,
+        bs721_address: impl Into<String>,
+        owner: impl Into<String>,
+    ) -> Vec<String> {
+        let resp: bs721::TokensResponse = self
+            .app
+            .wrap()
+            .query_wasm_smart(
+                bs721_address.into(),
+                &Bs721BaseQueryMsg::<Empty>::Tokens {
+                    owner: owner.into(),
+                    start_after: None,
+                    limit: None,
+                },
+            )
+            .unwrap();
+        resp.tokens
     }
 }
