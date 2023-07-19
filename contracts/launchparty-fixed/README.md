@@ -4,20 +4,24 @@ A smart contract to create an incredible launch party for NFTs sale. This contra
 
 ## Instantiate
 
-During instantiation, the contract will also instantiate a new bs721-base and a new bs721-royalties.
+Upon instantiation, the contract automatically creates new instances of the bs721-base and bs721-royalties contracts.
 
 ## Execute
 
 The contract handles the following state-changing messages:
 
-* `Mint`: This message allows a user to mint an NFT if the party is active. The mint message can contain a referral address. The contract requires the user to send the correct amount of tokens required by the party along with the transaction. The contract will then create a `BS721ExecuteMsg` to mint a token from the base contract.
+* __Mint__: Users can mint an NFT during an active party. The mint message allows users to provide a referral address. To successfully mint a token, the user must send the exact amount of tokens required by the party. The contract then utilizes the bs721-base to mint the token from the base contract.
 
 ## Tests
 
-The contract has been designed such that the majority of the logic is encapsulated in standalone functions. This allows to have more simple and short multi-test since single functions can be tested with unit tests.
+The contract has been designed to have most of the logic encapsulated in standalone functions. This allows to have more simple and short multi-test since single functions can be tested with unit tests.
 
 Tests are organized in the following way:
 
 * _unit tests_: Unit tests are placed at the bottom of each file for which the logic is tested.
 
 * _multi tests_: Multi tests are placed in the [multitest](./src/multitest/) folder and are designed to use a suite to simplify environment creation and interaction.
+
+## License
+
+This project is licensed under the Apache License - see the LICENSE-APACHE file for details.

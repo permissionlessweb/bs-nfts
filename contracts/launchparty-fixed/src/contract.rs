@@ -1,12 +1,12 @@
 use crate::error::ContractError;
-use crate::msg::{self, ConfigResponse, ExecuteMsg, InstantiateMsg, PartyType, QueryMsg};
+use crate::msg::{ConfigResponse, ExecuteMsg, InstantiateMsg, PartyType, QueryMsg};
 use crate::state::{Config, CONFIG};
 
 use bs721_base::{Extension, MintMsg};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    coin, to_binary, Addr, BankMsg, Binary, Decimal, Deps, DepsMut, Empty, Env, MessageInfo, Reply,
+    coin, to_binary, Addr, BankMsg, Binary, Deps, DepsMut, Empty, Env, MessageInfo, Reply,
     ReplyOn, Response, StdError, StdResult, SubMsg, Timestamp, Uint128, WasmMsg,
 };
 use cw2::set_contract_version;
@@ -14,9 +14,7 @@ use cw2::set_contract_version;
 use bs721_base::msg::{
     ExecuteMsg as Bs721BaseExecuteMsg, InstantiateMsg as Bs721BaseInstantiateMsg,
 };
-use bs721_royalties::msg::{
-    ExecuteMsg as Bs721RoyaltiesExecuteMsg, InstantiateMsg as Bs721RoyaltiesInstantiateMsg,
-};
+use bs721_royalties::msg::InstantiateMsg as Bs721RoyaltiesInstantiateMsg;
 
 use cw_utils::{may_pay, parse_reply_instantiate_data};
 
@@ -111,7 +109,9 @@ pub fn reply(deps: DepsMut, _env: Env, reply: Reply) -> Result<Response, Contrac
 
     let mut res = Response::new();
 
-    let reply_res = parse_reply_instantiate_data(reply.clone()).unwrap();
+    let reply_res = parse_reply_instantiate_data(reply.clone()).map_err(|_| {
+        StdError::parse_err("MsgInstantiateContractResponse", "failed to parse data")
+    })?;
 
     match reply.id {
         INSTANTIATE_TOKEN_REPLY_ID => {
