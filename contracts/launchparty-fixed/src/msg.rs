@@ -1,6 +1,6 @@
 use bs721_royalties::msg::ContributorMsg;
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Addr, Coin, StdResult, Timestamp, Uint128};
+use cosmwasm_std::{Addr, Coin, Timestamp};
 
 use crate::ContractError;
 

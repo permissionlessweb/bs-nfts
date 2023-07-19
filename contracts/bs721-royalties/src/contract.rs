@@ -282,7 +282,7 @@ mod test {
 
             let percentage = compute_shares_and_store(
                 deps.as_mut().storage,
-                contributor_addr.clone(),
+                contributor_addr,
                 initial_shares,
                 role,
                 total_shares,

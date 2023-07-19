@@ -1,8 +1,6 @@
 use bs721_royalties::msg::ContributorMsg;
 use cosmwasm_std::{coin, Addr, Uint128};
 
-use crate::msg::ConfigResponse;
-
 use super::suite::TestSuiteBuilder;
 
 /// Helper function to create a contributor message.

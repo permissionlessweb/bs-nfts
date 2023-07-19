@@ -1,14 +1,11 @@
-use std::fmt::format;
-
 use cosmwasm_std::{
     coin, coins,
     testing::{mock_dependencies, mock_env, mock_info},
-    Attribute, BankMsg, CosmosMsg, Decimal, DepsMut, Storage, Uint128,
+    Attribute, BankMsg, CosmosMsg, Decimal, DepsMut, Uint128,
 };
 
 use crate::{
-    contract::{execute, query, query_distributable_amount, query_withdrawable_amount},
-    msg::QueryMsg,
+    contract::{execute, query_distributable_amount, query_withdrawable_amount},
     state::DENOM as STATE_DENOM,
 };
 use crate::{
@@ -102,7 +99,7 @@ fn distribute_shares_fails() {
     {
         deps.querier
             .update_balance(env.contract.address.clone(), coins(1_000, "NOT_DENOM"));
-        let err = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone()).unwrap_err();
+        let err = execute(deps.as_mut(), env, info, msg).unwrap_err();
         assert_eq!(
             ContractError::NothingToDistribute {},
             err,
@@ -123,7 +120,7 @@ fn not_nough_to_distribute() {
     {
         deps.querier
             .update_balance(env.contract.address.clone(), coins(99, DENOM));
-        let resp = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone()).unwrap_err();
+        let resp = execute(deps.as_mut(), env, info, msg).unwrap_err();
         assert_eq!(
             resp,
             ContractError::NotEnoughToDistribute {},
@@ -169,7 +166,7 @@ fn distribute_shares_single() {
         deps.querier
             .update_balance(env.contract.address.clone(), coins(2_000, DENOM));
         execute(deps.as_mut(), env.clone(), info.clone(), msg.clone()).unwrap();
-        let err = execute(deps.as_mut(), env.clone(), info, msg.clone()).unwrap_err();
+        let err = execute(deps.as_mut(), env, info, msg).unwrap_err();
         assert_eq!(
             err,
             ContractError::NothingToDistribute {},
@@ -197,7 +194,7 @@ fn distribute_two_contributor() {
     {
         deps.querier
             .update_balance(env.contract.address.clone(), coins(101, DENOM));
-        let resp = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone()).unwrap();
+        let resp = execute(deps.as_mut(), env.clone(), info, msg).unwrap();
         assert_eq!(
             resp.attributes[1],
             Attribute {
@@ -214,7 +211,7 @@ fn distribute_two_contributor() {
             "expected distributed token to withdraw"
         );
 
-        let query_resp = query_distributable_amount(deps.as_ref(), env.clone()).unwrap();
+        let query_resp = query_distributable_amount(deps.as_ref(), env).unwrap();
         assert_eq!(
             query_resp,
             Uint128::new(1),
@@ -278,14 +275,14 @@ fn distribute_shares_multiple() {
         deps.querier
             .update_balance(env.contract.address.clone(), coins(2_000, DENOM));
         execute(deps.as_mut(), env.clone(), info.clone(), msg.clone()).unwrap();
-        let err = execute(deps.as_mut(), env.clone(), info, msg.clone()).unwrap_err();
+        let err = execute(deps.as_mut(), env.clone(), info, msg).unwrap_err();
         assert_eq!(
             err,
             ContractError::NothingToDistribute {},
             "expected to fail since after first distribution the contract has no more funds"
         );
 
-        let query_resp = query_distributable_amount(deps.as_ref(), env.clone()).unwrap();
+        let query_resp = query_distributable_amount(deps.as_ref(), env).unwrap();
         assert_eq!(
             query_resp,
             Uint128::zero(),
@@ -317,7 +314,7 @@ fn withdraw_royalties_fails() {
 
     {
         let info = mock_info(CONTRIBUTOR1, &[]);
-        let err = execute(deps.as_mut(), env.clone(), info.clone(), withdraw_msg).unwrap_err();
+        let err = execute(deps.as_mut(), env, info, withdraw_msg).unwrap_err();
         assert_eq!(
             err,
             ContractError::NothingToWithdraw {},
@@ -344,11 +341,11 @@ fn withdraw_royalties_single() {
             deps.as_mut(),
             env.clone(),
             info.clone(),
-            distribute_msg.clone(),
+            distribute_msg,
         )
         .unwrap();
 
-        let resp = execute(deps.as_mut(), env.clone(), info.clone(), withdraw_msg).unwrap();
+        let resp = execute(deps.as_mut(), env, info, withdraw_msg).unwrap();
         assert_eq!(
             resp.messages[0].msg,
             CosmosMsg::Bank(BankMsg::Send {
@@ -391,14 +388,14 @@ fn withdraw_royalties_multiple() {
         deps.as_mut(),
         env.clone(),
         info.clone(),
-        distribute_msg.clone(),
+        distribute_msg,
     )
     .unwrap();
 
     let resp = execute(
         deps.as_mut(),
         env.clone(),
-        info.clone(),
+        info,
         withdraw_msg.clone(),
     )
     .unwrap();
@@ -427,7 +424,7 @@ fn withdraw_royalties_multiple() {
     // we can still withdraw from second contributor
     let info = mock_info("address1", &[]);
 
-    let resp = execute(deps.as_mut(), env.clone(), info.clone(), withdraw_msg).unwrap();
+    let resp = execute(deps.as_mut(), env, info, withdraw_msg).unwrap();
     assert_eq!(
         resp.messages[0].msg,
         CosmosMsg::Bank(BankMsg::Send {
@@ -493,7 +490,7 @@ fn mixed_distribute_and_withdraw() {
         deps.as_mut(),
         env.clone(),
         info.clone(),
-        distribute_msg.clone(),
+        distribute_msg,
     )
     .unwrap();
 
@@ -501,7 +498,7 @@ fn mixed_distribute_and_withdraw() {
     let resp = execute(
         deps.as_mut(),
         env.clone(),
-        info.clone(),
+        info,
         withdraw_msg.clone(),
     )
     .unwrap();
@@ -516,7 +513,7 @@ fn mixed_distribute_and_withdraw() {
     let info = mock_info("address1", &[]);
 
     // first withdraw from contributor1
-    let resp = execute(deps.as_mut(), env.clone(), info.clone(), withdraw_msg).unwrap();
+    let resp = execute(deps.as_mut(), env, info, withdraw_msg).unwrap();
     assert_eq!(
         resp.messages[0].msg,
         CosmosMsg::Bank(BankMsg::Send {
@@ -604,7 +601,7 @@ fn query_distributable_amount_works() {
             .save(deps.as_mut().storage, &Uint128::zero())
             .unwrap();
 
-        let query_resp = query_distributable_amount(deps.as_ref(), env.clone()).unwrap();
+        let query_resp = query_distributable_amount(deps.as_ref(), env).unwrap();
         assert_eq!(
             query_resp,
             Uint128::new(1_000),

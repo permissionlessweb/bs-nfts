@@ -193,7 +193,7 @@ fn execute_mint(
 
     // create minting message
     for _ in 0..amount {
-        let token_id = config.next_token_id.clone();
+        let token_id = config.next_token_id;
         let token_uri = format!("{}/{}", config.base_token_uri.clone(), token_id);
 
         let mint_msg = Bs721BaseExecuteMsg::<Extension, Empty>::Mint(MintMsg::<Extension> {
@@ -231,12 +231,12 @@ fn execute_mint(
         if !referral_amount.is_zero() {
             bank_msgs.push(BankMsg::Send {
                 to_address: referral.unwrap().to_string(),
-                amount: vec![coin(referral_amount.u128(), config.price.denom.clone())],
+                amount: vec![coin(referral_amount.u128(), accepted_denom.clone())],
             });
         }
         bank_msgs.push(BankMsg::Send {
             to_address: config.royalties_address.clone().unwrap().to_string(),
-            amount: vec![coin(royalties_amount.u128(), config.price.denom.clone())],
+            amount: vec![coin(royalties_amount.u128(), accepted_denom)],
         });
         res = res.add_messages(bank_msgs);
     }
@@ -418,16 +418,14 @@ mod tests {
         {
             let curr_block_time = env.block.time;
             let mut start_time = curr_block_time.minus_seconds(1);
-            assert_eq!(
+            assert!(
                 party_is_active(&env, &PartyType::Duration(1), 1, start_time),
-                true,
                 "expected true since current time equal to start time + party duration is still valid for minting"
             );
 
             start_time = curr_block_time.minus_seconds(2);
-            assert_eq!(
-                party_is_active(&env, &PartyType::Duration(1), 1, start_time),
-                false,
+            assert!(
+                !party_is_active(&env, &PartyType::Duration(1), 1, start_time),
                 "expected false since current time 1s less then start time + party duration"
             )
         }
@@ -657,7 +655,7 @@ mod tests {
             collection_uri: "ipfs://Qm......".to_string(),
             seller_fee_bps: 100,
             referral_fee_bps: 1,
-            contributors: contributors.clone(),
+            contributors,
             start_time: Timestamp::from_seconds(0),
             party_type: PartyType::MaxEdition(1),
             bs721_royalties_code_id: BS721_ROYALTIES_CODE_ID,
@@ -665,7 +663,7 @@ mod tests {
         };
 
         let info = mock_info("creator", &[]);
-        instantiate(deps.as_mut(), mock_env(), info.clone(), msg.clone()).unwrap();
+        instantiate(deps.as_mut(), mock_env(), info, msg).unwrap();
     }
 
     #[test]
@@ -698,7 +696,7 @@ mod tests {
         let info = mock_info("creator", &[]);
         let res = instantiate(deps.as_mut(), mock_env(), info.clone(), msg.clone()).unwrap();
 
-        instantiate(deps.as_mut(), mock_env(), info.clone(), msg.clone()).unwrap();
+        instantiate(deps.as_mut(), mock_env(), info, msg.clone()).unwrap();
 
         assert_eq!(
             res.messages,
@@ -710,7 +708,7 @@ mod tests {
                             name: msg.name.clone(),
                             symbol: msg.symbol.clone(),
                             minter: MOCK_CONTRACT_ADDR.to_string(),
-                            uri: Some(msg.collection_uri.to_string()),
+                            uri: Some(msg.collection_uri),
                         })
                         .unwrap(),
                         funds: vec![],
@@ -833,7 +831,7 @@ mod tests {
         };
 
         let info = mock_info("creator", &[coin(1, "ubtsg")]);
-        instantiate(deps.as_mut(), mock_env(), info.clone(), msg.clone()).unwrap();
+        instantiate(deps.as_mut(), mock_env(), info, msg).unwrap();
 
         let instantiate_reply_bs721 = MsgInstantiateContractResponse {
             contract_address: NFT_CONTRACT_ADDR.to_string(),
@@ -883,7 +881,7 @@ mod tests {
         };
         let info = mock_info(MOCK_CONTRACT_ADDR, &[coin(1, "ubtsg")]);
 
-        let res = execute(deps.as_mut(), mock_env(), info.clone(), msg.clone()).unwrap();
+        let res = execute(deps.as_mut(), mock_env(), info.clone(), msg).unwrap();
 
         let mint_msg = Bs721BaseExecuteMsg::<Extension, Empty>::Mint(MintMsg::<Extension> {
             token_id: "1".to_string(),
@@ -935,7 +933,7 @@ mod tests {
         };
 
         let info = mock_info("creator", &[coin(3, "ubtsg")]);
-        instantiate(deps.as_mut(), mock_env(), info.clone(), msg.clone()).unwrap();
+        instantiate(deps.as_mut(), mock_env(), info, msg).unwrap();
 
         let instantiate_reply_bs721 = MsgInstantiateContractResponse {
             contract_address: NFT_CONTRACT_ADDR.to_string(),
@@ -985,7 +983,7 @@ mod tests {
         };
         let info = mock_info(MOCK_CONTRACT_ADDR, &[coin(3, "ubtsg")]);
 
-        let res = execute(deps.as_mut(), mock_env(), info.clone(), msg.clone()).unwrap();
+        let res = execute(deps.as_mut(), mock_env(), info.clone(), msg).unwrap();
 
         let mint_msg = Bs721BaseExecuteMsg::<Extension, Empty>::Mint(MintMsg::<Extension> {
             token_id: "1".to_string(),
