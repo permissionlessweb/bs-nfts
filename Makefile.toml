@@ -32,13 +32,13 @@ if [[ $(arch) == "arm64" ]]; then
   platform="linux/arm64"
 else
   image="cosmwasm/workspace-optimizer"
-  platoform=""linux/amd64"
+  platform="linux/amd64"
 fi
 
 docker run --rm -v "$(pwd)":/code \
   --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target \
   --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
-  --platform {{platform}} \
+  --platform ${platform} \
   ${image}:0.12.13
 """
 
