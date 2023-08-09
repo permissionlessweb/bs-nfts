@@ -17,7 +17,7 @@ pub enum PartyType {
 #[cw_serde]
 pub struct InstantiateMsg {
     /// Creator of the collection. If not provided it will be the sender.
-    pub creator: Option<String>,
+    // pub creator: Option<String>,
     /// BS721 token name.
     pub name: String,
     /// BS721 token symbol.
@@ -192,7 +192,7 @@ mod test {
         let mut msg = InstantiateMsg {
             name: "Launchparty".to_string(),
             price: coin(1, "ubtsg"),
-            creator: Some(String::from("creator")),
+            //creator: Some(String::from("creator")),
             max_per_address: Some(100),
             symbol: "LP".to_string(),
             base_token_uri: "ipfs://Qm......".to_string(),

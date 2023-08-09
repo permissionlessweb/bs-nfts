@@ -45,13 +45,6 @@
         "$ref": "#/definitions/ContributorMsg"
       }
     },
-    "creator": {
-      "description": "Creator of the collection. If not provided it will be the sender.",
-      "type": [
-        "string",
-        "null"
-      ]
-    },
     "max_per_address": {
       "description": "Maximum amount of tokens an address can mint.",
       "type": [
@@ -62,7 +55,7 @@
       "minimum": 0.0
     },
     "name": {
-      "description": "BS721 token name.",
+      "description": "Creator of the collection. If not provided it will be the sender. BS721 token name.",
       "type": "string"
     },
     "party_type": {

@@ -133,7 +133,7 @@ impl TestSuiteBuilder {
     ) -> Addr {
         // could we also use mem to optimize code and avoid clone
         let init_msg = InstantiateMsg {
-            creator: Some(self.creator.clone()),
+            //creator: Some(self.creator.clone()),
             name: self.name.clone(),
             symbol: self.symbol.clone(),
             price: self.price.clone(),

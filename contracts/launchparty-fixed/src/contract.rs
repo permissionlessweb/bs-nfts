@@ -6,8 +6,9 @@ use bs721_base::{Extension, MintMsg};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    coin, to_binary, Addr, BankMsg, Binary, Deps, DepsMut, Empty, Env, MessageInfo, Reply, ReplyOn,
-    Response, StdError, StdResult, SubMsg, Timestamp, Uint128, WasmMsg,
+    attr, coin, to_binary, Addr, Attribute, BankMsg, Binary, Deps, DepsMut, Empty, Env,
+    MessageInfo, Reply, ReplyOn, Response, StdError, StdResult, SubMsg, Timestamp, Uint128,
+    WasmMsg,
 };
 use cw2::set_contract_version;
 
@@ -43,9 +44,10 @@ pub fn instantiate(
     let denom = msg.price.denom.clone();
 
     let config = Config {
-        creator: deps
-            .api
-            .addr_validate(&msg.creator.unwrap_or_else(|| info.sender.to_string()))?, // creator is in instantiate message or the sender
+        //creator: deps
+        //    .api
+        //    .addr_validate(&msg.creator.unwrap_or_else(|| info.sender.to_string()))?, // creator is in instantiate message or the sender
+        creator: info.sender,
         name: msg.name.clone(),
         symbol: msg.symbol.clone(),
         base_token_uri: msg.base_token_uri.clone(),
@@ -227,25 +229,41 @@ fn execute_mint(
     if !config.price.amount.is_zero() {
         let (referral_amount, royalties_amount) =
             compute_referral_and_royalties_amounts(&config, &referral, required_amount)?;
+
         let mut bank_msgs: Vec<BankMsg> = vec![];
+        let mut attributes: Vec<Attribute> = vec![];
+
         if !referral_amount.is_zero() {
             bank_msgs.push(BankMsg::Send {
-                to_address: referral.unwrap().to_string(),
+                to_address: referral.clone().unwrap().to_string(),
                 amount: vec![coin(referral_amount.u128(), accepted_denom.clone())],
             });
+
+            attributes.push(attr("referral", referral.unwrap().to_string()));
+            attributes.push(attr(
+                "amount",
+                coin(referral_amount.u128(), accepted_denom.clone()).to_string(),
+            ));
         }
+
         bank_msgs.push(BankMsg::Send {
             to_address: config.royalties_address.clone().unwrap().to_string(),
-            amount: vec![coin(royalties_amount.u128(), accepted_denom)],
+            amount: vec![coin(royalties_amount.u128(), accepted_denom.clone())],
         });
-        res = res.add_messages(bank_msgs);
+
+        attributes.push(attr(
+            "royalties",
+            coin(royalties_amount.u128(), accepted_denom).to_string(),
+        ));
+
+        res = res.add_messages(bank_msgs).add_attributes(attributes)
     }
 
     config.next_token_id += 1;
     CONFIG.save(deps.storage, &config)?;
 
     Ok(res
-        .add_attribute("action", "mint_nft")
+        .add_attribute("action", "mint_launchparty_nft")
         .add_attribute("price", config.price.amount)
         .add_attribute("creator", config.creator.to_string())
         .add_attribute("recipient", info.sender.to_string()))
@@ -649,7 +667,7 @@ mod tests {
             name: "Launchparty".to_string(),
             price: coin(1, "ubtsg"),
             max_per_address: Some(1),
-            creator: Some(String::from("creator")),
+            // creator: Some(String::from("creator")),
             symbol: "LP".to_string(),
             base_token_uri: "ipfs://Qm......".to_string(),
             collection_uri: "ipfs://Qm......".to_string(),
@@ -680,7 +698,7 @@ mod tests {
             name: "Launchparty".to_string(),
             price: coin(1, "ubtsg"),
             max_per_address: Some(1),
-            creator: Some(String::from("creator")),
+            // creator: Some(String::from("creator")),
             symbol: "LP".to_string(),
             base_token_uri: "ipfs://Qm......".to_string(),
             collection_uri: "ipfs://Qm......".to_string(),
@@ -813,7 +831,7 @@ mod tests {
             name: "Launchparty".to_string(),
             price: coin(1, "ubtsg"),
             max_per_address: Some(1),
-            creator: Some(String::from("creator")),
+            // creator: Some(String::from("creator")),
             symbol: "LP".to_string(),
             base_token_uri: "ipfs://Qm......".to_string(),
             collection_uri: "ipfs://Qm......".to_string(),
@@ -915,7 +933,7 @@ mod tests {
             name: "Launchparty".to_string(),
             price: coin(1, "ubtsg"),
             max_per_address: Some(3),
-            creator: Some(String::from("creator")),
+            // creator: Some(String::from("creator")),
             symbol: "LP".to_string(),
             base_token_uri: "ipfs://Qm......".to_string(),
             collection_uri: "ipfs://Qm......".to_string(),
