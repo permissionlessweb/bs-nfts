@@ -259,7 +259,6 @@ fn execute_mint(
         res = res.add_messages(bank_msgs).add_attributes(attributes)
     }
 
-    config.next_token_id += 1;
     CONFIG.save(deps.storage, &config)?;
 
     Ok(res
