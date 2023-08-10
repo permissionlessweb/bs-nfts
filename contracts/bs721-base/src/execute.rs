@@ -10,10 +10,7 @@ use cw_utils::maybe_addr;
 use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InstantiateMsg, MintMsg};
 use crate::state::{Approval, Bs721Contract, TokenInfo};
-
-// Version info for migration
-const CONTRACT_NAME: &str = "crates.io:bs721-base";
-const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
+use crate::{CONTRACT_NAME, CONTRACT_VERSION};
 
 const MAX_SELLER_FEE: u16 = 10000; // mean 100%
 
