@@ -134,4 +134,127 @@ fn mint_multiple() {
         suite.query_nft_token(config.bs721_base.unwrap(), "address1"),
         "expected 3 nft with sequential ids starting from 1"
     );
+
+    suite
+        .mint("address1", None, 3, Some(coin(3, "ubtsg")))
+        .unwrap();
+
+    let config = suite.query_config();
+    assert_eq!(
+        vec!["1", "2", "3", "4", "5", "6"],
+        suite.query_nft_token(config.bs721_base.unwrap(), "address1"),
+        "expected 3 nft with sequential ids starting from 1"
+    );
+}
+
+#[test]
+fn max_per_address() {
+    let mut suite = TestSuiteBuilder::new()
+        .with_default_contributors(vec![1])
+        .with_funds("address1", &[coin(1_000, "ubtsg")])
+        .with_funds("address2", &[coin(1_000, "ubtsg")])
+        .with_price(coin(1, "ubtsg"))
+        .with_party_type(crate::msg::PartyType::MaxEdition(10))
+        .with_max_per_address(3)
+        .build();
+
+    suite
+        .mint("address1", None, 1, Some(coin(1, "ubtsg")))
+        .unwrap();
+
+    suite
+        .mint("address1", None, 2, Some(coin(2, "ubtsg")))
+        .unwrap();
+
+    suite
+        .mint("address1", None, 1, Some(coin(1, "ubtsg")))
+        .unwrap_err();
+
+    suite
+        .mint("address2", None, 1, Some(coin(1, "ubtsg")))
+        .unwrap();
+
+    suite
+        .mint("address2", None, 2, Some(coin(2, "ubtsg")))
+        .unwrap();
+
+    suite
+        .mint("address2", None, 1, Some(coin(1, "ubtsg")))
+        .unwrap_err();
+}
+
+#[test]
+fn query_max_per_address() {
+    let mut suite = TestSuiteBuilder::new()
+        .with_default_contributors(vec![1])
+        .with_funds("address1", &[coin(1_000, "ubtsg")])
+        .with_funds("address2", &[coin(1_000, "ubtsg")])
+        .with_price(coin(1, "ubtsg"))
+        .with_party_type(crate::msg::PartyType::MaxEdition(10))
+        .with_max_per_address(3)
+        .build();
+
+    let config = suite.query_config();
+
+    assert_eq!(
+        config.max_per_address,
+        Some(3),
+        "expected max per address to be 3"
+    );
+
+    let response = suite.query_max_per_address("address1");
+    if let Some(remaining) = response.remaining {
+        assert_eq!(
+            remaining, 3,
+            "expected remaining mintable NFTs for address1 to be 3"
+        );
+    }
+
+    suite
+        .mint("address1", None, 1, Some(coin(1, "ubtsg")))
+        .unwrap();
+
+    let response = suite.query_max_per_address("address1");
+    if let Some(remaining) = response.remaining {
+        assert_eq!(
+            remaining, 2,
+            "expected remaining mintable NFTs for address1 to be 2"
+        );
+    }
+
+    suite
+        .mint("address1", None, 1, Some(coin(1, "ubtsg")))
+        .unwrap();
+
+    let response = suite.query_max_per_address("address1");
+    if let Some(remaining) = response.remaining {
+        assert_eq!(
+            remaining, 1,
+            "expected remaining mintable NFTs for address1 to be 1"
+        );
+    }
+
+    suite
+        .mint("address1", None, 1, Some(coin(1, "ubtsg")))
+        .unwrap();
+
+    let response = suite.query_max_per_address("address1");
+    if let Some(remaining) = response.remaining {
+        assert_eq!(
+            remaining, 0,
+            "expected remaining mintable NFTs for address1 to be 0"
+        );
+    }
+
+    suite
+        .mint("address1", None, 1, Some(coin(1, "ubtsg")))
+        .unwrap_err();
+
+    let response = suite.query_max_per_address("address2");
+    if let Some(remaining) = response.remaining {
+        assert_eq!(
+            remaining, 3,
+            "expected remaining mintable NFTs for address2 to be 3"
+        );
+    }
 }

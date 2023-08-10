@@ -16,7 +16,7 @@ pub struct Config {
     /// Price of single nft minting.
     pub price: Coin,
     /// Maximum amount of token an address can mint.
-    pub max_per_address: Option<u16>,
+    pub max_per_address: Option<u32>,
     /// Uri, optional uri to get more information about the NFT
     pub base_token_uri: String,
     /// ID of the next NFT that will be minted. The first NFT will be minted with ID == 1.

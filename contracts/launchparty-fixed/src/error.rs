@@ -54,4 +54,7 @@ pub enum ContractError {
 
     #[error("max number of pre-generated metadata reached")]
     MaxMetadataReached {},
+
+    #[error("max number of mint, remaining: {remaining}")]
+    MaxPerAddressExceeded { remaining: u32 },
 }

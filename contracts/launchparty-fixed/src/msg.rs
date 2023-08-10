@@ -27,7 +27,7 @@ pub struct InstantiateMsg {
     /// BS721 token uri.
     pub base_token_uri: String,
     /// Maximum amount of tokens an address can mint.
-    pub max_per_address: Option<u16>,
+    pub max_per_address: Option<u32>,
     /// BS721 collection uri.
     pub collection_uri: String,
     /// Basis per point of the `price` sent to the referred address during mint. This payment is sent
@@ -69,6 +69,10 @@ pub enum QueryMsg {
     /// Retrieves contract's configuration
     #[returns(ConfigResponse)]
     GetConfig {},
+
+    /// Returns the maximum amount of token an address can mint.
+    #[returns(MaxPerAddressResponse)]
+    MaxPerAddress { address: String },
 }
 
 #[cw_serde]
@@ -82,7 +86,7 @@ pub struct ConfigResponse {
     /// Price of single nft minting.
     pub price: Coin,
     /// Maximum amount of token an address can mint.
-    pub max_per_address: Option<u16>,
+    pub max_per_address: Option<u32>,
     /// BS721 token name.
     pub name: String,
     /// BS721 token symbol.
@@ -97,6 +101,12 @@ pub struct ConfigResponse {
     pub start_time: Timestamp,
     /// End condition of the collection launchparty.
     pub party_type: PartyType,
+}
+
+#[cw_serde]
+pub struct MaxPerAddressResponse {
+    /// Returns the maximum amount of token an address can mint.
+    pub remaining: Option<u32>,
 }
 
 impl InstantiateMsg {

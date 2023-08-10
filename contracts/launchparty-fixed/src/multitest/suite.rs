@@ -6,7 +6,9 @@ use derivative::Derivative;
 
 use bs721_base::msg::QueryMsg as Bs721BaseQueryMsg;
 
-use crate::msg::{ConfigResponse, ExecuteMsg, InstantiateMsg, PartyType, QueryMsg};
+use crate::msg::{
+    ConfigResponse, ExecuteMsg, InstantiateMsg, MaxPerAddressResponse, PartyType, QueryMsg,
+};
 
 pub const CREATOR: &str = "creator";
 
@@ -60,8 +62,8 @@ pub struct TestSuiteBuilder {
     /// Price of single nft minting.
     pub price: Coin,
     /// Maximum numer of tokens an address can mint
-    #[derivative(Default(value = "Some(1)"))]
-    pub max_per_address: Option<u16>,
+    #[derivative(Default(value = "None"))]
+    pub max_per_address: Option<u32>,
     /// BS721 token uri.
     pub base_token_uri: String,
     /// BS721 collection uri.
@@ -120,6 +122,12 @@ impl TestSuiteBuilder {
     /// Helper function to initialize the bank module with funds associated to particular addresses.
     pub fn with_funds(mut self, addr: &str, funds: &[Coin]) -> Self {
         self.init_funds.push((Addr::unchecked(addr), funds.into()));
+        self
+    }
+
+    /// Helper function to define maximum number of tokens an address can mint.
+    pub fn with_max_per_address(mut self, max_per_address: u32) -> Self {
+        self.max_per_address = Some(max_per_address);
         self
     }
 
@@ -229,6 +237,19 @@ impl Suite {
         self.app
             .wrap()
             .query_wasm_smart(self.contract_address(), &QueryMsg::GetConfig {})
+            .unwrap()
+    }
+
+    /// Helper function to query the max number of tokens an address can mint.
+    pub fn query_max_per_address(&self, address: impl Into<String>) -> MaxPerAddressResponse {
+        self.app
+            .wrap()
+            .query_wasm_smart(
+                self.contract_address(),
+                &QueryMsg::MaxPerAddress {
+                    address: address.into(),
+                },
+            )
             .unwrap()
     }
 

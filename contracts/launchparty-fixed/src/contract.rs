@@ -1,6 +1,8 @@
 use crate::error::ContractError;
-use crate::msg::{ConfigResponse, ExecuteMsg, InstantiateMsg, PartyType, QueryMsg};
-use crate::state::{Config, CONFIG};
+use crate::msg::{
+    ConfigResponse, ExecuteMsg, InstantiateMsg, MaxPerAddressResponse, PartyType, QueryMsg,
+};
+use crate::state::{Config, ADDRESS_TOKENS, CONFIG};
 
 use bs721_base::{Extension, MintMsg};
 #[cfg(not(feature = "library"))]
@@ -176,6 +178,17 @@ fn execute_mint(
 
     before_mint_checks(&env, &config, amount)?;
 
+    let already_minted = (ADDRESS_TOKENS.key(&info.sender).may_load(deps.storage)?).unwrap_or(0);
+    let new_total_mint = already_minted.checked_add(amount).unwrap_or(1);
+
+    if let Some(max_per_address) = config.max_per_address {
+        if new_total_mint > max_per_address {
+            return Err(ContractError::MaxPerAddressExceeded {
+                remaining: max_per_address.checked_sub(already_minted).unwrap_or(0),
+            });
+        }
+    }
+
     // check that the user has sent exactly the required amount. The amount is given by the price of
     // a single token times the number of tokens to mint.
     let sent_amount = may_pay(&info, &accepted_denom)?;
@@ -260,6 +273,7 @@ fn execute_mint(
     }
 
     CONFIG.save(deps.storage, &config)?;
+    ADDRESS_TOKENS.save(deps.storage, &info.sender, &new_total_mint)?;
 
     Ok(res
         .add_attribute("action", "mint_launchparty_nft")
@@ -379,7 +393,23 @@ pub fn party_is_active(
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::GetConfig {} => to_binary(&query_config(deps)?),
+        QueryMsg::MaxPerAddress { address } => to_binary(&query_max_per_address(deps, address)?),
     }
+}
+
+fn query_max_per_address(deps: Deps, address: String) -> StdResult<MaxPerAddressResponse> {
+    let addr = deps.api.addr_validate(&address)?;
+    let already_minted = (ADDRESS_TOKENS.key(&addr).may_load(deps.storage)?).unwrap_or(0);
+
+    let config: Config = CONFIG.load(deps.storage)?;
+
+    if let Some(max_per_address) = config.max_per_address {
+        return Ok(MaxPerAddressResponse {
+            remaining: Some(max_per_address.checked_sub(already_minted).unwrap_or(0)),
+        });
+    }
+
+    Ok(MaxPerAddressResponse { remaining: None })
 }
 
 fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
