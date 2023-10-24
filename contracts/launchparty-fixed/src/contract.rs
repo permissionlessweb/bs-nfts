@@ -4,19 +4,19 @@ use crate::msg::{
 };
 use crate::state::{Config, ADDRESS_TOKENS, CONFIG};
 
-use bs721_base::{Extension, MintMsg};
+use bs721_base::MintMsg;
+use bs721_metadata_onchain::{
+    ExecuteMsg as Bs721MetadataExecuteMsg, Extension,
+    InstantiateMsg as Bs721MetadataInstantiateMsg, Metadata as BS721Metadata,
+};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    attr, coin, to_binary, Addr, Attribute, BankMsg, Binary, Deps, DepsMut, Empty, Env,
-    MessageInfo, Reply, ReplyOn, Response, StdError, StdResult, SubMsg, Timestamp, Uint128,
-    WasmMsg,
+    attr, coin, to_binary, Addr, Attribute, BankMsg, Binary, Deps, DepsMut, Env, MessageInfo,
+    Reply, ReplyOn, Response, StdError, StdResult, SubMsg, Timestamp, Uint128, WasmMsg,
 };
 use cw2::set_contract_version;
 
-use bs721_base::msg::{
-    ExecuteMsg as Bs721BaseExecuteMsg, InstantiateMsg as Bs721BaseInstantiateMsg,
-};
 use bs721_royalties::msg::InstantiateMsg as Bs721RoyaltiesInstantiateMsg;
 
 use cw_utils::{may_pay, parse_reply_instantiate_data};
@@ -41,21 +41,17 @@ pub fn instantiate(
 ) -> Result<Response, ContractError> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
-    msg.validate()?;
+    msg.validate(env.clone())?;
 
     let denom = msg.price.denom.clone();
 
     let config = Config {
-        //creator: deps
-        //    .api
-        //    .addr_validate(&msg.creator.unwrap_or_else(|| info.sender.to_string()))?, // creator is in instantiate message or the sender
         creator: info.sender,
-        name: msg.name.clone(),
         symbol: msg.symbol.clone(),
-        base_token_uri: msg.base_token_uri.clone(),
         price: msg.price,
         max_per_address: msg.max_per_address,
-        bs721_base_address: None,
+        bs721_metadata_address: None,
+        metadata: msg.metadata.clone(),
         next_token_id: 1, // first token ID is 1
         seller_fee_bps: msg.seller_fee_bps,
         referral_fee_bps: msg.referral_fee_bps,
@@ -71,14 +67,16 @@ pub fn instantiate(
         SubMsg {
             id: INSTANTIATE_TOKEN_REPLY_ID,
             msg: WasmMsg::Instantiate {
-                code_id: msg.bs721_base_code_id,
-                msg: to_binary(&Bs721BaseInstantiateMsg {
-                    name: msg.name.clone(),
+                code_id: msg.bs721_metadata_code_id,
+                msg: to_binary(&Bs721MetadataInstantiateMsg {
+                    name: msg.metadata.name.clone(),
                     symbol: msg.symbol.clone(),
                     minter: env.contract.address.to_string(),
-                    uri: Some(msg.collection_uri.to_string()),
+                    uri: None,
+                    cover_image: msg.collection_cover_image,
+                    image: Some(msg.collection_image),
                 })?,
-                label: "Launchparty fixed contract".to_string(),
+                label: "Launchparty: bs721 metadata contract".to_string(),
                 admin: None,
                 funds: vec![],
             }
@@ -94,7 +92,7 @@ pub fn instantiate(
                     denom,
                     contributors: msg.contributors,
                 })?,
-                label: "Launchparty royalties contract".to_string(),
+                label: "Launchparty: royalties contract".to_string(),
                 admin: None,
                 funds: vec![],
             }
@@ -119,11 +117,12 @@ pub fn reply(deps: DepsMut, _env: Env, reply: Reply) -> Result<Response, Contrac
 
     match reply.id {
         INSTANTIATE_TOKEN_REPLY_ID => {
-            if config.bs721_base_address.is_some() {
+            if config.bs721_metadata_address.is_some() {
                 return Err(ContractError::Bs721BaseAlreadyLinked {});
             }
 
-            config.bs721_base_address = Addr::unchecked(reply_res.contract_address.clone()).into();
+            config.bs721_metadata_address =
+                Addr::unchecked(reply_res.contract_address.clone()).into();
 
             res = res
                 .add_attribute("action", "bs721_base_reply")
@@ -209,19 +208,31 @@ fn execute_mint(
     // create minting message
     for _ in 0..amount {
         let token_id = config.next_token_id;
-        let token_uri = format!("{}/{}", config.base_token_uri.clone(), token_id);
+        //let token_uri = format!("{}/{}", config.base_token_uri.clone(), token_id);
 
-        let mint_msg = Bs721BaseExecuteMsg::<Extension, Empty>::Mint(MintMsg::<Extension> {
+        let metadata = config.metadata.clone();
+
+        let mint_msg = Bs721MetadataExecuteMsg::Mint(MintMsg::<Extension> {
             owner: info.sender.to_string(),
             token_id: token_id.to_string(),
-            token_uri: Some(token_uri),
-            extension: None,
+            token_uri: None,
+            extension: Some(BS721Metadata {
+                name: Some(format!("{} #{}", metadata.name, token_id.to_string())),
+                description: Some(metadata.description),
+                image: metadata.image,
+                animation_url: metadata.animation_url,
+                attributes: metadata.attributes,
+                background_color: metadata.background_color,
+                external_url: metadata.external_url,
+                image_data: metadata.image_data,
+                media_type: metadata.media_type,
+            }),
             payment_addr: Some(config.royalties_address.clone().unwrap().to_string()),
             seller_fee_bps: Some(config.seller_fee_bps),
         });
 
         let msg = WasmMsg::Execute {
-            contract_addr: config.bs721_base_address.clone().unwrap().to_string(),
+            contract_addr: config.bs721_metadata_address.clone().unwrap().to_string(),
             msg: to_binary(&mint_msg)?,
             funds: vec![],
         };
@@ -337,7 +348,7 @@ pub fn before_mint_checks(
         return Err(ContractError::NotStarted {});
     }
 
-    if config.bs721_base_address.is_none() {
+    if config.bs721_metadata_address.is_none() {
         return Err(ContractError::Bs721NotLinked {});
     }
 
@@ -417,13 +428,12 @@ fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
 
     Ok(ConfigResponse {
         creator: config.creator,
-        bs721_base: config.bs721_base_address,
+        bs721_metadata: config.bs721_metadata_address,
         bs721_royalties: config.royalties_address,
         price: config.price,
         max_per_address: config.max_per_address,
-        name: config.name,
         symbol: config.symbol,
-        base_token_uri: config.base_token_uri,
+        metadata: config.metadata,
         next_token_id: config.next_token_id,
         seller_fee_bps: config.seller_fee_bps,
         referral_fee_bps: config.referral_fee_bps,
@@ -438,7 +448,10 @@ fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
 #[cfg(test)]
 mod tests {
 
+    use crate::msg::Metadata;
+
     use super::*;
+    use bs721_metadata_onchain::MediaType;
     use bs721_royalties::msg::ContributorMsg;
     use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info, MOCK_CONTRACT_ADDR};
     use cosmwasm_std::{from_binary, to_binary, SubMsgResponse, SubMsgResult, Timestamp};
@@ -446,7 +459,7 @@ mod tests {
 
     const NFT_CONTRACT_ADDR: &str = "nftcontract";
     const ROYALTIES_CONTRACT_ADDR: &str = "royaltiescontract";
-    const BS721_BASE_CODE_ID: u64 = 1;
+    const BS721_METADATA_CODE_ID: u64 = 1;
     const BS721_ROYALTIES_CODE_ID: u64 = 2;
 
     // Type for replies to contract instantiate messes
@@ -484,17 +497,26 @@ mod tests {
 
         let mut config = Config {
             creator: Addr::unchecked("creator"),
-            name: String::from(""),
             symbol: String::from(""),
             price: coin(1, "ubtsg"),
             max_per_address: None,
-            base_token_uri: String::from(""),
+            metadata: Metadata {
+                name: "Launchparty".to_string(),
+                description: "".to_string(),
+                image: None,
+                animation_url: None,
+                attributes: None,
+                background_color: None,
+                external_url: None,
+                image_data: None,
+                media_type: Some(MediaType::Image),
+            },
             next_token_id: 1,
             seller_fee_bps: 1_000,
             referral_fee_bps: 1_000,
             start_time: Timestamp::from_seconds(1),
             party_type: PartyType::MaxEdition(2),
-            bs721_base_address: Some(Addr::unchecked("contract1")),
+            bs721_metadata_address: Some(Addr::unchecked("contract1")),
             royalties_address: Some(Addr::unchecked("contract2")),
         };
 
@@ -510,14 +532,14 @@ mod tests {
         }
 
         {
-            config.bs721_base_address = None;
+            config.bs721_metadata_address = None;
             let resp = before_mint_checks(&env, &config, 1).unwrap_err();
             assert_eq!(
                 resp,
                 ContractError::Bs721NotLinked {},
                 "expected to fail since cw721 base contract not linked"
             );
-            config.bs721_base_address = Some(Addr::unchecked("contract1"));
+            config.bs721_metadata_address = Some(Addr::unchecked("contract1"));
         }
 
         {
@@ -560,17 +582,26 @@ mod tests {
     fn compute_referral_and_royalties_amounts_works() {
         let config = Config {
             creator: Addr::unchecked("creator"),
-            name: String::from(""),
             symbol: String::from(""),
             price: coin(1, "ubtsg"),
             max_per_address: None,
-            base_token_uri: String::from(""),
+            metadata: Metadata {
+                name: "Launchparty".to_string(),
+                description: "".to_string(),
+                image: None,
+                animation_url: None,
+                attributes: None,
+                background_color: None,
+                external_url: None,
+                image_data: None,
+                media_type: Some(MediaType::Image),
+            },
             next_token_id: 1,
             seller_fee_bps: 1_000,
             referral_fee_bps: 1_000,
             start_time: Timestamp::from_seconds(1),
             party_type: PartyType::MaxEdition(2),
-            bs721_base_address: Some(Addr::unchecked("contract1")),
+            bs721_metadata_address: Some(Addr::unchecked("contract1")),
             royalties_address: Some(Addr::unchecked("contract2")),
         };
 
@@ -692,25 +723,37 @@ mod tests {
             shares: 100,
         }];
 
+        let env = mock_env();
+
         let msg = InstantiateMsg {
-            name: "Launchparty".to_string(),
             price: coin(1, "ubtsg"),
             max_per_address: Some(1),
             // creator: Some(String::from("creator")),
             symbol: "LP".to_string(),
-            base_token_uri: "ipfs://Qm......".to_string(),
-            collection_uri: "ipfs://Qm......".to_string(),
+            collection_image: "ipfs://Qm......".to_string(),
+            collection_cover_image: Some("ipfs://Qm......".to_string()),
+            metadata: Metadata {
+                name: "Launchparty".to_string(),
+                description: "".to_string(),
+                image: None,
+                animation_url: None,
+                attributes: None,
+                background_color: None,
+                external_url: None,
+                image_data: None,
+                media_type: Some(MediaType::Image),
+            },
             seller_fee_bps: 100,
             referral_fee_bps: 1,
             contributors,
-            start_time: Timestamp::from_seconds(0),
+            start_time: env.block.time,
             party_type: PartyType::MaxEdition(1),
             bs721_royalties_code_id: BS721_ROYALTIES_CODE_ID,
-            bs721_base_code_id: BS721_BASE_CODE_ID,
+            bs721_metadata_code_id: BS721_METADATA_CODE_ID,
         };
 
         let info = mock_info("creator", &[]);
-        instantiate(deps.as_mut(), mock_env(), info, msg).unwrap();
+        instantiate(deps.as_mut(), env, info, msg).unwrap();
     }
 
     #[test]
@@ -723,44 +766,58 @@ mod tests {
             shares: 100,
         }];
 
+        let env = mock_env();
+
         let msg = InstantiateMsg {
-            name: "Launchparty".to_string(),
             price: coin(1, "ubtsg"),
             max_per_address: Some(1),
             // creator: Some(String::from("creator")),
             symbol: "LP".to_string(),
-            base_token_uri: "ipfs://Qm......".to_string(),
-            collection_uri: "ipfs://Qm......".to_string(),
+            collection_cover_image: Some("ipfs://Qm......".to_string()),
+            collection_image: "ipfs://Qm......".to_string(),
+            metadata: Metadata {
+                name: "Launchparty".to_string(),
+                description: "".to_string(),
+                image: None,
+                animation_url: None,
+                attributes: None,
+                background_color: None,
+                external_url: None,
+                image_data: None,
+                media_type: Some(MediaType::Image),
+            },
             seller_fee_bps: 100,
             referral_fee_bps: 1,
             contributors: contributors.clone(),
-            start_time: Timestamp::from_seconds(0),
+            start_time: env.block.time,
             party_type: PartyType::MaxEdition(1),
             bs721_royalties_code_id: BS721_ROYALTIES_CODE_ID,
-            bs721_base_code_id: BS721_BASE_CODE_ID,
+            bs721_metadata_code_id: BS721_METADATA_CODE_ID,
         };
 
         let info = mock_info("creator", &[]);
-        let res = instantiate(deps.as_mut(), mock_env(), info.clone(), msg.clone()).unwrap();
+        let res = instantiate(deps.as_mut(), env.clone(), info.clone(), msg.clone()).unwrap();
 
-        instantiate(deps.as_mut(), mock_env(), info, msg.clone()).unwrap();
+        instantiate(deps.as_mut(), env.clone(), info, msg.clone()).unwrap();
 
         assert_eq!(
             res.messages,
             vec![
                 SubMsg {
                     msg: WasmMsg::Instantiate {
-                        code_id: BS721_BASE_CODE_ID,
-                        msg: to_binary(&Bs721BaseInstantiateMsg {
-                            name: msg.name.clone(),
+                        code_id: BS721_METADATA_CODE_ID,
+                        msg: to_binary(&Bs721MetadataInstantiateMsg {
+                            name: msg.metadata.name.clone(),
                             symbol: msg.symbol.clone(),
                             minter: MOCK_CONTRACT_ADDR.to_string(),
-                            uri: Some(msg.collection_uri),
+                            uri: None,
+                            image: Some(msg.collection_image),
+                            cover_image: msg.collection_cover_image,
                         })
                         .unwrap(),
                         funds: vec![],
                         admin: None,
-                        label: String::from("Launchparty fixed contract"),
+                        label: String::from("Launchparty: bs721 metadata contract"),
                     }
                     .into(),
                     id: INSTANTIATE_TOKEN_REPLY_ID,
@@ -775,7 +832,7 @@ mod tests {
                             contributors
                         })
                         .unwrap(),
-                        label: "Launchparty royalties contract".to_string(),
+                        label: "Launchparty: royalties contract".to_string(),
                         admin: None,
                         funds: vec![],
                     }
@@ -806,7 +863,7 @@ mod tests {
             }),
         };
 
-        reply(deps.as_mut(), mock_env(), reply_msg_bs721).unwrap();
+        reply(deps.as_mut(), env.clone(), reply_msg_bs721).unwrap();
 
         let instantiate_reply_royalty = MsgInstantiateContractResponse {
             contract_address: ROYALTIES_CONTRACT_ADDR.to_string(),
@@ -827,27 +884,36 @@ mod tests {
             }),
         };
 
-        reply(deps.as_mut(), mock_env(), reply_msg_royalty).unwrap();
+        reply(deps.as_mut(), env.clone(), reply_msg_royalty).unwrap();
 
         let query_msg = QueryMsg::GetConfig {};
-        let res = query(deps.as_ref(), mock_env(), query_msg).unwrap();
+        let res = query(deps.as_ref(), env.clone(), query_msg).unwrap();
         let config: ConfigResponse = from_binary(&res).unwrap();
 
         assert_eq!(
             config,
             ConfigResponse {
                 creator: Addr::unchecked("creator"),
-                name: "Launchparty".to_string(),
                 symbol: "LP".to_string(),
-                base_token_uri: "ipfs://Qm......".to_string(),
                 price: coin(1, "ubtsg"),
                 max_per_address: Some(1),
-                bs721_base: Some(Addr::unchecked(NFT_CONTRACT_ADDR)),
+                bs721_metadata: Some(Addr::unchecked(NFT_CONTRACT_ADDR)),
+                metadata: Metadata {
+                    name: "Launchparty".to_string(),
+                    description: "".to_string(),
+                    image: None,
+                    animation_url: None,
+                    attributes: None,
+                    background_color: None,
+                    external_url: None,
+                    image_data: None,
+                    media_type: Some(MediaType::Image),
+                },
                 next_token_id: 1,
                 seller_fee_bps: 100,
                 referral_fee_bps: 1,
                 bs721_royalties: Some(Addr::unchecked(ROYALTIES_CONTRACT_ADDR)),
-                start_time: Timestamp::from_nanos(0),
+                start_time: env.block.time,
                 party_type: PartyType::MaxEdition(1)
             }
         );
@@ -856,14 +922,25 @@ mod tests {
     #[test]
     fn mint_single() {
         let mut deps = mock_dependencies();
+        let env = mock_env();
         let msg = InstantiateMsg {
-            name: "Launchparty".to_string(),
             price: coin(1, "ubtsg"),
             max_per_address: Some(1),
             // creator: Some(String::from("creator")),
             symbol: "LP".to_string(),
-            base_token_uri: "ipfs://Qm......".to_string(),
-            collection_uri: "ipfs://Qm......".to_string(),
+            collection_cover_image: Some("ipfs://Qm......".to_string()),
+            collection_image: "ipfs://Qm......".to_string(),
+            metadata: Metadata {
+                name: "Launchparty".to_string(),
+                description: "".to_string(),
+                image: None,
+                animation_url: None,
+                attributes: None,
+                background_color: None,
+                external_url: None,
+                image_data: None,
+                media_type: Some(MediaType::Image),
+            },
             seller_fee_bps: 100,
             referral_fee_bps: 100,
             contributors: vec![ContributorMsg {
@@ -871,14 +948,14 @@ mod tests {
                 role: "creator".to_string(),
                 shares: 100,
             }],
-            start_time: Timestamp::from_nanos(0),
+            start_time: env.block.time,
             party_type: PartyType::MaxEdition(1),
             bs721_royalties_code_id: 1,
-            bs721_base_code_id: 2,
+            bs721_metadata_code_id: 2,
         };
 
         let info = mock_info("creator", &[coin(1, "ubtsg")]);
-        instantiate(deps.as_mut(), mock_env(), info, msg).unwrap();
+        instantiate(deps.as_mut(), env.clone(), info, msg).unwrap();
 
         let instantiate_reply_bs721 = MsgInstantiateContractResponse {
             contract_address: NFT_CONTRACT_ADDR.to_string(),
@@ -899,7 +976,7 @@ mod tests {
             }),
         };
 
-        reply(deps.as_mut(), mock_env(), reply_msg_bs721).unwrap();
+        reply(deps.as_mut(), env.clone(), reply_msg_bs721).unwrap();
 
         let instantiate_reply_royalty = MsgInstantiateContractResponse {
             contract_address: ROYALTIES_CONTRACT_ADDR.to_string(),
@@ -920,7 +997,7 @@ mod tests {
             }),
         };
 
-        reply(deps.as_mut(), mock_env(), reply_msg_royalty).unwrap();
+        reply(deps.as_mut(), env.clone(), reply_msg_royalty).unwrap();
 
         let msg = ExecuteMsg::Mint {
             referral: None,
@@ -928,15 +1005,29 @@ mod tests {
         };
         let info = mock_info(MOCK_CONTRACT_ADDR, &[coin(1, "ubtsg")]);
 
-        let res = execute(deps.as_mut(), mock_env(), info.clone(), msg).unwrap();
+        let res = execute(deps.as_mut(), env.clone(), info.clone(), msg).unwrap();
 
-        let mint_msg = Bs721BaseExecuteMsg::<Extension, Empty>::Mint(MintMsg::<Extension> {
+        let mint_msg = Bs721MetadataExecuteMsg::Mint(MintMsg::<Extension> {
             token_id: "1".to_string(),
-            extension: None,
+            extension: Some(BS721Metadata {
+                name: Some(format!(
+                    "{} #{}",
+                    "Launchparty".to_string(),
+                    "1".to_string()
+                )),
+                description: Some("".to_string()),
+                image: None,
+                animation_url: None,
+                attributes: None,
+                background_color: None,
+                external_url: None,
+                image_data: None,
+                media_type: Some(MediaType::Image),
+            }),
             owner: info.sender.to_string(),
             payment_addr: Some(ROYALTIES_CONTRACT_ADDR.to_string()),
             seller_fee_bps: Some(100),
-            token_uri: Some("ipfs://Qm....../1".to_string()),
+            token_uri: None,
         });
 
         assert_eq!(
@@ -958,14 +1049,25 @@ mod tests {
     #[test]
     fn mint_multiple() {
         let mut deps = mock_dependencies();
+        let env = mock_env();
         let msg = InstantiateMsg {
-            name: "Launchparty".to_string(),
             price: coin(1, "ubtsg"),
             max_per_address: Some(3),
             // creator: Some(String::from("creator")),
             symbol: "LP".to_string(),
-            base_token_uri: "ipfs://Qm......".to_string(),
-            collection_uri: "ipfs://Qm......".to_string(),
+            collection_cover_image: Some("ipfs://Qm......".to_string()),
+            collection_image: "ipfs://Qm......".to_string(),
+            metadata: Metadata {
+                name: "Launchparty".to_string(),
+                description: "".to_string(),
+                image: None,
+                animation_url: None,
+                attributes: None,
+                background_color: None,
+                external_url: None,
+                image_data: None,
+                media_type: Some(MediaType::Image),
+            },
             seller_fee_bps: 100,
             referral_fee_bps: 100,
             contributors: vec![ContributorMsg {
@@ -973,14 +1075,14 @@ mod tests {
                 role: "creator".to_string(),
                 shares: 100,
             }],
-            start_time: Timestamp::from_nanos(0),
+            start_time: env.block.time,
             party_type: PartyType::MaxEdition(3),
             bs721_royalties_code_id: 1,
-            bs721_base_code_id: 2,
+            bs721_metadata_code_id: 2,
         };
 
         let info = mock_info("creator", &[coin(3, "ubtsg")]);
-        instantiate(deps.as_mut(), mock_env(), info, msg).unwrap();
+        instantiate(deps.as_mut(), env.clone(), info, msg).unwrap();
 
         let instantiate_reply_bs721 = MsgInstantiateContractResponse {
             contract_address: NFT_CONTRACT_ADDR.to_string(),
@@ -1001,7 +1103,7 @@ mod tests {
             }),
         };
 
-        reply(deps.as_mut(), mock_env(), reply_msg_bs721).unwrap();
+        reply(deps.as_mut(), env.clone(), reply_msg_bs721).unwrap();
 
         let instantiate_reply_royalty = MsgInstantiateContractResponse {
             contract_address: ROYALTIES_CONTRACT_ADDR.to_string(),
@@ -1022,7 +1124,7 @@ mod tests {
             }),
         };
 
-        reply(deps.as_mut(), mock_env(), reply_msg_royalty).unwrap();
+        reply(deps.as_mut(), env.clone(), reply_msg_royalty).unwrap();
 
         let msg = ExecuteMsg::Mint {
             referral: None,
@@ -1030,15 +1132,29 @@ mod tests {
         };
         let info = mock_info(MOCK_CONTRACT_ADDR, &[coin(3, "ubtsg")]);
 
-        let res = execute(deps.as_mut(), mock_env(), info.clone(), msg).unwrap();
+        let res = execute(deps.as_mut(), env.clone(), info.clone(), msg).unwrap();
 
-        let mint_msg = Bs721BaseExecuteMsg::<Extension, Empty>::Mint(MintMsg::<Extension> {
+        let mint_msg = Bs721MetadataExecuteMsg::Mint(MintMsg::<Extension> {
             token_id: "1".to_string(),
-            extension: None,
+            extension: Some(BS721Metadata {
+                name: Some(format!(
+                    "{} #{}",
+                    "Launchparty".to_string(),
+                    "1".to_string()
+                )),
+                description: Some("".to_string()),
+                image: None,
+                animation_url: None,
+                attributes: None,
+                background_color: None,
+                external_url: None,
+                image_data: None,
+                media_type: Some(MediaType::Image),
+            }),
             owner: info.sender.to_string(),
             payment_addr: Some(ROYALTIES_CONTRACT_ADDR.to_string()),
             seller_fee_bps: Some(100),
-            token_uri: Some("ipfs://Qm....../1".to_string()),
+            token_uri: None,
         });
 
         assert_eq!(
@@ -1056,13 +1172,27 @@ mod tests {
             }
         );
 
-        let mint_msg = Bs721BaseExecuteMsg::<Extension, Empty>::Mint(MintMsg::<Extension> {
+        let mint_msg = Bs721MetadataExecuteMsg::Mint(MintMsg::<Extension> {
             token_id: "2".to_string(),
-            extension: None,
+            extension: Some(BS721Metadata {
+                name: Some(format!(
+                    "{} #{}",
+                    "Launchparty".to_string(),
+                    "2".to_string()
+                )),
+                description: Some("".to_string()),
+                image: None,
+                animation_url: None,
+                attributes: None,
+                background_color: None,
+                external_url: None,
+                image_data: None,
+                media_type: Some(MediaType::Image),
+            }),
             owner: info.sender.to_string(),
             payment_addr: Some(ROYALTIES_CONTRACT_ADDR.to_string()),
             seller_fee_bps: Some(100),
-            token_uri: Some("ipfs://Qm....../2".to_string()),
+            token_uri: None,
         });
 
         assert_eq!(
@@ -1080,13 +1210,27 @@ mod tests {
             }
         );
 
-        let mint_msg = Bs721BaseExecuteMsg::<Extension, Empty>::Mint(MintMsg::<Extension> {
+        let mint_msg = Bs721MetadataExecuteMsg::Mint(MintMsg::<Extension> {
             token_id: "3".to_string(),
-            extension: None,
+            extension: Some(BS721Metadata {
+                name: Some(format!(
+                    "{} #{}",
+                    "Launchparty".to_string(),
+                    "3".to_string()
+                )),
+                description: Some("".to_string()),
+                image: None,
+                animation_url: None,
+                attributes: None,
+                background_color: None,
+                external_url: None,
+                image_data: None,
+                media_type: Some(MediaType::Image),
+            }),
             owner: info.sender.to_string(),
             payment_addr: Some(ROYALTIES_CONTRACT_ADDR.to_string()),
             seller_fee_bps: Some(100),
-            token_uri: Some("ipfs://Qm....../3".to_string()),
+            token_uri: None,
         });
 
         assert_eq!(

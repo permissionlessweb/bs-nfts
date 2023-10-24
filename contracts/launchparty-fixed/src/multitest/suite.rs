@@ -7,7 +7,8 @@ use derivative::Derivative;
 use bs721_base::msg::QueryMsg as Bs721BaseQueryMsg;
 
 use crate::msg::{
-    ConfigResponse, ExecuteMsg, InstantiateMsg, MaxPerAddressResponse, PartyType, QueryMsg,
+    ConfigResponse, ExecuteMsg, InstantiateMsg, MaxPerAddressResponse, Metadata, PartyType,
+    QueryMsg,
 };
 
 pub const CREATOR: &str = "creator";
@@ -53,9 +54,6 @@ pub struct TestSuiteBuilder {
     /// Creator of the collection. If not provided it will be the sender.
     #[derivative(Default(value = "String::from(CREATOR)"))]
     pub creator: String,
-    /// BS721 token name.
-    #[derivative(Default(value = "String::from(\"album\")"))]
-    pub name: String,
     /// BS721 token symbol.
     #[derivative(Default(value = "String::from(\"album\")"))]
     pub symbol: String,
@@ -66,13 +64,15 @@ pub struct TestSuiteBuilder {
     pub max_per_address: Option<u32>,
     /// BS721 token uri.
     pub base_token_uri: String,
-    /// BS721 collection uri.
-    pub collection_uri: String,
+    pub collection_image: String,
+    pub collection_cover_image: Option<String>,
+    pub metadata: Metadata,
     pub seller_fee_bps: u16,
     pub referral_fee_bps: u16,
     /// Contributors to the collection.
     pub contributors: Vec<ContributorMsg>,
     /// Start time of the launchparty.
+    #[derivative(Default(value = "Timestamp::from_seconds(1571797419)"))]
     pub start_time: Timestamp,
     /// End condition of the collection launchparty.
     #[derivative(Default(value = "PartyType::MaxEdition(1)"))]
@@ -136,24 +136,23 @@ impl TestSuiteBuilder {
         &self,
         app: &mut App,
         code_id: u64,
-        bs721_base_code_id: u64,
+        bs721_metadata_code_id: u64,
         bs721_royalties_code_id: u64,
     ) -> Addr {
         // could we also use mem to optimize code and avoid clone
         let init_msg = InstantiateMsg {
-            //creator: Some(self.creator.clone()),
-            name: self.name.clone(),
             symbol: self.symbol.clone(),
             price: self.price.clone(),
             max_per_address: self.max_per_address,
-            base_token_uri: self.base_token_uri.clone(),
-            collection_uri: self.collection_uri.clone(),
+            collection_cover_image: self.collection_cover_image.clone(),
+            collection_image: self.collection_image.clone(),
+            metadata: self.metadata.clone(),
             seller_fee_bps: self.seller_fee_bps,
             referral_fee_bps: self.referral_fee_bps,
             contributors: self.contributors.clone(),
             start_time: self.start_time,
             party_type: self.party_type.clone(),
-            bs721_base_code_id,
+            bs721_metadata_code_id,
             bs721_royalties_code_id,
         };
 
@@ -171,6 +170,8 @@ impl TestSuiteBuilder {
     #[track_caller]
     pub fn build(self) -> Suite {
         let mut app: App = App::default();
+
+        app.update_block(|block| block.time = Timestamp::from_seconds(1571797419));
 
         let bs721_base_code_id = app.store_code(contract_bs721_base());
         let bs721_royalties_code_id = app.store_code(contract_bs721_royalties());

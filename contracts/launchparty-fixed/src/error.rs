@@ -57,4 +57,7 @@ pub enum ContractError {
 
     #[error("max number of mint, remaining: {remaining}")]
     MaxPerAddressExceeded { remaining: u32 },
+
+    #[error("start time must be in the future: start time is {start_time} but current time is {current_time}")]
+    StartTimeInPast { start_time: u64, current_time: u64 },
 }

@@ -16,6 +16,28 @@
         }
       },
       "additionalProperties": false
+    },
+    {
+      "description": "Returns the maximum amount of token an address can mint.",
+      "type": "object",
+      "required": [
+        "max_per_address"
+      ],
+      "properties": {
+        "max_per_address": {
+          "type": "object",
+          "required": [
+            "address"
+          ],
+          "properties": {
+            "address": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
     }
   ]
 }

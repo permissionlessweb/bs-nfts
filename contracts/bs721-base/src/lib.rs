@@ -33,6 +33,8 @@ pub mod entry {
         info: MessageInfo,
         msg: InstantiateMsg,
     ) -> StdResult<Response> {
+        cw2::set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+
         let tract = Bs721Contract::<Extension, Empty, Empty, Empty>::default();
         tract.instantiate(deps, env, info, msg)
     }

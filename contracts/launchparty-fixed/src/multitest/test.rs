@@ -30,7 +30,7 @@ fn instantiate() {
 
     // ensure created contract addresses are correctly saved in the state
     assert_eq!(
-        resp.bs721_base,
+        resp.bs721_metadata,
         Some(Addr::unchecked("contract1")),
         "expected bs721 base as second contract stored and saved in the state"
     );
@@ -131,7 +131,7 @@ fn mint_multiple() {
 
     assert_eq!(
         vec!["1", "2", "3"],
-        suite.query_nft_token(config.bs721_base.unwrap(), "address1"),
+        suite.query_nft_token(config.bs721_metadata.unwrap(), "address1"),
         "expected 3 nft with sequential ids starting from 1"
     );
 
@@ -142,7 +142,7 @@ fn mint_multiple() {
     let config = suite.query_config();
     assert_eq!(
         vec!["1", "2", "3", "4", "5", "6"],
-        suite.query_nft_token(config.bs721_base.unwrap(), "address1"),
+        suite.query_nft_token(config.bs721_metadata.unwrap(), "address1"),
         "expected 3 nft with sequential ids starting from 1"
     );
 }

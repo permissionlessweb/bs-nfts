@@ -4,13 +4,11 @@ use serde::Serialize;
 use cosmwasm_std::{Binary, CustomMsg, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
 
 use bs721::{Bs721Execute, Bs721ReceiveMsg, ContractInfoResponse, Expiration};
-use cw2::set_contract_version;
 use cw_utils::maybe_addr;
 
 use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InstantiateMsg, MintMsg};
 use crate::state::{Approval, Bs721Contract, TokenInfo};
-use crate::{CONTRACT_NAME, CONTRACT_VERSION};
 
 const MAX_SELLER_FEE: u16 = 10000; // mean 100%
 
@@ -28,16 +26,22 @@ where
         _info: MessageInfo,
         msg: InstantiateMsg,
     ) -> StdResult<Response<C>> {
-        set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+        //set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
         let info = ContractInfoResponse {
             name: msg.name,
             symbol: msg.symbol,
             uri: msg.uri,
+            cover_image: msg.cover_image,
+            image: msg.image,
         };
         self.contract_info.save(deps.storage, &info)?;
+
         let minter = deps.api.addr_validate(&msg.minter)?;
         self.minter.save(deps.storage, &minter)?;
+
+        cw_ownable::initialize_owner(deps.storage, deps.api, Some(&msg.minter))?;
+
         Ok(Response::default())
     }
 

@@ -19,6 +19,7 @@ bs721-base      = { version = "0.1.0-alpha.1", path = "./contracts/bs721-base" }
 bs721-royalties   = { version = "0.1.0-alpha.1", path = "./contracts/bs721-royalties" }
 cw-storage-plus = "0.16.0"
 cw-utils        = "0.16.0"
+cw-ownable      = "0.5.1"
 schemars        = "0.8.10"
 serde           = { version = "1.0.140", default-features = false, features = ["derive"] }
 thiserror       = "1.0.31"
@@ -28,6 +29,14 @@ codegen-units = 1
 incremental = false
 
 [profile.release.package.bs721-royalties]
+codegen-units = 1
+incremental = false
+
+[profile.release.package.bs721-metadata-onchain]
+codegen-units = 1
+incremental = false
+
+[profile.release.package.launchparty-fixed]
 codegen-units = 1
 incremental = false
 

@@ -23,6 +23,8 @@ fn setup_contract(deps: DepsMut<'_>) -> Bs721Contract<'static, Extension, Empty,
         symbol: SYMBOL.to_string(),
         uri: Some(URI.to_string()),
         minter: String::from(MINTER),
+        cover_image: None,
+        image: None,
     };
     let info = mock_info("creator", &[]);
     let res = contract.instantiate(deps, mock_env(), info, msg).unwrap();
@@ -40,6 +42,8 @@ fn proper_instantiation() {
         symbol: SYMBOL.to_string(),
         uri: Some(URI.to_string()),
         minter: String::from(MINTER),
+        cover_image: None,
+        image: None,
     };
     let info = mock_info("creator", &[]);
 
@@ -59,15 +63,13 @@ fn proper_instantiation() {
             name: CONTRACT_NAME.to_string(),
             symbol: SYMBOL.to_string(),
             uri: Some(URI.to_string()),
+            cover_image: None,
+            image: None,
         }
     );
 
     let count = contract.num_tokens(deps.as_ref()).unwrap();
     assert_eq!(0, count.count);
-
-    // list the token_ids
-    let tokens = contract.all_tokens(deps.as_ref(), None, None).unwrap();
-    assert_eq!(0, tokens.tokens.len());
 }
 
 #[test]

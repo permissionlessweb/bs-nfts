@@ -1,6 +1,7 @@
+use bs721_metadata_onchain::{MediaType, Trait};
 use bs721_royalties::msg::ContributorMsg;
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Addr, Coin, Timestamp};
+use cosmwasm_std::{Addr, Coin, Env, Timestamp};
 
 use crate::ContractError;
 
@@ -9,8 +10,37 @@ use crate::ContractError;
 pub enum PartyType {
     /// Maximum number of mintable tokens.
     MaxEdition(u32),
-    /// Number of blocks for which tokens are mintable.
+    /// Number of seconds after the launchparty start_time.
     Duration(u32),
+}
+
+#[cw_serde]
+pub struct Metadata {
+    pub image: Option<String>,
+    pub image_data: Option<String>,
+    pub external_url: Option<String>,
+    pub description: String,
+    pub name: String,
+    pub attributes: Option<Vec<Trait>>,
+    pub background_color: Option<String>,
+    pub animation_url: Option<String>,
+    pub media_type: Option<MediaType>,
+}
+
+impl Default for Metadata {
+    fn default() -> Self {
+        Metadata {
+            image: None,
+            image_data: None,
+            external_url: None,
+            description: "".to_string(),
+            name: "".to_string(),
+            attributes: None,
+            background_color: None,
+            animation_url: None,
+            media_type: None,
+        }
+    }
 }
 
 /// Structure required by the launchparty-fixed contract during its instantiation.
@@ -19,17 +49,21 @@ pub struct InstantiateMsg {
     /// Creator of the collection. If not provided it will be the sender.
     // pub creator: Option<String>,
     /// BS721 token name.
-    pub name: String,
+    // pub name: String,
     /// BS721 token symbol.
     pub symbol: String,
     /// Price of single nft minting.
     pub price: Coin,
     /// BS721 token uri.
-    pub base_token_uri: String,
+    //pub base_token_uri: String,
     /// Maximum amount of tokens an address can mint.
     pub max_per_address: Option<u32>,
-    /// BS721 collection uri.
-    pub collection_uri: String,
+    /// BS721 collection image.
+    pub collection_image: String,
+    /// BS721 collection cover image.
+    pub collection_cover_image: Option<String>,
+    /// On-chain Metadata
+    pub metadata: Metadata,
     /// Basis per point of the `price` sent to the referred address during mint. This payment is sent
     /// one-off.
     pub seller_fee_bps: u16,
@@ -42,8 +76,8 @@ pub struct InstantiateMsg {
     pub start_time: Timestamp,
     /// End condition of the collection launchparty.
     pub party_type: PartyType,
-    /// Code id used to instantiate a bs721 token contract.
-    pub bs721_base_code_id: u64,
+    /// Code id used to instantiate a bs721 metadata onchain token contract.
+    pub bs721_metadata_code_id: u64,
     /// Code id used to instantiate bs721 royalties contract. The address of this contract will be used
     /// as the payment address for the NFT mint.
     pub bs721_royalties_code_id: u64,
@@ -80,18 +114,17 @@ pub struct ConfigResponse {
     /// Creator of the collection. If not provided it will be the sender.
     pub creator: Addr,
     /// Address of the bs721 token contract.
-    pub bs721_base: Option<Addr>,
+    pub bs721_metadata: Option<Addr>,
     /// Address of the bs721 royalties contract.
     pub bs721_royalties: Option<Addr>,
     /// Price of single nft minting.
     pub price: Coin,
     /// Maximum amount of token an address can mint.
     pub max_per_address: Option<u32>,
-    /// BS721 token name.
-    pub name: String,
     /// BS721 token symbol.
     pub symbol: String,
-    pub base_token_uri: String,
+    /// On-chain Metadata
+    pub metadata: Metadata,
     /// ID that will be associated to the next NFT minted.
     pub next_token_id: u32,
     pub seller_fee_bps: u16,
@@ -116,9 +149,17 @@ impl InstantiateMsg {
     ///
     /// # Validation Checks:
     ///
+    /// - start time must be in the future.
     /// - maximum bps allowed for both seller and referral.
     /// - end condition of the launchparty.
-    pub fn validate(&self) -> Result<(), ContractError> {
+    pub fn validate(&self, env: Env) -> Result<(), ContractError> {
+        if self.start_time < env.block.time {
+            return Err(ContractError::StartTimeInPast {
+                start_time: self.start_time.seconds(),
+                current_time: env.block.time.seconds(),
+            });
+        }
+
         // validate seller_fee_bps
         if self.seller_fee_bps > Self::MAX_FEE_BPS {
             return Err(ContractError::FeeBps {
@@ -168,7 +209,7 @@ impl PartyType {
 // -------------------------------------------------------------------------------------------------
 #[cfg(test)]
 mod test {
-    use cosmwasm_std::coin;
+    use cosmwasm_std::{coin, testing::mock_env};
 
     use super::*;
 
@@ -200,25 +241,37 @@ mod test {
     #[test]
     fn instantiate_msg_validate_works() {
         let mut msg = InstantiateMsg {
-            name: "Launchparty".to_string(),
+            //name: "Launchparty".to_string(),
             price: coin(1, "ubtsg"),
             //creator: Some(String::from("creator")),
             max_per_address: Some(100),
             symbol: "LP".to_string(),
-            base_token_uri: "ipfs://Qm......".to_string(),
-            collection_uri: "ipfs://Qm......".to_string(),
+            //collection_uri: "ipfs://Qm......".to_string(),
+            collection_image: "ipfs://Qm......".to_string(),
+            collection_cover_image: Some("ipfs://Qm......".to_string()),
+            metadata: Metadata {
+                image: Some("ipfs://Qm......".to_string()),
+                image_data: None,
+                external_url: None,
+                description: "".to_string(),
+                name: "Launchparty".to_string(),
+                attributes: None,
+                background_color: None,
+                animation_url: None,
+                media_type: Some(MediaType::Image),
+            },
             seller_fee_bps: 100,
             referral_fee_bps: 1,
             contributors: vec![],
             start_time: Timestamp::from_seconds(0),
             party_type: PartyType::MaxEdition(1),
             bs721_royalties_code_id: 0,
-            bs721_base_code_id: 1,
+            bs721_metadata_code_id: 1,
         };
 
         {
             msg.seller_fee_bps = 10_001;
-            let err = msg.validate().unwrap_err();
+            let err = msg.validate(mock_env()).unwrap_err();
             assert_eq!(
                 err,
                 ContractError::FeeBps {
@@ -231,7 +284,7 @@ mod test {
 
         {
             msg.referral_fee_bps = 10_001;
-            let err = msg.validate().unwrap_err();
+            let err = msg.validate(mock_env()).unwrap_err();
             assert_eq!(
                 err,
                 ContractError::FeeBps {
