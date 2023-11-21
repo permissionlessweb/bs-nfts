@@ -69,6 +69,7 @@ pub struct TestSuiteBuilder {
     pub metadata: Metadata,
     pub seller_fee_bps: u16,
     pub referral_fee_bps: u16,
+    pub protocol_fee_bps: u16,
     /// Contributors to the collection.
     pub contributors: Vec<ContributorMsg>,
     /// Start time of the launchparty.
@@ -149,6 +150,7 @@ impl TestSuiteBuilder {
             metadata: self.metadata.clone(),
             seller_fee_bps: self.seller_fee_bps,
             referral_fee_bps: self.referral_fee_bps,
+            protocol_fee_bps: self.protocol_fee_bps,
             contributors: self.contributors.clone(),
             start_time: self.start_time,
             party_type: self.party_type.clone(),

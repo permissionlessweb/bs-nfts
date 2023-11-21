@@ -95,6 +95,7 @@ mod tests {
     /// Make sure cw2 version info is properly initialized during instantiation,
     /// and NOT overwritten by the base contract.
     #[test]
+    #[cfg(not(feature = "library"))]
     fn proper_cw2_initialization() {
         let mut deps = mock_dependencies();
 

@@ -23,10 +23,10 @@ backtraces = ["cosmwasm-std/backtraces"]
 library = []
 
 [dependencies]
-bs721 = { workspace = true }
-bs721-base = { workspace = true, features = ["library"] }
+bs721           = { workspace = true }
+bs721-base      = { workspace = true, features = ["library"] }
 cw2             = { workspace = true }
 cosmwasm-schema = { workspace = true }
-cosmwasm-std = { workspace = true }
-schemars = { workspace = true }
-serde = { workspace = true }
+cosmwasm-std    = { workspace = true }
+schemars        = { workspace = true }
+serde           = { workspace = true }

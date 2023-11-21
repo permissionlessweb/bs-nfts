@@ -1,8 +1,8 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Addr, Coin, Timestamp};
+use cosmwasm_std::{Addr, Timestamp};
 use cw_storage_plus::{Item, Map};
 
-use crate::msg::{Metadata, PartyType};
+use crate::msg::Metadata;
 
 /// Smart contract configuration structure.
 #[cw_serde]
@@ -11,12 +11,10 @@ pub struct Config {
     pub creator: Addr,
     /// Symbol of the NFT contract
     pub symbol: String,
-    /// Price of single nft minting.
-    pub price: Coin,
+    /// Denom used to pay for the NFTs
+    pub payment_denom: String,
     /// Maximum amount of token an address can mint.
     pub max_per_address: Option<u32>,
-    /// Uri, optional uri to get more information about the NFT
-    //pub base_token_uri: String,
     /// On-chain metadata
     pub metadata: Metadata,
     /// ID of the next NFT that will be minted. The first NFT will be minted with ID == 1.
@@ -26,12 +24,14 @@ pub struct Config {
     pub protocol_fee_bps: u16,
     /// Start time of the launchparty.
     pub start_time: Timestamp,
-    /// End condition of the collection launchparty.
-    pub party_type: PartyType,
+    /// Max edition of the collection launchparty.
+    pub max_edition: Option<u32>,
     /// Address of the bs721 metadata-onchain token contract.
     pub bs721_metadata_address: Option<Addr>,
     /// Address of the bs721 royalties contract.
     pub royalties_address: Option<Addr>,
+    /// Ratio, is the cooeficient of the curve
+    pub ratio: u32,
 }
 
 /// Stores the contract's configuration

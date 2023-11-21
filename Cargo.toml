@@ -17,6 +17,7 @@ cw20            = "0.16.0"
 bs721           = { version = "0.1.0-alpha.1", path = "./packages/bs721" }
 bs721-base      = { version = "0.1.0-alpha.1", path = "./contracts/bs721-base" }
 bs721-royalties   = { version = "0.1.0-alpha.1", path = "./contracts/bs721-royalties" }
+bs721-factory   = { version = "0.1.0-alpha.1", path = "./contracts/bs721-factory" }
 cw-storage-plus = "0.16.0"
 cw-utils        = "0.16.0"
 cw-ownable      = "0.5.1"
@@ -37,6 +38,10 @@ codegen-units = 1
 incremental = false
 
 [profile.release.package.launchparty-fixed]
+codegen-units = 1
+incremental = false
+
+[profile.release.package.bs721-curve]
 codegen-units = 1
 incremental = false
 

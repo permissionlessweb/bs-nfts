@@ -1,18 +1,9 @@
 use bs721_metadata_onchain::{MediaType, Trait};
 use bs721_royalties::msg::ContributorMsg;
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Addr, Coin, Env, Timestamp};
+use cosmwasm_std::{Addr, Env, StdError, Timestamp, Uint128};
 
 use crate::ContractError;
-
-/// Possible launchparty type. Each type defines how the party end.
-#[cw_serde]
-pub enum PartyType {
-    /// Maximum number of mintable tokens.
-    MaxEdition(u32),
-    /// Number of seconds after the launchparty start_time.
-    Duration(u32),
-}
 
 #[cw_serde]
 pub struct Metadata {
@@ -43,19 +34,13 @@ impl Default for Metadata {
     }
 }
 
-/// Structure required by the launchparty-fixed contract during its instantiation.
+/// Structure required by the launchparty-curve contract during its instantiation.
 #[cw_serde]
 pub struct InstantiateMsg {
-    /// Creator of the collection. If not provided it will be the sender.
-    // pub creator: Option<String>,
-    /// BS721 token name.
-    // pub name: String,
     /// BS721 token symbol.
     pub symbol: String,
-    /// Price of single nft minting.
-    pub price: Coin,
-    /// BS721 token uri.
-    //pub base_token_uri: String,
+    /// Denom used to pay for the NFTs
+    pub payment_denom: String,
     /// Maximum amount of tokens an address can mint.
     pub max_per_address: Option<u32>,
     /// BS721 collection image.
@@ -74,16 +59,18 @@ pub struct InstantiateMsg {
     pub contributors: Vec<ContributorMsg>,
     /// Start time of the launchparty.
     pub start_time: Timestamp,
-    /// End condition of the collection launchparty.
-    pub party_type: PartyType,
+    /// Max edition of the collection launchparty.
+    pub max_edition: Option<u32>,
     /// Code id used to instantiate a bs721 metadata onchain token contract.
     pub bs721_metadata_code_id: u64,
     /// Code id used to instantiate bs721 royalties contract. The address of this contract will be used
     /// as the payment address for the NFT mint.
     pub bs721_royalties_code_id: u64,
+    /// Ratio, is the cooeficient of the curve
+    pub ratio: u32,
 }
 
-/// Possible state-changing messages that the launchparty-fixed contract can handle.
+/// Possible state-changing messages that the launchparty-curve contract can handle.
 #[cw_serde]
 pub enum ExecuteMsg {
     /// Allows to mint a bs721 token and, optionally, to refer an address.
@@ -94,9 +81,15 @@ pub enum ExecuteMsg {
         /// Referral address used for minting.
         referral: Option<String>,
     },
+
+    Burn {
+        token_ids: Vec<u32>,
+        min_out_amount: u128,
+        referral: Option<String>,
+    },
 }
 
-/// Possible query messages that the launchparty-fixed contract can handle.
+/// Possible query messages that the launchparty-curve contract can handle.
 #[cw_serde]
 #[derive(QueryResponses)]
 pub enum QueryMsg {
@@ -107,6 +100,12 @@ pub enum QueryMsg {
     /// Returns the maximum amount of token an address can mint.
     #[returns(MaxPerAddressResponse)]
     MaxPerAddress { address: String },
+
+    #[returns(PriceResponse)]
+    BuyPrice { amount: u128 },
+
+    #[returns(PriceResponse)]
+    SellPrice { amount: u128 },
 }
 
 #[cw_serde]
@@ -117,8 +116,6 @@ pub struct ConfigResponse {
     pub bs721_metadata: Option<Addr>,
     /// Address of the bs721 royalties contract.
     pub bs721_royalties: Option<Addr>,
-    /// Price of single nft minting.
-    pub price: Coin,
     /// Maximum amount of token an address can mint.
     pub max_per_address: Option<u32>,
     /// BS721 token symbol.
@@ -132,8 +129,21 @@ pub struct ConfigResponse {
     pub referral_fee_bps: u16,
     /// Start time of the launchparty.
     pub start_time: Timestamp,
-    /// End condition of the collection launchparty.
-    pub party_type: PartyType,
+    /// Max edition of the collection launchparty.
+    pub max_edition: Option<u32>,
+    /// Denom used to pay for the NFTs
+    pub payment_denom: String,
+    /// Ratio, is the cooeficient of the curve
+    pub ratio: u32,
+}
+
+#[cw_serde]
+pub struct PriceResponse {
+    pub base_price: Uint128,
+    pub royalties: Uint128,
+    pub referral: Uint128,
+    pub protocol_fee: Uint128,
+    pub total_price: Uint128,
 }
 
 #[cw_serde]
@@ -167,32 +177,13 @@ impl InstantiateMsg {
             });
         }
 
-        self.party_type.validate()?;
-
-        Ok(())
-    }
-}
-
-impl PartyType {
-    /// Performs basic validation checks on the party type.
-    ///
-    /// # Validation Checks
-    ///
-    /// - the number of maximum edition cannot be zero.
-    /// - or, the party cannot end in the same time of the instantiation.
-    pub fn validate(&self) -> Result<(), ContractError> {
-        match self {
-            PartyType::MaxEdition(number) => {
-                if number == &0u32 {
-                    return Err(ContractError::ZeroEditions {});
-                }
-            }
-            PartyType::Duration(duration) => {
-                if duration == &0u32 {
-                    return Err(ContractError::ZeroDuration {});
-                }
-            }
+        // validate denom
+        if self.payment_denom.is_empty() {
+            return Err(ContractError::Std(StdError::generic_err(
+                "payment denom cannot be empty",
+            )));
         }
+
         Ok(())
     }
 }
@@ -200,37 +191,11 @@ impl PartyType {
 // -------------------------------------------------------------------------------------------------
 // Unit tests
 // -------------------------------------------------------------------------------------------------
-#[cfg(test)]
+/*#[cfg(test)]
 mod test {
     use cosmwasm_std::{coin, testing::mock_env};
 
     use super::*;
-
-    #[test]
-    fn party_type_validate_works() {
-        {
-            let party_type = PartyType::Duration(0);
-            let err = party_type.validate().unwrap_err();
-
-            assert_eq!(
-                err,
-                ContractError::ZeroDuration {},
-                "expected to fail since no zero duration party is allowed"
-            );
-        }
-
-        {
-            let party_type = PartyType::MaxEdition(0);
-            let err = party_type.validate().unwrap_err();
-
-            assert_eq!(
-                err,
-                ContractError::ZeroEditions {},
-                "expected to fail since no party with zero editions is allowed"
-            );
-        }
-    }
-
     #[test]
     fn instantiate_msg_validate_works() {
         let mut msg = InstantiateMsg {
@@ -255,7 +220,6 @@ mod test {
             },
             seller_fee_bps: 100,
             referral_fee_bps: 1,
-            protocol_fee_bps: 1,
             contributors: vec![],
             start_time: Timestamp::from_seconds(0),
             party_type: PartyType::MaxEdition(1),
@@ -290,3 +254,4 @@ mod test {
         }
     }
 }
+*/

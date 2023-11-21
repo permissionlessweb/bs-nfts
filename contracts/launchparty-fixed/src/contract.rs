@@ -9,11 +9,13 @@ use bs721_metadata_onchain::{
     ExecuteMsg as Bs721MetadataExecuteMsg, Extension,
     InstantiateMsg as Bs721MetadataInstantiateMsg, Metadata as BS721Metadata,
 };
+use cosmos_sdk_proto::{cosmos::distribution::v1beta1::MsgFundCommunityPool, traits::Message};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    attr, coin, to_binary, Addr, Attribute, BankMsg, Binary, Deps, DepsMut, Env, MessageInfo,
-    Reply, ReplyOn, Response, StdError, StdResult, SubMsg, Timestamp, Uint128, WasmMsg,
+    attr, coin, to_binary, Addr, Attribute, BankMsg, Binary, Coin, CosmosMsg, Deps, DepsMut, Env,
+    MessageInfo, Reply, ReplyOn, Response, StdError, StdResult, SubMsg, Timestamp, Uint128,
+    WasmMsg,
 };
 use cw2::set_contract_version;
 
@@ -45,6 +47,12 @@ pub fn instantiate(
 
     let denom = msg.price.denom.clone();
 
+    let start_time = if msg.start_time < env.block.time {
+        env.block.time
+    } else {
+        msg.start_time
+    };
+
     let config = Config {
         creator: info.sender,
         symbol: msg.symbol.clone(),
@@ -56,8 +64,9 @@ pub fn instantiate(
         seller_fee_bps: msg.seller_fee_bps,
         referral_fee_bps: msg.referral_fee_bps,
         royalties_address: None,
-        start_time: msg.start_time,
+        start_time,
         party_type: msg.party_type,
+        protocol_fee_bps: msg.protocol_fee_bps,
     };
 
     CONFIG.save(deps.storage, &config)?;
@@ -251,7 +260,7 @@ fn execute_mint(
     // - referral bps * price to referred address.
     // - price - (referral bps * price) to royalties address
     if !config.price.amount.is_zero() {
-        let (referral_amount, royalties_amount) =
+        let (referral_amount, royalties_amount, protocol_amount) =
             compute_referral_and_royalties_amounts(&config, &referral, required_amount)?;
 
         let mut bank_msgs: Vec<BankMsg> = vec![];
@@ -270,15 +279,19 @@ fn execute_mint(
             ));
         }
 
+        res = res.add_submessage(fund_community_pool_msg(
+            env,
+            coin(protocol_amount.u128(), accepted_denom.clone()),
+        ));
+
+        attributes.push(attr("protocol_fee", protocol_amount.u128().to_string()));
+
         bank_msgs.push(BankMsg::Send {
             to_address: config.royalties_address.clone().unwrap().to_string(),
             amount: vec![coin(royalties_amount.u128(), accepted_denom.clone())],
         });
 
-        attributes.push(attr(
-            "royalties",
-            coin(royalties_amount.u128(), accepted_denom).to_string(),
-        ));
+        attributes.push(attr("royalties", royalties_amount.u128().to_string()));
 
         res = res.add_messages(bank_msgs).add_attributes(attributes)
     }
@@ -291,6 +304,25 @@ fn execute_mint(
         .add_attribute("price", config.price.amount)
         .add_attribute("creator", config.creator.to_string())
         .add_attribute("recipient", info.sender.to_string()))
+}
+
+fn fund_community_pool_msg(env: Env, amount: Coin) -> SubMsg {
+    let mut buffer = vec![];
+
+    MsgFundCommunityPool {
+        amount: vec![cosmos_sdk_proto::cosmos::base::v1beta1::Coin {
+            denom: amount.denom,
+            amount: amount.amount.to_string(),
+        }],
+        depositor: env.contract.address.to_string(),
+    }
+    .encode(&mut buffer)
+    .unwrap();
+
+    SubMsg::new(CosmosMsg::Stargate {
+        type_url: "/cosmos.distribution.v1beta1.MsgFundCommunityPool".to_string(),
+        value: Binary::from(buffer),
+    })
 }
 
 /// Computes the amount of `total_amount` associated with the referral address, if any, and the amount
@@ -313,7 +345,7 @@ pub fn compute_referral_and_royalties_amounts(
     config: &Config,
     referral: &Option<Addr>,
     total_amount: Uint128,
-) -> StdResult<(Uint128, Uint128)> {
+) -> StdResult<(Uint128, Uint128, Uint128)> {
     let referral_amount = referral.as_ref().map_or_else(
         || Ok(Uint128::zero()),
         |_address| -> Result<Uint128, _> {
@@ -325,9 +357,20 @@ pub fn compute_referral_and_royalties_amounts(
         },
     )?;
 
-    let royalties_amount = total_amount - referral_amount;
+    let protocol_amount = total_amount
+        .checked_mul(Uint128::from(config.protocol_fee_bps))
+        .map_err(StdError::overflow)?
+        .checked_div(Uint128::new(10_000))
+        .map_err(StdError::divide_by_zero)?;
 
-    Ok((referral_amount, royalties_amount))
+    let royalties_amount = total_amount - referral_amount - protocol_amount;
+    if royalties_amount.u128() <= 0u128 {
+        return Err(StdError::generic_err(
+            "royalties amount is zero or negative",
+        ));
+    }
+
+    Ok((referral_amount, royalties_amount, protocol_amount))
 }
 
 /// Basic checks performed before minting a token
@@ -514,6 +557,7 @@ mod tests {
             next_token_id: 1,
             seller_fee_bps: 1_000,
             referral_fee_bps: 1_000,
+            protocol_fee_bps: 1_000,
             start_time: Timestamp::from_seconds(1),
             party_type: PartyType::MaxEdition(2),
             bs721_metadata_address: Some(Addr::unchecked("contract1")),
@@ -599,6 +643,7 @@ mod tests {
             next_token_id: 1,
             seller_fee_bps: 1_000,
             referral_fee_bps: 1_000,
+            protocol_fee_bps: 1_000,
             start_time: Timestamp::from_seconds(1),
             party_type: PartyType::MaxEdition(2),
             bs721_metadata_address: Some(Addr::unchecked("contract1")),
@@ -606,7 +651,7 @@ mod tests {
         };
 
         {
-            let (referral_amt, royalties_amt) =
+            let (referral_amt, royalties_amt, protocol_amt) =
                 compute_referral_and_royalties_amounts(&config, &None, Uint128::new(1_000))
                     .unwrap();
             assert_eq!(
@@ -615,33 +660,37 @@ mod tests {
                 "expected zero referral amount since no referral address"
             );
             assert_eq!(
-                Uint128::new(1_000),
+                Uint128::new(900),
                 royalties_amt,
-                "expected royalties amount equal to total amount"
+                "expected royalties amount equal to total amount - protocol_fee"
             );
+            assert_eq!(Uint128::new(100), protocol_amt, "expected protocol fee")
         }
 
         {
-            let (referral_amt, royalties_amt) = compute_referral_and_royalties_amounts(
-                &config,
-                &Some(Addr::unchecked("referrral".to_string())),
-                Uint128::new(1_000),
-            )
-            .unwrap();
+            let (referral_amt, royalties_amt, protocol_amt) =
+                compute_referral_and_royalties_amounts(
+                    &config,
+                    &Some(Addr::unchecked("referrral".to_string())),
+                    Uint128::new(1_000),
+                )
+                .unwrap();
             assert_eq!(
                 Uint128::new(100),
                 referral_amt,
                 "expected 10% as referral amount"
             );
             assert_eq!(
-                Uint128::new(900),
+                Uint128::new(800),
                 royalties_amt,
-                "expected 90% as royalties amount"
+                "expected 80% as royalties amount"
             );
+            assert_eq!(Uint128::new(100), protocol_amt, "expected protocol fee")
         }
 
         {
-            let (referral_amt, royalties_amt) = compute_referral_and_royalties_amounts(
+            // must get an error
+            let (referral_amt, royalties_amt, _) = compute_referral_and_royalties_amounts(
                 &config,
                 &Some(Addr::unchecked("referrral".to_string())),
                 Uint128::zero(),
@@ -660,7 +709,7 @@ mod tests {
         }
 
         {
-            let (referral_amt, royalties_amt) = compute_referral_and_royalties_amounts(
+            let (referral_amt, royalties_amt, _) = compute_referral_and_royalties_amounts(
                 &config,
                 &Some(Addr::unchecked("referrral".to_string())),
                 Uint128::new(1),
@@ -679,7 +728,7 @@ mod tests {
         }
 
         {
-            let (referral_amt, royalties_amt) = compute_referral_and_royalties_amounts(
+            let (referral_amt, royalties_amt, _) = compute_referral_and_royalties_amounts(
                 &config,
                 &Some(Addr::unchecked("referrral".to_string())),
                 Uint128::new(9),
@@ -698,7 +747,7 @@ mod tests {
         }
 
         {
-            let (referral_amt, royalties_amt) = compute_referral_and_royalties_amounts(
+            let (referral_amt, royalties_amt, _) = compute_referral_and_royalties_amounts(
                 &config,
                 &Some(Addr::unchecked("referrral".to_string())),
                 Uint128::new(10),
@@ -745,6 +794,7 @@ mod tests {
             },
             seller_fee_bps: 100,
             referral_fee_bps: 1,
+            protocol_fee_bps: 3,
             contributors,
             start_time: env.block.time,
             party_type: PartyType::MaxEdition(1),
@@ -788,6 +838,7 @@ mod tests {
             },
             seller_fee_bps: 100,
             referral_fee_bps: 1,
+            protocol_fee_bps: 3,
             contributors: contributors.clone(),
             start_time: env.block.time,
             party_type: PartyType::MaxEdition(1),
@@ -952,6 +1003,7 @@ mod tests {
             party_type: PartyType::MaxEdition(1),
             bs721_royalties_code_id: 1,
             bs721_metadata_code_id: 2,
+            protocol_fee_bps: 3,
         };
 
         let info = mock_info("creator", &[coin(1, "ubtsg")]);
@@ -1079,6 +1131,7 @@ mod tests {
             party_type: PartyType::MaxEdition(3),
             bs721_royalties_code_id: 1,
             bs721_metadata_code_id: 2,
+            protocol_fee_bps: 3,
         };
 
         let info = mock_info("creator", &[coin(3, "ubtsg")]);

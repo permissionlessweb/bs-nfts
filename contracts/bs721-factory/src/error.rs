@@ -57,4 +57,7 @@ pub enum ContractError {
 
     #[error("max number of mint, remaining: {remaining}")]
     MaxPerAddressExceeded { remaining: u32 },
+
+    #[error("min out amount: {min_out_amount} is less then amount: {amount}")]
+    MinOutAmount { amount: u128, min_out_amount: u128 },
 }

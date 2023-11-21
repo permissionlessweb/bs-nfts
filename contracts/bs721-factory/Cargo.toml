@@ -1,6 +1,6 @@
 [package]
-name          = "launchparty-fixed"
-description   = "A basic launchpad contract for Bs721 NFTs."
+name          = "bs721-factory"
+description   = "A factory contract for creating and managing BS721 contracts."
 authors       = [
   "Angelo Recca <angelorc@users.noreply.github.com>",
 ]
@@ -26,7 +26,9 @@ cosmwasm-std    = { workspace = true }
 cw-utils        = { workspace = true }
 cw2             = { workspace = true }
 bs721-base      = { workspace = true, features = ["library"] }
+bs721-curve      = { version = "0.1.0-alpha.1", path = "../bs721-curve", features = ["library"] }
 bs721-metadata-onchain  = { version = "0.1.0-alpha.1", path = "../bs721-metadata-onchain", features = ["library"] }
+launchparty-fixed      = { version = "0.1.0-alpha.1", path = "../launchparty-fixed", features = ["library"] }
 bs721 = { workspace = true }
 bs721-royalties = { workspace = true, features = ["library"] }
 cw-storage-plus = { workspace = true }

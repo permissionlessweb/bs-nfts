@@ -1,6 +1,6 @@
 [package]
-name          = "launchparty-fixed"
-description   = "A basic launchpad contract for Bs721 NFTs."
+name          = "bs721-curve"
+description   = "A basic launchpad contract that incorporates a curve mechanism for purchasing and selling Bs721 NFTs."
 authors       = [
   "Angelo Recca <angelorc@users.noreply.github.com>",
 ]

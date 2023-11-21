@@ -13,12 +13,6 @@ pub enum ContractError {
     #[error("unauthorized")]
     Unauthorized {},
 
-    #[error("max editions cannot be zero")]
-    ZeroEditions {},
-
-    #[error("party duration cannot be zero")]
-    ZeroDuration {},
-
     #[error("BS721 contract already linked")]
     Bs721BaseAlreadyLinked {},
 
@@ -37,24 +31,18 @@ pub enum ContractError {
     #[error("contract is sold out")]
     SoldOut {},
 
-    #[error("coins sent are invalid")]
-    InvalidFunds {},
-
     #[error("invalid payment amount. Sent is {0} but required is {1}")]
     InvalidPaymentAmount(Uint128, Uint128),
 
     #[error("launchpad not started")]
     NotStarted {},
 
-    #[error("party has ended")]
-    PartyEnded {},
-
     #[error("{profile} fee bps must be less than 10000")]
     FeeBps { profile: String },
 
-    #[error("max number of pre-generated metadata reached")]
-    MaxMetadataReached {},
-
     #[error("max number of mint, remaining: {remaining}")]
     MaxPerAddressExceeded { remaining: u32 },
+
+    #[error("min out amount: {min_out_amount} is less then amount: {amount}")]
+    MinOutAmount { amount: u128, min_out_amount: u128 },
 }
