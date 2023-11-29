@@ -28,7 +28,7 @@ use bs721_royalties::msg::InstantiateMsg as Bs721RoyaltiesInstantiateMsg;
 
 use cw_utils::{must_pay, nonpayable, parse_reply_instantiate_data};
 
-const CONTRACT_NAME: &str = "crates.io:launchparty-curve";
+const CONTRACT_NAME: &str = "crates.io:bs721-curve";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// ID used to recognize the instantiate token reply in the reply entry point.
@@ -86,7 +86,7 @@ pub fn instantiate(
                     cover_image: msg.collection_cover_image,
                     image: Some(msg.collection_image),
                 })?,
-                label: "Launchparty: bs721 metadata contract".to_string(),
+                label: "Bs721-Curve: bs721 metadata contract".to_string(),
                 admin: None,
                 funds: vec![],
             }
@@ -102,7 +102,7 @@ pub fn instantiate(
                     denom: msg.payment_denom,
                     contributors: msg.contributors,
                 })?,
-                label: "Launchparty: royalties contract".to_string(),
+                label: "Bs721-Curve: royalties contract".to_string(),
                 admin: None,
                 funds: vec![],
             }
@@ -639,4 +639,175 @@ fn query_sell_price(deps: Deps, amount: Uint128) -> StdResult<PriceResponse> {
     let supply = query_supply(deps.querier, deps.storage);
 
     Ok(sell_price(deps.storage, supply, amount))
+}
+
+// -------------------------------------------------------------------------------------------------
+// Unit tests
+// -------------------------------------------------------------------------------------------------
+#[cfg(test)]
+mod test {
+    use cosmwasm_std::{testing::mock_dependencies, Timestamp};
+
+    use crate::msg::Metadata;
+
+    use super::*;
+
+    #[test]
+    fn sum_of_squares_zero() {
+        assert_eq!(sum_of_squares(Uint128::zero()), Uint128::zero());
+    }
+
+    #[test]
+    fn sum_of_squares_small_positive() {
+        let n = Uint128::new(1);
+        assert_eq!(sum_of_squares(n), Uint128::new(1));
+    }
+
+    #[test]
+    fn test_sum_of_squares_large_positive() {
+        let n = Uint128::new(5_541_000_000_000);
+        assert_eq!(
+            sum_of_squares(n),
+            Uint128::new(56_707_851_807_015_351_340_500_000_923_500_000_000)
+        );
+    }
+
+    #[test]
+    fn compute_base_price_zero_supply_amount() {
+        let mut deps = mock_dependencies();
+
+        let config = Config {
+            creator: Addr::unchecked("creator"),
+            symbol: "TEST".to_string(),
+            payment_denom: "ubtsg".to_string(),
+            max_per_address: None,
+            bs721_metadata_address: None,
+            metadata: Metadata {
+                name: "Test".to_string(),
+                description: "Test".to_string(),
+                ..Default::default()
+            },
+            next_token_id: 1,
+            seller_fee_bps: 0,
+            referral_fee_bps: 0,
+            protocol_fee_bps: 0,
+            royalties_address: None,
+            start_time: Timestamp::from_seconds(0),
+            max_edition: None,
+            ratio: 1,
+        };
+
+        CONFIG.save(deps.as_mut().storage, &config).unwrap();
+
+        assert_eq!(
+            compute_base_price(deps.as_ref().storage, Uint128::zero(), Uint128::zero()),
+            Uint128::zero()
+        );
+    }
+
+    #[test]
+    fn compute_base_price_non_zero_supply_zero_amount() {
+        let mut deps = mock_dependencies();
+
+        let config = Config {
+            creator: Addr::unchecked("creator"),
+            symbol: "TEST".to_string(),
+            payment_denom: "ubtsg".to_string(),
+            max_per_address: None,
+            bs721_metadata_address: None,
+            metadata: Metadata {
+                name: "Test".to_string(),
+                description: "Test".to_string(),
+                ..Default::default()
+            },
+            next_token_id: 1,
+            seller_fee_bps: 0,
+            referral_fee_bps: 0,
+            protocol_fee_bps: 0,
+            royalties_address: None,
+            start_time: Timestamp::from_seconds(0),
+            max_edition: None,
+            ratio: 1,
+        };
+
+        CONFIG.save(deps.as_mut().storage, &config).unwrap();
+
+        assert_eq!(
+            compute_base_price(deps.as_ref().storage, Uint128::new(1), Uint128::zero()),
+            Uint128::zero()
+        );
+    }
+
+    #[test]
+    fn compute_base_price_with_values() {
+        let mut deps = mock_dependencies();
+
+        // ratio, supply, amount, expected
+        let test_cases = [
+            (1, 1, 1, 4_000_000),
+            (10, 1, 1, 400_000),
+            (100, 1, 1, 40_000),
+            (1000, 1, 1, 4_000),
+            (10000, 1, 1, 400),
+            (100000, 1, 1, 40),
+            (1000000, 1, 1, 4),
+            (10000000, 1, 1, 0),
+            (1, 0, 0, 0),
+            (1, 10, 5, 855_000_000),
+            (1, 100, 50, 797_925_000_000),
+            (10, 10, 10, 248_500_000),
+            (100, 20, 10, 65_850_000),
+            (1000, 30, 15, 21_940_000),
+            (10000, 40, 20, 5_167_000),
+            (100000, 50, 25, 1_005_250),
+            (1, 2, 2, 25_000_000),
+            (1, 3, 3, 77_000_000),
+            (1, 4, 4, 174_000_000),
+            (1, 5, 5, 330_000_000),
+            (1, 6, 6, 559_000_000),
+            (1, 7, 7, 875_000_000),
+            (1, 8, 8, 1_292_000_000),
+            (1, 9, 9, 1_824_000_000),
+            (1, 10, 10, 2_485_000_000),
+            (1, 11, 11, 3_289_000_000),
+            (1, 12, 12, 4_250_000_000),
+            (1, 13, 13, 5_382_000_000),
+            (1, 14, 14, 6_699_000_000),
+            (1, 15, 15, 8_215_000_000),
+        ];
+
+        for (ratio, supply, amount, expected) in test_cases {
+            let config = Config {
+                creator: Addr::unchecked("creator"),
+                symbol: "TEST".to_string(),
+                payment_denom: "ubtsg".to_string(),
+                max_per_address: None,
+                bs721_metadata_address: None,
+                metadata: Metadata {
+                    name: "Test".to_string(),
+                    description: "Test".to_string(),
+                    ..Default::default()
+                },
+                next_token_id: 1,
+                seller_fee_bps: 0,
+                referral_fee_bps: 0,
+                protocol_fee_bps: 0,
+                royalties_address: None,
+                start_time: Timestamp::from_seconds(0),
+                max_edition: None,
+                ratio,
+            };
+
+            CONFIG.save(deps.as_mut().storage, &config).unwrap();
+
+            assert_eq!(
+                compute_base_price(
+                    deps.as_ref().storage,
+                    Uint128::new(supply),
+                    Uint128::new(amount)
+                ),
+                Uint128::new(expected)
+            );
+        }
+    }
 }
