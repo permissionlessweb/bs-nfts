@@ -1,73 +1,38 @@
-use bs721_metadata_onchain::{MediaType, Trait};
-use bs721_royalties::msg::ContributorMsg;
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Addr, Env, StdError, Timestamp, Uint128};
+use cosmwasm_std::{Env, StdError, Timestamp, Uint128};
 
-use crate::ContractError;
-
-#[cw_serde]
-pub struct Metadata {
-    pub image: Option<String>,
-    pub image_data: Option<String>,
-    pub external_url: Option<String>,
-    pub description: String,
-    pub name: String,
-    pub attributes: Option<Vec<Trait>>,
-    pub background_color: Option<String>,
-    pub animation_url: Option<String>,
-    pub media_type: Option<MediaType>,
-}
-
-impl Default for Metadata {
-    fn default() -> Self {
-        Metadata {
-            image: None,
-            image_data: None,
-            external_url: None,
-            description: "".to_string(),
-            name: "".to_string(),
-            attributes: None,
-            background_color: None,
-            animation_url: None,
-            media_type: None,
-        }
-    }
-}
+use crate::{state::Config, ContractError};
 
 /// Structure required by the launchparty-curve contract during its instantiation.
 #[cw_serde]
 pub struct InstantiateMsg {
     /// BS721 token symbol.
     pub symbol: String,
+    /// BS721 token name.
+    pub name: String,
+    /// BS721 Uri
+    pub uri: String,
     /// Denom used to pay for the NFTs
     pub payment_denom: String,
     /// Maximum amount of tokens an address can mint.
     pub max_per_address: Option<u32>,
-    /// BS721 collection image.
-    pub collection_image: String,
-    /// BS721 collection cover image.
-    pub collection_cover_image: Option<String>,
-    /// On-chain Metadata
-    pub metadata: Metadata,
+    /// Payment address for the royalties.
+    pub payment_address: String,
     /// Basis per point of the `price` sent to the royalties address during mint or burn.
     pub seller_fee_bps: u16,
     /// Basis per point of the `price` sent to the referred address during mint or burn.
     pub referral_fee_bps: u16,
     /// Basis per point of the `price` sent to the community pool during mint or burn.
     pub protocol_fee_bps: u16,
-    /// Contributors to the collection.
-    pub contributors: Vec<ContributorMsg>,
     /// Start time of the launchparty.
     pub start_time: Timestamp,
     /// Max edition of the collection launchparty.
     pub max_edition: Option<u32>,
     /// Code id used to instantiate a bs721 metadata onchain token contract.
-    pub bs721_metadata_code_id: u64,
-    /// Code id used to instantiate bs721 royalties contract. The address of this contract will be used
-    /// as the payment address for the NFT mint.
-    pub bs721_royalties_code_id: u64,
+    pub bs721_code_id: u64,
     /// Ratio, is the cooeficient of the curve
     pub ratio: u32,
+    pub bs721_admin: String,
 }
 
 /// Possible state-changing messages that the launchparty-curve contract can handle.
@@ -94,7 +59,7 @@ pub enum ExecuteMsg {
 #[derive(QueryResponses)]
 pub enum QueryMsg {
     /// Retrieves contract's configuration
-    #[returns(ConfigResponse)]
+    #[returns(Config)]
     GetConfig {},
 
     /// Returns the maximum amount of token an address can mint.
@@ -106,35 +71,6 @@ pub enum QueryMsg {
 
     #[returns(PriceResponse)]
     SellPrice { amount: u128 },
-}
-
-#[cw_serde]
-pub struct ConfigResponse {
-    /// Creator of the collection. If not provided it will be the sender.
-    pub creator: Addr,
-    /// Address of the bs721 token contract.
-    pub bs721_metadata: Option<Addr>,
-    /// Address of the bs721 royalties contract.
-    pub bs721_royalties: Option<Addr>,
-    /// Maximum amount of token an address can mint.
-    pub max_per_address: Option<u32>,
-    /// BS721 token symbol.
-    pub symbol: String,
-    /// On-chain Metadata
-    pub metadata: Metadata,
-    /// ID that will be associated to the next NFT minted.
-    pub next_token_id: u32,
-    pub seller_fee_bps: u16,
-    /// BPS of the token price associated to the referral address.
-    pub referral_fee_bps: u16,
-    /// Start time of the launchparty.
-    pub start_time: Timestamp,
-    /// Max edition of the collection launchparty.
-    pub max_edition: Option<u32>,
-    /// Denom used to pay for the NFTs
-    pub payment_denom: String,
-    /// Ratio, is the cooeficient of the curve
-    pub ratio: u32,
 }
 
 #[cw_serde]

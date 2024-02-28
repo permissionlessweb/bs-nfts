@@ -1,13 +1,12 @@
 use crate::error::ContractError;
-use crate::msg::{
-    ExecuteMsg, InstantiateMsg, MsgCreateNftCurveSale, MsgCreateNftSimpleSale, QueryMsg,
-};
+use crate::msg::{ExecuteMsg, InstantiateMsg, MsgCreateCurve, MsgCreateLaunchparty, QueryMsg};
 use crate::state::{Config, CONFIG};
 
 use cosmos_sdk_proto::{cosmos::distribution::v1beta1::MsgFundCommunityPool, traits::Message};
 
 use bs721_curve::msg::InstantiateMsg as Bs721CurveMsgInstantiate;
 
+use bs721_launchparty::msg::InstantiateMsg as LaunchpartyFixedMsgInstantiate;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
@@ -16,7 +15,6 @@ use cosmwasm_std::{
 };
 use cw2::set_contract_version;
 use cw_utils::must_pay;
-use launchparty_fixed::msg::InstantiateMsg as LaunchpartyFixedMsgInstantiate;
 
 const CONTRACT_NAME: &str = "crates.io:bs721-factory";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -34,10 +32,10 @@ pub fn instantiate(
 
     let config = Config {
         owner: deps.api.addr_validate(&msg.owner)?,
-        bs721_metadata_code_id: msg.bs721_metadata_code_id,
+        bs721_code_id: msg.bs721_code_id,
         bs721_royalties_code_id: msg.bs721_royalties_code_id,
-        bs721_simple_sale_code_id: msg.bs721_simple_sale_code_id,
-        bs721_curve_sale_code_id: msg.bs721_curve_sale_code_id,
+        bs721_launchparty_code_id: msg.bs721_launchparty_code_id,
+        bs721_curve_code_id: msg.bs721_curve_code_id,
         protocol_fee_bps: msg.protocol_fee_bps,
         create_nft_sale_fee: msg.create_nft_sale_fee,
     };
@@ -57,27 +55,29 @@ pub fn execute(
     match msg {
         ExecuteMsg::UpdateConfig {
             owner,
-            bs721_metadata_code_id,
+            bs721_code_id,
             bs721_royalties_code_id,
             protocol_fee_bps,
-            bs721_simple_sale_code_id,
-            bs721_curve_sale_code_id,
+            bs721_launchparty_code_id,
+            bs721_curve_code_id,
             create_nft_sale_fee,
         } => execute_update_config(
             deps,
             info,
             owner,
-            bs721_metadata_code_id,
+            bs721_code_id,
             bs721_royalties_code_id,
-            bs721_simple_sale_code_id,
-            bs721_curve_sale_code_id,
+            bs721_launchparty_code_id,
+            bs721_curve_code_id,
             protocol_fee_bps,
             create_nft_sale_fee,
         ),
-        ExecuteMsg::CreateNftSimpleSale(msg) => {
-            execute_create_nft_simple_sale(deps, env, info, msg)
-        }
-        ExecuteMsg::CreateNftCurveSale(msg) => execute_create_nft_curve_sale(deps, env, info, msg),
+        ExecuteMsg::CreateLaunchaparty(msg) => execute_create_launchparty(deps, env, info, msg),
+        ExecuteMsg::CreateCurve(msg) => execute_create_curve(deps, env, info, msg),
+        ExecuteMsg::CreateRoyaltiesGroup {
+            contributors,
+            denom,
+        } => execute_create_royalties_group(deps, env, info, denom, contributors),
     }
 }
 
@@ -85,10 +85,10 @@ fn execute_update_config(
     deps: DepsMut,
     info: MessageInfo,
     owner: Option<String>,
-    bs721_metadata_code_id: Option<u64>,
+    bs721_code_id: Option<u64>,
     bs721_royalties_code_id: Option<u64>,
-    bs721_simple_sale_code_id: Option<u64>,
-    bs721_curve_sale_code_id: Option<u64>,
+    bs721_launchparty_code_id: Option<u64>,
+    bs721_curve_code_id: Option<u64>,
     protocol_fee_bps: Option<u32>,
     create_nft_sale_fee: Option<Coin>,
 ) -> Result<Response, ContractError> {
@@ -102,20 +102,20 @@ fn execute_update_config(
         config.owner = deps.api.addr_validate(&owner)?;
     }
 
-    if let Some(bs721_metadata_code_id) = bs721_metadata_code_id {
-        config.bs721_metadata_code_id = bs721_metadata_code_id;
+    if let Some(bs721_code_id) = bs721_code_id {
+        config.bs721_code_id = bs721_code_id;
     }
 
     if let Some(bs721_royalties_code_id) = bs721_royalties_code_id {
         config.bs721_royalties_code_id = bs721_royalties_code_id;
     }
 
-    if let Some(bs721_simple_sale_code_id) = bs721_simple_sale_code_id {
-        config.bs721_simple_sale_code_id = bs721_simple_sale_code_id;
+    if let Some(bs721_launchparty_code_id) = bs721_launchparty_code_id {
+        config.bs721_launchparty_code_id = bs721_launchparty_code_id;
     }
 
-    if let Some(bs721_curve_sale_code_id) = bs721_curve_sale_code_id {
-        config.bs721_curve_sale_code_id = bs721_curve_sale_code_id;
+    if let Some(bs721_curve_code_id) = bs721_curve_code_id {
+        config.bs721_curve_code_id = bs721_curve_code_id;
     }
 
     if let Some(protocol_fee_bps) = protocol_fee_bps {
@@ -131,11 +131,39 @@ fn execute_update_config(
     Ok(Response::new().add_attribute("action", "update_config"))
 }
 
-fn execute_create_nft_curve_sale(
+fn execute_create_royalties_group(
+    deps: DepsMut,
+    _env: Env,
+    _info: MessageInfo,
+    denom: String,
+    contributors: Vec<bs721_royalties::msg::ContributorMsg>,
+) -> Result<Response, ContractError> {
+    let config = CONFIG.load(deps.storage)?;
+
+    let msg = WasmMsg::Instantiate {
+        admin: Some(config.owner.to_string()),
+        code_id: config.bs721_royalties_code_id,
+        msg: to_binary(&bs721_royalties::msg::InstantiateMsg {
+            denom,
+            contributors,
+        })?,
+        funds: vec![],
+        label: format!(
+            "Bitsong Studio Royalties - codeId: {}",
+            config.bs721_royalties_code_id
+        ),
+    };
+
+    Ok(Response::new()
+        .add_message(msg)
+        .add_attribute("action", "create_royalties_group"))
+}
+
+fn execute_create_curve(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
-    msg: MsgCreateNftCurveSale,
+    msg: MsgCreateCurve,
 ) -> Result<Response, ContractError> {
     let config = CONFIG.load(deps.storage)?;
 
@@ -161,26 +189,28 @@ fn execute_create_nft_curve_sale(
 
     let msg = WasmMsg::Instantiate {
         admin: Some(config.owner.to_string()),
-        code_id: config.bs721_curve_sale_code_id,
+        code_id: config.bs721_curve_code_id,
         msg: to_binary(&Bs721CurveMsgInstantiate {
             symbol: msg.symbol,
+            name: msg.name,
             payment_denom: msg.payment_denom,
             max_per_address: msg.max_per_address,
-            collection_image: msg.collection_image,
-            collection_cover_image: msg.collection_cover_image,
-            metadata: msg.metadata,
+            uri: msg.uri,
+            payment_address: msg.payment_address,
             seller_fee_bps: msg.seller_fee_bps,
             referral_fee_bps: msg.referral_fee_bps,
             protocol_fee_bps: config.protocol_fee_bps as u16,
-            contributors: msg.contributors,
             start_time: msg.start_time,
             max_edition: msg.max_edition,
             ratio: msg.ratio,
-            bs721_metadata_code_id: config.bs721_metadata_code_id,
-            bs721_royalties_code_id: config.bs721_royalties_code_id,
+            bs721_code_id: config.bs721_code_id,
+            bs721_admin: config.owner.to_string(),
         })?,
         funds: vec![],
-        label: format!("Bs721CurveSale-{}", config.bs721_curve_sale_code_id,),
+        label: format!(
+            "Bitsong Studio Curve - codeId: {}",
+            config.bs721_curve_code_id
+        ),
     };
 
     Ok(res
@@ -188,11 +218,11 @@ fn execute_create_nft_curve_sale(
         .add_message(msg))
 }
 
-fn execute_create_nft_simple_sale(
+fn execute_create_launchparty(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
-    msg: MsgCreateNftSimpleSale,
+    msg: MsgCreateLaunchparty,
 ) -> Result<Response, ContractError> {
     let config = CONFIG.load(deps.storage)?;
 
@@ -218,25 +248,27 @@ fn execute_create_nft_simple_sale(
 
     let msg = WasmMsg::Instantiate {
         admin: Some(config.owner.to_string()),
-        code_id: config.bs721_simple_sale_code_id,
+        code_id: config.bs721_launchparty_code_id,
         msg: to_binary(&LaunchpartyFixedMsgInstantiate {
             symbol: msg.symbol,
+            name: msg.name,
+            uri: msg.uri,
             price: msg.price,
             max_per_address: msg.max_per_address,
-            collection_image: msg.collection_image,
-            collection_cover_image: msg.collection_cover_image,
-            metadata: msg.metadata,
             seller_fee_bps: msg.seller_fee_bps,
             referral_fee_bps: msg.referral_fee_bps,
             protocol_fee_bps: config.protocol_fee_bps as u16,
-            contributors: msg.contributors,
             start_time: msg.start_time,
             party_type: msg.party_type,
-            bs721_metadata_code_id: config.bs721_metadata_code_id,
-            bs721_royalties_code_id: config.bs721_royalties_code_id,
+            bs721_code_id: config.bs721_code_id,
+            payment_address: msg.payment_address,
+            bs721_admin: config.owner.to_string(),
         })?,
         funds: vec![],
-        label: format!("Bs721SimpleSale-{}", config.bs721_simple_sale_code_id),
+        label: format!(
+            "Bitsong Studio Launchparty - codeId: {}",
+            config.bs721_launchparty_code_id
+        ),
     };
 
     Ok(res

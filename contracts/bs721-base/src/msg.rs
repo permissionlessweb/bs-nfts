@@ -11,10 +11,6 @@ pub struct InstantiateMsg {
     pub symbol: String,
     /// Uri, optional uri to get more information about the NFT
     pub uri: Option<String>,
-
-    pub image: Option<String>,
-    pub cover_image: Option<String>,
-
     /// The minter is the only one who can create new NFTs.
     /// This is designed for a base NFT that is controlled by an external program
     /// or contract. You will likely replace this with custom logic in custom NFTs
@@ -55,6 +51,9 @@ pub enum ExecuteMsg<T, E> {
 
     /// Mint a new NFT, can only be called by the contract minter
     Mint(MintMsg<T>),
+
+    /// Set a new minter
+    SetMinter { new_minter: String },
 
     /// Burn an NFT the sender has access to
     Burn { token_id: String },

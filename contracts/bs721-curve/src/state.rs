@@ -2,8 +2,6 @@ use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, Timestamp};
 use cw_storage_plus::{Item, Map};
 
-use crate::msg::Metadata;
-
 /// Smart contract configuration structure.
 #[cw_serde]
 pub struct Config {
@@ -11,12 +9,14 @@ pub struct Config {
     pub creator: Addr,
     /// Symbol of the NFT contract
     pub symbol: String,
+    /// Name of the NFT contract
+    pub name: String,
+    /// URI of the NFT contract
+    pub uri: String,
     /// Denom used to pay for the NFTs
     pub payment_denom: String,
     /// Maximum amount of token an address can mint.
     pub max_per_address: Option<u32>,
-    /// On-chain metadata
-    pub metadata: Metadata,
     /// ID of the next NFT that will be minted. The first NFT will be minted with ID == 1.
     pub next_token_id: u32,
     pub seller_fee_bps: u16,
@@ -27,9 +27,9 @@ pub struct Config {
     /// Max edition of the collection launchparty.
     pub max_edition: Option<u32>,
     /// Address of the bs721 metadata-onchain token contract.
-    pub bs721_metadata_address: Option<Addr>,
+    pub bs721_address: Option<Addr>,
     /// Address of the bs721 royalties contract.
-    pub royalties_address: Option<Addr>,
+    pub payment_address: Addr,
     /// Ratio, is the cooeficient of the curve
     pub ratio: u32,
 }
@@ -37,3 +37,16 @@ pub struct Config {
 /// Stores the contract's configuration
 pub const CONFIG: Item<Config> = Item::new("config");
 pub const ADDRESS_TOKENS: Map<&Addr, u32> = Map::new("address_tokens");
+
+#[cw_serde]
+pub struct Trait {
+    pub display_type: Option<String>,
+    pub trait_type: String,
+    pub value: String,
+}
+
+#[cw_serde]
+pub struct EditionMetadata {
+    pub name: String,
+    pub attributes: Option<Vec<Trait>>,
+}

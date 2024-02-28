@@ -8,14 +8,14 @@ pub struct Config {
     /// Address allowed to update contract parameters
     pub owner: Addr,
     /// Code id used to instantiate a bs721 metadata onchain token contract.
-    pub bs721_metadata_code_id: u64,
+    pub bs721_code_id: u64,
     /// Code id used to instantiate bs721 royalties contract. The address of this contract will be used
     /// as the payment address for the NFT mint.
     pub bs721_royalties_code_id: u64,
 
-    pub bs721_simple_sale_code_id: u64,
+    pub bs721_launchparty_code_id: u64,
 
-    pub bs721_curve_sale_code_id: u64,
+    pub bs721_curve_code_id: u64,
     /// Protocol fee as basis points
     pub protocol_fee_bps: u32,
 

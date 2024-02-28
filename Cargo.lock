@@ -63,7 +63,7 @@ dependencies = [
 
 [[package]]
 name = "bs721"
-version = "0.1.0-alpha.1"
+version = "0.1.0-rc1"
 dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
@@ -74,7 +74,7 @@ dependencies = [
 
 [[package]]
 name = "bs721-base"
-version = "0.1.0-alpha.1"
+version = "0.1.0-rc1"
 dependencies = [
  "bs721",
  "cosmwasm-schema",
@@ -90,12 +90,11 @@ dependencies = [
 
 [[package]]
 name = "bs721-curve"
-version = "0.1.0-alpha.1"
+version = "0.1.0-rc1"
 dependencies = [
  "anyhow",
  "bs721",
  "bs721-base",
- "bs721-metadata-onchain",
  "bs721-royalties",
  "cosmos-sdk-proto",
  "cosmwasm-schema",
@@ -113,13 +112,13 @@ dependencies = [
 
 [[package]]
 name = "bs721-factory"
-version = "0.1.0-alpha.1"
+version = "0.1.0-rc1"
 dependencies = [
  "anyhow",
  "bs721",
  "bs721-base",
  "bs721-curve",
- "bs721-metadata-onchain",
+ "bs721-launchparty",
  "bs721-royalties",
  "cosmos-sdk-proto",
  "cosmwasm-schema",
@@ -129,7 +128,6 @@ dependencies = [
  "cw-utils 0.16.0",
  "cw2 0.16.0",
  "derivative",
- "launchparty-fixed",
  "prost 0.11.9",
  "schemars",
  "serde",
@@ -137,21 +135,30 @@ dependencies = [
 ]
 
 [[package]]
-name = "bs721-metadata-onchain"
-version = "0.1.0-alpha.1"
+name = "bs721-launchparty"
+version = "0.1.0-rc1"
 dependencies = [
+ "anyhow",
  "bs721",
  "bs721-base",
+ "bs721-royalties",
+ "cosmos-sdk-proto",
  "cosmwasm-schema",
  "cosmwasm-std",
+ "cw-multi-test",
+ "cw-storage-plus 0.16.0",
+ "cw-utils 0.16.0",
  "cw2 0.16.0",
+ "derivative",
+ "prost 0.11.9",
  "schemars",
  "serde",
+ "thiserror",
 ]
 
 [[package]]
 name = "bs721-royalties"
-version = "0.1.0-alpha.1"
+version = "0.1.0-rc1"
 dependencies = [
  "anyhow",
  "bs721-base",
@@ -669,29 +676,6 @@ dependencies = [
  "ecdsa",
  "elliptic-curve",
  "sha2 0.10.7",
-]
-
-[[package]]
-name = "launchparty-fixed"
-version = "0.1.0-alpha.1"
-dependencies = [
- "anyhow",
- "bs721",
- "bs721-base",
- "bs721-metadata-onchain",
- "bs721-royalties",
- "cosmos-sdk-proto",
- "cosmwasm-schema",
- "cosmwasm-std",
- "cw-multi-test",
- "cw-storage-plus 0.16.0",
- "cw-utils 0.16.0",
- "cw2 0.16.0",
- "derivative",
- "prost 0.11.9",
- "schemars",
- "serde",
- "thiserror",
 ]
 
 [[package]]

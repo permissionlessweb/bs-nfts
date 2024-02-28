@@ -32,8 +32,6 @@ where
             name: msg.name,
             symbol: msg.symbol,
             uri: msg.uri,
-            cover_image: msg.cover_image,
-            image: msg.image,
         };
         self.contract_info.save(deps.storage, &info)?;
 
@@ -53,6 +51,7 @@ where
         msg: ExecuteMsg<T, E>,
     ) -> Result<Response<C>, ContractError> {
         match msg {
+            ExecuteMsg::SetMinter { new_minter } => self.set_minter(deps, env, info, new_minter),
             ExecuteMsg::Mint(msg) => self.mint(deps, env, info, msg),
             ExecuteMsg::Approve {
                 spender,
@@ -89,6 +88,26 @@ where
     E: CustomMsg,
     Q: CustomMsg,
 {
+    pub fn set_minter(
+        &self,
+        deps: DepsMut,
+        _env: Env,
+        info: MessageInfo,
+        new_minter: String,
+    ) -> Result<Response<C>, ContractError> {
+        let minter = self.minter.load(deps.storage)?;
+        if info.sender != minter {
+            return Err(ContractError::Unauthorized {});
+        }
+
+        let new_minter_addr = deps.api.addr_validate(&new_minter)?;
+        self.minter.save(deps.storage, &new_minter_addr)?;
+
+        Ok(Response::new()
+            .add_attribute("action", "set_minter")
+            .add_attribute("new_minter", new_minter))
+    }
+
     pub fn mint(
         &self,
         deps: DepsMut,

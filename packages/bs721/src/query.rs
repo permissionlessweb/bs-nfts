@@ -110,8 +110,6 @@ pub struct ContractInfoResponse {
     pub name: String,
     pub symbol: String,
     pub uri: Option<String>,
-    pub image: Option<String>,
-    pub cover_image: Option<String>,
 }
 
 #[cw_serde]

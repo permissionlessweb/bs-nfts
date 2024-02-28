@@ -1,30 +1,24 @@
 use std::ops::Add;
 
 use crate::error::ContractError;
-use crate::msg::{
-    ConfigResponse, ExecuteMsg, InstantiateMsg, MaxPerAddressResponse, PriceResponse, QueryMsg,
-};
-use crate::state::{Config, ADDRESS_TOKENS, CONFIG};
+use crate::msg::{ExecuteMsg, InstantiateMsg, MaxPerAddressResponse, PriceResponse, QueryMsg};
+use crate::state::{Config, EditionMetadata, Trait, ADDRESS_TOKENS, CONFIG};
 
 use cosmos_sdk_proto::{cosmos::distribution::v1beta1::MsgFundCommunityPool, traits::Message};
 
 use bs721::{Bs721QueryMsg, NumTokensResponse};
-use bs721_base::MintMsg;
-use bs721_metadata_onchain::{
-    ExecuteMsg as Bs721MetadataExecuteMsg, Extension,
-    InstantiateMsg as Bs721MetadataInstantiateMsg, Metadata as BS721Metadata,
+use bs721_base::{
+    ExecuteMsg as Bs721BaseExecuteMsg, InstantiateMsg as Bs721BaseInstantiateMsg, MintMsg,
 };
 
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     attr, coin, to_binary, Addr, Attribute, BankMsg, Binary, Coin, CosmosMsg, Decimal, Deps,
-    DepsMut, Env, MessageInfo, QuerierWrapper, QueryRequest, Reply, ReplyOn, Response, StdError,
-    StdResult, Storage, SubMsg, Uint128, WasmMsg, WasmQuery,
+    DepsMut, Empty, Env, MessageInfo, QuerierWrapper, QueryRequest, Reply, ReplyOn, Response,
+    StdError, StdResult, Storage, SubMsg, Uint128, WasmMsg, WasmQuery,
 };
 use cw2::set_contract_version;
-
-use bs721_royalties::msg::InstantiateMsg as Bs721RoyaltiesInstantiateMsg;
 
 use cw_utils::{must_pay, nonpayable, parse_reply_instantiate_data};
 
@@ -33,8 +27,6 @@ const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// ID used to recognize the instantiate token reply in the reply entry point.
 const INSTANTIATE_TOKEN_REPLY_ID: u64 = 1;
-/// ID used to recognize the instantiate the royalties contract reply in the reply entry point.
-const INSTANTIATE_ROYALTIES_REPLY_ID: u64 = 2;
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
@@ -53,18 +45,22 @@ pub fn instantiate(
         msg.start_time
     };
 
+    let payment_address = deps.api.addr_validate(msg.payment_address.as_str())?;
+    let bs721_admin = deps.api.addr_validate(msg.bs721_admin.as_str())?;
+
     let config = Config {
         creator: info.sender,
         symbol: msg.symbol.clone(),
+        name: msg.name.clone(),
+        uri: msg.uri.clone(),
         payment_denom: msg.payment_denom.clone(),
         max_per_address: msg.max_per_address,
-        bs721_metadata_address: None,
-        metadata: msg.metadata.clone(),
+        bs721_address: None,
         next_token_id: 1, // first token ID is 1
         seller_fee_bps: msg.seller_fee_bps,
         referral_fee_bps: msg.referral_fee_bps,
         protocol_fee_bps: msg.protocol_fee_bps,
-        royalties_address: None,
+        payment_address,
         start_time,
         max_edition: msg.max_edition,
         ratio: msg.ratio,
@@ -73,44 +69,24 @@ pub fn instantiate(
     CONFIG.save(deps.storage, &config)?;
 
     // create submessages to instantiate token and royalties contracts
-    let sub_msgs: Vec<SubMsg> = vec![
-        SubMsg {
-            id: INSTANTIATE_TOKEN_REPLY_ID,
-            msg: WasmMsg::Instantiate {
-                code_id: msg.bs721_metadata_code_id,
-                msg: to_binary(&Bs721MetadataInstantiateMsg {
-                    name: msg.metadata.name.clone(),
-                    symbol: msg.symbol.clone(),
-                    minter: env.contract.address.to_string(),
-                    uri: None,
-                    cover_image: msg.collection_cover_image,
-                    image: Some(msg.collection_image),
-                })?,
-                label: "Bs721-Curve: bs721 metadata contract".to_string(),
-                admin: None,
-                funds: vec![],
-            }
-            .into(),
-            gas_limit: None,
-            reply_on: ReplyOn::Success,
-        },
-        SubMsg {
-            id: INSTANTIATE_ROYALTIES_REPLY_ID,
-            msg: WasmMsg::Instantiate {
-                code_id: msg.bs721_royalties_code_id,
-                msg: to_binary(&Bs721RoyaltiesInstantiateMsg {
-                    denom: msg.payment_denom,
-                    contributors: msg.contributors,
-                })?,
-                label: "Bs721-Curve: royalties contract".to_string(),
-                admin: None,
-                funds: vec![],
-            }
-            .into(),
-            gas_limit: None,
-            reply_on: ReplyOn::Success,
-        },
-    ];
+    let sub_msgs: Vec<SubMsg> = vec![SubMsg {
+        id: INSTANTIATE_TOKEN_REPLY_ID,
+        msg: WasmMsg::Instantiate {
+            code_id: msg.bs721_code_id,
+            msg: to_binary(&Bs721BaseInstantiateMsg {
+                name: msg.name.clone(),
+                symbol: msg.symbol.clone(),
+                minter: env.contract.address.to_string(),
+                uri: Some(msg.uri.clone()),
+            })?,
+            label: "Bitsong Studio Curve Contract".to_string(),
+            admin: Some(bs721_admin.to_string()),
+            funds: vec![],
+        }
+        .into(),
+        gas_limit: None,
+        reply_on: ReplyOn::Success,
+    }];
 
     Ok(Response::new().add_submessages(sub_msgs))
 }
@@ -127,26 +103,14 @@ pub fn reply(deps: DepsMut, _env: Env, reply: Reply) -> Result<Response, Contrac
 
     match reply.id {
         INSTANTIATE_TOKEN_REPLY_ID => {
-            if config.bs721_metadata_address.is_some() {
+            if config.bs721_address.is_some() {
                 return Err(ContractError::Bs721BaseAlreadyLinked {});
             }
 
-            config.bs721_metadata_address =
-                Addr::unchecked(reply_res.contract_address.clone()).into();
+            config.bs721_address = Addr::unchecked(reply_res.contract_address.clone()).into();
 
             res = res
                 .add_attribute("action", "bs721_base_reply")
-                .add_attribute("contract_address", reply_res.contract_address)
-        }
-        INSTANTIATE_ROYALTIES_REPLY_ID => {
-            if config.royalties_address.is_some() {
-                return Err(ContractError::RoyaltiesAlreadyLinked {});
-            }
-
-            config.royalties_address = Addr::unchecked(reply_res.contract_address.clone()).into();
-
-            res = res
-                .add_attribute("action", "royalties_reply")
                 .add_attribute("contract_address", reply_res.contract_address)
         }
         _ => return Err(ContractError::UnknownReplyId {}),
@@ -277,7 +241,7 @@ fn query_supply(querier: QuerierWrapper, storage: &dyn Storage) -> Uint128 {
 
     let query_response: NumTokensResponse = querier
         .query(&QueryRequest::Wasm(WasmQuery::Smart {
-            contract_addr: config.bs721_metadata_address.unwrap().into_string(),
+            contract_addr: config.bs721_address.unwrap().into_string(),
             msg: to_binary(&query_msg).unwrap(),
         }))
         .unwrap();
@@ -308,8 +272,8 @@ fn execute_burn(
     let mut res = Response::new();
     for token_id in token_ids.clone() {
         let burn_msg = WasmMsg::Execute {
-            contract_addr: config.bs721_metadata_address.clone().unwrap().to_string(),
-            msg: to_binary(&Bs721MetadataExecuteMsg::Burn {
+            contract_addr: config.bs721_address.clone().unwrap().to_string(),
+            msg: to_binary(&Bs721BaseExecuteMsg::<Empty, Empty>::Burn {
                 token_id: token_id.to_string(),
             })?,
             funds: vec![],
@@ -350,7 +314,7 @@ fn execute_burn(
 
     // Pay royalties
     bank_msgs.push(BankMsg::Send {
-        to_address: config.royalties_address.clone().unwrap().to_string(),
+        to_address: config.payment_address.clone().to_string(),
         amount: vec![coin(royalties_sum.u128(), payment_denom.clone())],
     });
 
@@ -358,7 +322,7 @@ fn execute_burn(
 
     attributes.push(attr(
         "royalties_recipient",
-        config.royalties_address.clone().unwrap().to_string(),
+        config.payment_address.clone().to_string(),
     ));
 
     // Protocol Fee
@@ -453,30 +417,46 @@ fn execute_mint(
     for _ in 0..amount {
         let token_id = config.next_token_id;
 
-        let metadata = config.metadata.clone();
+        let mut attributes: Vec<Trait> = vec![Trait {
+            trait_type: "Edition".to_string(),
+            value: token_id.to_string(),
+            display_type: Some("number".to_string()),
+        }];
 
-        let mint_msg = Bs721MetadataExecuteMsg::Mint(MintMsg::<Extension> {
-            owner: info.sender.to_string(),
-            token_id: token_id.to_string(),
-            token_uri: None,
-            extension: Some(BS721Metadata {
-                name: Some(format!("{} #{}", metadata.name, token_id.to_string())),
-                description: Some(metadata.description),
-                image: metadata.image,
-                animation_url: metadata.animation_url,
-                attributes: metadata.attributes,
-                background_color: metadata.background_color,
-                external_url: metadata.external_url,
-                image_data: metadata.image_data,
-                media_type: metadata.media_type,
-                // TODO: add editions
-            }),
-            payment_addr: Some(config.royalties_address.clone().unwrap().to_string()),
-            seller_fee_bps: Some(config.seller_fee_bps),
-        });
+        if let Some(max_edition) = config.max_edition {
+            attributes.push(Trait {
+                trait_type: "Max Editions".to_string(),
+                value: max_edition.to_string(),
+                display_type: Some("number".to_string()),
+            });
+            attributes.push(Trait {
+                trait_type: "Edition Type".to_string(),
+                value: "Limited Edition".to_string(),
+                display_type: None,
+            });
+        } else {
+            attributes.push(Trait {
+                trait_type: "Edition Type".to_string(),
+                value: "Open Edition".to_string(),
+                display_type: None,
+            });
+        }
+
+        let mint_msg =
+            Bs721BaseExecuteMsg::<EditionMetadata, Empty>::Mint(MintMsg::<EditionMetadata> {
+                owner: info.sender.to_string(),
+                token_id: token_id.to_string(),
+                token_uri: Some(config.uri.clone()),
+                extension: EditionMetadata {
+                    name: format!("{} #{}", config.name, token_id),
+                    attributes: Some(attributes),
+                },
+                payment_addr: Some(config.payment_address.clone().to_string()),
+                seller_fee_bps: Some(config.seller_fee_bps),
+            });
 
         let msg = WasmMsg::Execute {
-            contract_addr: config.bs721_metadata_address.clone().unwrap().to_string(),
+            contract_addr: config.bs721_address.clone().unwrap().to_string(),
             msg: to_binary(&mint_msg)?,
             funds: vec![],
         };
@@ -511,7 +491,7 @@ fn execute_mint(
 
     // Pay royalties
     bank_msgs.push(BankMsg::Send {
-        to_address: config.royalties_address.clone().unwrap().to_string(),
+        to_address: config.payment_address.clone().to_string(),
         amount: vec![coin(royalties_sum.u128(), payment_denom.clone())],
     });
 
@@ -519,7 +499,7 @@ fn execute_mint(
 
     attributes.push(attr(
         "royalties_recipient",
-        config.royalties_address.clone().unwrap().to_string(),
+        config.payment_address.clone().to_string(),
     ));
 
     // Protocol fee
@@ -566,12 +546,8 @@ pub fn before_mint_checks(
         return Err(ContractError::NotStarted {});
     }
 
-    if config.bs721_metadata_address.is_none() {
+    if config.bs721_address.is_none() {
         return Err(ContractError::Bs721NotLinked {});
-    }
-
-    if config.royalties_address.is_none() {
-        return Err(ContractError::RoyaltiesNotLinked {});
     }
 
     let max_editions = config.max_edition.unwrap_or(0);
@@ -609,24 +585,9 @@ fn query_max_per_address(deps: Deps, address: String) -> StdResult<MaxPerAddress
     Ok(MaxPerAddressResponse { remaining: None })
 }
 
-fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
+fn query_config(deps: Deps) -> StdResult<Config> {
     let config: Config = CONFIG.load(deps.storage)?;
-
-    Ok(ConfigResponse {
-        creator: config.creator,
-        bs721_metadata: config.bs721_metadata_address,
-        bs721_royalties: config.royalties_address,
-        payment_denom: config.payment_denom,
-        max_per_address: config.max_per_address,
-        symbol: config.symbol,
-        metadata: config.metadata,
-        next_token_id: config.next_token_id,
-        seller_fee_bps: config.seller_fee_bps,
-        referral_fee_bps: config.referral_fee_bps,
-        start_time: config.start_time,
-        max_edition: config.max_edition,
-        ratio: config.ratio,
-    })
+    Ok(config)
 }
 
 fn query_buy_price(deps: Deps, amount: Uint128) -> StdResult<PriceResponse> {
@@ -647,8 +608,6 @@ fn query_sell_price(deps: Deps, amount: Uint128) -> StdResult<PriceResponse> {
 #[cfg(test)]
 mod test {
     use cosmwasm_std::{testing::mock_dependencies, Timestamp};
-
-    use crate::msg::Metadata;
 
     use super::*;
 
@@ -681,17 +640,14 @@ mod test {
             symbol: "TEST".to_string(),
             payment_denom: "ubtsg".to_string(),
             max_per_address: None,
-            bs721_metadata_address: None,
-            metadata: Metadata {
-                name: "Test".to_string(),
-                description: "Test".to_string(),
-                ..Default::default()
-            },
+            bs721_address: None,
+            name: "Test".to_string(),
+            uri: "ipfs://Qm......".to_string(),
             next_token_id: 1,
             seller_fee_bps: 0,
             referral_fee_bps: 0,
             protocol_fee_bps: 0,
-            royalties_address: None,
+            payment_address: Addr::unchecked("payment_address"),
             start_time: Timestamp::from_seconds(0),
             max_edition: None,
             ratio: 1,
@@ -714,17 +670,14 @@ mod test {
             symbol: "TEST".to_string(),
             payment_denom: "ubtsg".to_string(),
             max_per_address: None,
-            bs721_metadata_address: None,
-            metadata: Metadata {
-                name: "Test".to_string(),
-                description: "Test".to_string(),
-                ..Default::default()
-            },
+            bs721_address: None,
+            name: "Test".to_string(),
+            uri: "ipfs://Qm......".to_string(),
             next_token_id: 1,
             seller_fee_bps: 0,
             referral_fee_bps: 0,
             protocol_fee_bps: 0,
-            royalties_address: None,
+            payment_address: Addr::unchecked("payment_address"),
             start_time: Timestamp::from_seconds(0),
             max_edition: None,
             ratio: 1,
@@ -735,6 +688,106 @@ mod test {
         assert_eq!(
             compute_base_price(deps.as_ref().storage, Uint128::new(1), Uint128::zero()),
             Uint128::zero()
+        );
+    }
+
+    #[test]
+    fn test_buy_price() {
+        let mut deps = mock_dependencies();
+
+        let config = Config {
+            creator: Addr::unchecked("creator"),
+            symbol: "TEST".to_string(),
+            payment_denom: "ubtsg".to_string(),
+            max_per_address: None,
+            bs721_address: None,
+            name: "Test".to_string(),
+            uri: "ipfs://Qm......".to_string(),
+            next_token_id: 1,
+            seller_fee_bps: 100,
+            referral_fee_bps: 0,
+            protocol_fee_bps: 30,
+            payment_address: Addr::unchecked("payment_address"),
+            start_time: Timestamp::from_seconds(0),
+            max_edition: None,
+            ratio: 1,
+        };
+
+        CONFIG.save(deps.as_mut().storage, &config).unwrap();
+
+        let supply = Uint128::new(0);
+        let amount = Uint128::new(1);
+        let price_response = buy_price(deps.as_ref().storage, supply, amount);
+
+        assert_eq!(
+            price_response.base_price,
+            Decimal::from_ratio(1000000u128, 1u32).to_uint_floor()
+        );
+        assert_eq!(
+            price_response.royalties,
+            Decimal::from_ratio(10000u128, 1u32).to_uint_floor()
+        );
+        assert_eq!(
+            price_response.referral,
+            Decimal::from_ratio(0u128, 1u32).to_uint_floor()
+        );
+        assert_eq!(
+            price_response.protocol_fee,
+            Decimal::from_ratio(3000u128, 1u32).to_uint_floor()
+        );
+        assert_eq!(
+            price_response.total_price,
+            Decimal::from_ratio(1013000u128, 1u32).to_uint_floor()
+        );
+    }
+
+    #[test]
+    fn test_sell_price() {
+        let mut deps = mock_dependencies();
+
+        let config = Config {
+            creator: Addr::unchecked("creator"),
+            symbol: "TEST".to_string(),
+            payment_denom: "ubtsg".to_string(),
+            max_per_address: None,
+            bs721_address: None,
+            name: "Test".to_string(),
+            uri: "ipfs://Qm......".to_string(),
+            next_token_id: 1,
+            seller_fee_bps: 100,
+            referral_fee_bps: 0,
+            protocol_fee_bps: 30,
+            payment_address: Addr::unchecked("payment_address"),
+            start_time: Timestamp::from_seconds(0),
+            max_edition: None,
+            ratio: 1,
+        };
+
+        CONFIG.save(deps.as_mut().storage, &config).unwrap();
+
+        let supply = Uint128::new(1);
+        let amount = Uint128::new(1);
+        let price_response = sell_price(deps.as_ref().storage, supply, amount);
+
+        assert_eq!(
+            price_response.base_price,
+            Decimal::from_ratio(1000000u128, 1u32).to_uint_floor()
+        );
+        assert_eq!(
+            price_response.royalties,
+            Decimal::from_ratio(10000u128, 1u32).to_uint_floor()
+        );
+        assert_eq!(
+            price_response.referral,
+            Decimal::from_ratio(0u128, 1u32).to_uint_floor()
+        );
+        assert_eq!(
+            price_response.protocol_fee,
+            Decimal::from_ratio(3000u128, 1u32).to_uint_floor()
+        );
+        assert_eq!(
+            price_response.total_price,
+            Decimal::from_ratio(987000u128, 1u32).to_uint_floor()
         );
     }
 
@@ -782,17 +835,14 @@ mod test {
                 symbol: "TEST".to_string(),
                 payment_denom: "ubtsg".to_string(),
                 max_per_address: None,
-                bs721_metadata_address: None,
-                metadata: Metadata {
-                    name: "Test".to_string(),
-                    description: "Test".to_string(),
-                    ..Default::default()
-                },
+                bs721_address: None,
+                name: "Test".to_string(),
+                uri: "ipfs://Qm......".to_string(),
                 next_token_id: 1,
                 seller_fee_bps: 0,
                 referral_fee_bps: 0,
                 protocol_fee_bps: 0,
-                royalties_address: None,
+                payment_address: Addr::unchecked("payment_address"),
                 start_time: Timestamp::from_seconds(0),
                 max_edition: None,
                 ratio,

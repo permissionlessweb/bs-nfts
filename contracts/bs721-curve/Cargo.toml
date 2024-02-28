@@ -21,19 +21,18 @@ backtraces = ["cosmwasm-std/backtraces"]
 library = []
 
 [dependencies]
-cosmwasm-schema = { workspace = true }
-cosmwasm-std    = { workspace = true }
-cw-utils        = { workspace = true }
-cw2             = { workspace = true }
-bs721-base      = { workspace = true, features = ["library"] }
-bs721-metadata-onchain  = { version = "0.1.0-alpha.1", path = "../bs721-metadata-onchain", features = ["library"] }
-bs721 = { workspace = true }
-bs721-royalties = { workspace = true, features = ["library"] }
-cw-storage-plus = { workspace = true }
-schemars        = { workspace = true }
-serde           = { workspace = true }
-thiserror       = { workspace = true }
-cosmos-sdk-proto = { version = "0.16.0", default-features = false }
+cosmwasm-schema    = { workspace = true }
+cosmwasm-std       = { workspace = true }
+cw-utils           = { workspace = true }
+cw2                = { workspace = true }
+bs721              = { workspace = true }
+bs721-base         = { workspace = true, features = ["library"] }
+bs721-royalties    = { workspace = true, features = ["library"] }
+cw-storage-plus    = { workspace = true }
+schemars           = { workspace = true }
+serde              = { workspace = true }
+thiserror          = { workspace = true }
+cosmos-sdk-proto   = { version = "0.16.0", default-features = false }
 
 [dev-dependencies]
 prost = "0.11.9"
