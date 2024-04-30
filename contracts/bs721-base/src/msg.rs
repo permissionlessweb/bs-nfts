@@ -1,26 +1,22 @@
-use bs721::Expiration;
-use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::Binary;
-use schemars::JsonSchema;
+use cosmwasm_schema::cw_serde;
+use cosmwasm_schema::QueryResponses;
+use cosmwasm_std::Response;
+use cosmwasm_std::SubMsg;
+use cosmwasm_std::{
+    coin, Addr, BankMsg, Binary, Empty, Event, StdError, StdResult, Timestamp, Uint128,
+};
+use cw721::{
+    AllNftInfoResponse, ApprovalResponse, ApprovalsResponse, ContractInfoResponse, NftInfoResponse,
+    NumTokensResponse, OperatorsResponse, OwnerOfResponse, TokensResponse,
+};
+use cw721_base::msg::MinterResponse;
+use cw721_base::msg::QueryMsg as Cw721QueryMsg;
+use cw_ownable::cw_ownable_execute;
+use cw_ownable::cw_ownable_query;
+use cw_utils::Expiration;
+use bs721::RoyaltyInfoResponse;
 
-#[cw_serde]
-pub struct InstantiateMsg {
-    /// Name of the NFT contract
-    pub name: String,
-    /// Symbol of the NFT contract
-    pub symbol: String,
-    /// Uri, optional uri to get more information about the NFT
-    pub uri: Option<String>,
-
-    /// The minter is the only one who can create new NFTs.
-    /// This is designed for a base NFT that is controlled by an external program
-    /// or contract. You will likely replace this with custom logic in custom NFTs
-    pub minter: String,
-}
-
-/// This is like Bs721ExecuteMsg but we add a Mint command for an owner
-/// to make this stand-alone. You will likely want to remove mint and
-/// use other control logic in any contract that inherits this.
+#[cw_ownable_execute]
 #[cw_serde]
 pub enum ExecuteMsg<T, E> {
     /// Transfer is a base message to move a token to another account without triggering actions
@@ -51,7 +47,18 @@ pub enum ExecuteMsg<T, E> {
     RevokeAll { operator: String },
 
     /// Mint a new NFT, can only be called by the contract minter
-    Mint(MintMsg<T>),
+    Mint {
+        /// Unique ID of the NFT
+        token_id: String,
+        /// The owner of the newly minter NFT
+        owner: String,
+        /// Universal resource identifier for this NFT
+        /// Should point to a JSON file that conforms to the ERC721
+        /// Metadata JSON Schema
+        token_uri: Option<String>,
+        /// Any custom extension used by this contract
+        extension: T,
+    },
 
     /// Burn an NFT the sender has access to
     Burn { token_id: String },
@@ -60,108 +67,179 @@ pub enum ExecuteMsg<T, E> {
     Extension { msg: E },
 }
 
-#[cw_serde]
-pub struct MintMsg<T> {
-    /// Unique ID of the NFT
-    pub token_id: String,
-    /// The owner of the newly minted NFT
-    pub owner: String,
-    /// Universal resource identifier for this NFT
-    /// Should point to a JSON file that conforms to the ERC721
-    /// Metadata JSON Schema
-    pub token_uri: Option<String>,
-    /// Seller fee basis points, 0-10000
-    /// 0 means no fee, 100 means 1%, 10000 means 100%
-    /// This is the fee paid by the buyer to the original creator
-    pub seller_fee_bps: Option<u16>,
-    /// Payment address, is the address that will receive the payment
-    pub payment_addr: Option<String>,
-    /// Any custom extension used by this contract
-    pub extension: T,
-}
-
-#[cw_serde]
+#[cw_ownable_query]
 #[derive(QueryResponses)]
-pub enum QueryMsg<Q: JsonSchema> {
-    /// Return the owner of the given token, error if token does not exist
-    #[returns(bs721::OwnerOfResponse)]
+#[cw_serde]
+pub enum QueryMsg {
+    #[returns(OwnerOfResponse)]
     OwnerOf {
         token_id: String,
-        /// unset or false will filter out expired approvals, you must set to true to see them
         include_expired: Option<bool>,
     },
-    /// Return operator that can access all of the owner's tokens.
-    #[returns(bs721::ApprovalResponse)]
+    #[returns(ApprovalResponse)]
     Approval {
         token_id: String,
         spender: String,
         include_expired: Option<bool>,
     },
-    /// Return approvals that a token has
-    #[returns(bs721::ApprovalsResponse)]
+    #[returns(ApprovalsResponse)]
     Approvals {
         token_id: String,
         include_expired: Option<bool>,
     },
-    /// List all operators that can access all of the owner's tokens
-    #[returns(bs721::OperatorsResponse)]
+    #[returns(OperatorsResponse)]
     AllOperators {
         owner: String,
-        /// unset or false will filter out expired items, you must set to true to see them
         include_expired: Option<bool>,
         start_after: Option<String>,
         limit: Option<u32>,
     },
-    /// Total number of tokens issued
-    #[returns(bs721::NumTokensResponse)]
+    #[returns(NumTokensResponse)]
     NumTokens {},
-
-    /// With MetaData Extension.
-    /// Returns top-level metadata about the contract
-    #[returns(bs721::ContractInfoResponse)]
+    #[returns(ContractInfoResponse)]
     ContractInfo {},
-    /// With MetaData Extension.
-    /// Returns metadata about one particular token, based on *ERC721 Metadata JSON Schema*
-    /// but directly from the contract
-    #[returns(bs721::NftInfoResponse<Q>)]
+    #[returns(NftInfoResponse<Empty>)]
     NftInfo { token_id: String },
-    /// With MetaData Extension.
-    /// Returns the result of both `NftInfo` and `OwnerOf` as one query as an optimization
-    /// for clients
-    #[returns(bs721::AllNftInfoResponse<Q>)]
+    #[returns(AllNftInfoResponse<Empty>)]
     AllNftInfo {
         token_id: String,
-        /// unset or false will filter out expired approvals, you must set to true to see them
         include_expired: Option<bool>,
     },
-
-    /// With Enumerable extension.
-    /// Returns all tokens owned by the given address, [] if unset.
-    #[returns(bs721::TokensResponse)]
+    #[returns(TokensResponse)]
     Tokens {
         owner: String,
         start_after: Option<String>,
         limit: Option<u32>,
     },
-    /// With Enumerable extension.
-    /// Requires pagination. Lists all token_ids controlled by the contract.
-    #[returns(bs721::TokensResponse)]
+    #[returns(TokensResponse)]
     AllTokens {
         start_after: Option<String>,
         limit: Option<u32>,
     },
-
-    /// Return the minter
     #[returns(MinterResponse)]
     Minter {},
-
-    /// Extension query
-    #[returns(())]
-    Extension { msg: Q },
+    #[returns(CollectionInfoResponse)]
+    CollectionInfo {},
 }
 
-/// Shows who can mint these tokens
+impl From<QueryMsg> for Cw721QueryMsg<Empty> {
+    fn from(msg: QueryMsg) -> Cw721QueryMsg<Empty> {
+        match msg {
+            QueryMsg::OwnerOf {
+                token_id,
+                include_expired,
+            } => Cw721QueryMsg::OwnerOf {
+                token_id,
+                include_expired,
+            },
+            QueryMsg::Approval {
+                token_id,
+                spender,
+                include_expired,
+            } => Cw721QueryMsg::Approval {
+                token_id,
+                spender,
+                include_expired,
+            },
+            QueryMsg::Approvals {
+                token_id,
+                include_expired,
+            } => Cw721QueryMsg::Approvals {
+                token_id,
+                include_expired,
+            },
+            QueryMsg::AllOperators {
+                owner,
+                include_expired,
+                start_after,
+                limit,
+            } => Cw721QueryMsg::AllOperators {
+                owner,
+                include_expired,
+                start_after,
+                limit,
+            },
+            QueryMsg::NumTokens {} => Cw721QueryMsg::NumTokens {},
+            QueryMsg::ContractInfo {} => Cw721QueryMsg::ContractInfo {},
+            QueryMsg::NftInfo { token_id } => Cw721QueryMsg::NftInfo { token_id },
+            QueryMsg::AllNftInfo {
+                token_id,
+                include_expired,
+            } => Cw721QueryMsg::AllNftInfo {
+                token_id,
+                include_expired,
+            },
+            QueryMsg::Tokens {
+                owner,
+                start_after,
+                limit,
+            } => Cw721QueryMsg::Tokens {
+                owner,
+                start_after,
+                limit,
+            },
+            QueryMsg::AllTokens { start_after, limit } => {
+                Cw721QueryMsg::AllTokens { start_after, limit }
+            }
+            QueryMsg::Minter {} => Cw721QueryMsg::Minter {},
+            QueryMsg::Ownership {} => Cw721QueryMsg::Ownership {},
+            _ => unreachable!("cannot convert {:?} to Cw721QueryMsg", msg),
+        }
+    }
+}
+
 #[cw_serde]
-pub struct MinterResponse {
-    pub minter: String,
+pub struct CollectionInfoResponse {
+    pub creator: String,
+    pub description: String,
+    pub image: String,
+    pub external_link: Option<String>,
+    pub explicit_content: Option<bool>,
+    pub start_trading_time: Option<Timestamp>,
+    pub royalty_info: Option<RoyaltyInfoResponse>,
+}
+
+impl CollectionInfoResponse {
+    pub fn royalty_payout(
+        &self,
+        collection: Addr,
+        payment: Uint128,
+        protocol_fee: Uint128,
+        finders_fee: Option<Uint128>,
+        res: &mut Response,
+    ) -> StdResult<Uint128> {
+        if let Some(royalty_info) = self.royalty_info.as_ref() {
+            if royalty_info.share.is_zero() {
+                return Ok(Uint128::zero());
+            }
+            let royalty = coin((payment * royalty_info.share).u128(), "ubtsg");
+            if payment < (protocol_fee + finders_fee.unwrap_or(Uint128::zero()) + royalty.amount) {
+                return Err(StdError::generic_err("Fees exceed payment"));
+            }
+            res.messages.push(SubMsg::new(BankMsg::Send {
+                to_address: royalty_info.payment_address.to_string(),
+                amount: vec![royalty.clone()],
+            }));
+
+            let event = Event::new("royalty-payout")
+                .add_attribute("collection", collection.to_string())
+                .add_attribute("amount", royalty.to_string())
+                .add_attribute("recipient", royalty_info.payment_address.to_string());
+            res.events.push(event);
+
+            Ok(royalty.amount)
+        } else {
+            Ok(Uint128::zero())
+        }
+    }
+}
+
+#[cw_serde]
+pub enum NftParams<T> {
+    NftData {
+        token_id: String,
+        owner: String,
+        token_uri: Option<String>,
+        extension: T,
+    },
 }

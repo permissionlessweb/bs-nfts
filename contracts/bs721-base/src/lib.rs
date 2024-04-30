@@ -1,36 +1,46 @@
-mod contract_tests;
+pub mod contract;
 mod error;
-mod execute;
-pub mod helpers;
 pub mod msg;
-mod query;
-pub mod state;
+mod state;
+// pub mod upgrades;
 
 pub use crate::error::ContractError;
-pub use crate::msg::{ExecuteMsg, InstantiateMsg, MintMsg, MinterResponse, QueryMsg};
-pub use crate::state::Bs721Contract;
+pub use crate::state::Sg721Contract;
 use cosmwasm_std::Empty;
+use cw721_base::Extension;
 
-// This is a simple type to let us handle empty extensions
-pub type Extension = Option<Empty>;
+pub type ExecuteMsg = bs721::ExecuteMsg<Extension, Empty>;
+pub type QueryMsg = cw721_base::QueryMsg<Empty>;
 
 pub mod entry {
     use super::*;
+    use crate::{msg::QueryMsg, state::Sg721Contract};
 
     #[cfg(not(feature = "library"))]
     use cosmwasm_std::entry_point;
     use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
+    use cw2::set_contract_version;
+    use cw721_base::Extension;
+    use bs721::InstantiateMsg;
 
-    // This makes a conscious choice on the various generics used by the contract
+    // version info for migration info
+    pub const CONTRACT_NAME: &str = "crates.io:sg721-base";
+    pub const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
+
     #[cfg_attr(not(feature = "library"), entry_point)]
     pub fn instantiate(
         deps: DepsMut,
         env: Env,
         info: MessageInfo,
         msg: InstantiateMsg,
-    ) -> StdResult<Response> {
-        let tract = Bs721Contract::<Extension, Empty, Empty, Empty>::default();
-        tract.instantiate(deps, env, info, msg)
+    ) -> Result<Response, ContractError> {
+        set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+
+        let res = Sg721Contract::<Extension>::default().instantiate(deps, env, info, msg)?;
+
+        Ok(res
+            .add_attribute("contract_name", CONTRACT_NAME)
+            .add_attribute("contract_version", CONTRACT_VERSION))
     }
 
     #[cfg_attr(not(feature = "library"), entry_point)]
@@ -38,15 +48,13 @@ pub mod entry {
         deps: DepsMut,
         env: Env,
         info: MessageInfo,
-        msg: ExecuteMsg<Extension, Empty>,
+        msg: ExecuteMsg,
     ) -> Result<Response, ContractError> {
-        let tract = Bs721Contract::<Extension, Empty, Empty, Empty>::default();
-        tract.execute(deps, env, info, msg)
+        Sg721Contract::<Extension>::default().execute(deps, env, info, msg)
     }
 
     #[cfg_attr(not(feature = "library"), entry_point)]
-    pub fn query(deps: Deps, env: Env, msg: QueryMsg<Empty>) -> StdResult<Binary> {
-        let tract = Bs721Contract::<Extension, Empty, Empty, Empty>::default();
-        tract.query(deps, env, msg)
+    pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
+        Sg721Contract::<Extension>::default().query(deps, env, msg)
     }
 }
