@@ -6,7 +6,7 @@ use bs721::{CollectionInfo, RoyaltyInfo};
 use std::ops::Deref;
 
 type Parent<'a, T> = cw721_base::Cw721Contract<'a, T, Empty, Empty, Empty>;
-pub struct Sg721Contract<'a, T>
+pub struct Bs721Contract<'a, T>
 where
     T: Serialize + DeserializeOwned + Clone,
 {
@@ -18,12 +18,12 @@ where
     pub royalty_updated_at: Item<'a, Timestamp>,
 }
 
-impl<'a, T> Default for Sg721Contract<'a, T>
+impl<'a, T> Default for Bs721Contract<'a, T>
 where
     T: Serialize + DeserializeOwned + Clone,
 {
     fn default() -> Self {
-        Sg721Contract {
+        Bs721Contract {
             parent: cw721_base::Cw721Contract::default(),
             collection_info: Item::new("collection_info"),
             frozen_collection_info: Item::new("frozen_collection_info"),
@@ -32,7 +32,7 @@ where
     }
 }
 
-impl<'a, T> Deref for Sg721Contract<'a, T>
+impl<'a, T> Deref for Bs721Contract<'a, T>
 where
     T: Serialize + DeserializeOwned + Clone,
 {

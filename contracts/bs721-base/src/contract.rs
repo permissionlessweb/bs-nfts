@@ -16,7 +16,7 @@ use bs721::{
 };
 
 use crate::msg::{CollectionInfoResponse, NftParams, QueryMsg};
-use crate::{ContractError, Sg721Contract};
+use crate::{ContractError, Bs721Contract};
 
 use crate::entry::{CONTRACT_NAME, CONTRACT_VERSION};
 
@@ -24,7 +24,7 @@ const MAX_DESCRIPTION_LENGTH: u32 = 512;
 const MAX_SHARE_DELTA_PCT: u64 = 2;
 const MAX_ROYALTY_SHARE_PCT: u64 = 10;
 
-impl<'a, T> Sg721Contract<'a, T>
+impl<'a, T> Bs721Contract<'a, T>
 where
     T: Serialize + DeserializeOwned + Clone,
 {
@@ -56,7 +56,7 @@ where
         self.parent.contract_info.save(deps.storage, &info)?;
         cw_ownable::initialize_owner(deps.storage, deps.api, Some(&msg.minter))?;
 
-        // sg721 instantiation
+        // bs721 instantiation
         if msg.collection_info.description.len() > MAX_DESCRIPTION_LENGTH as usize {
             return Err(ContractError::DescriptionTooLong {});
         }
