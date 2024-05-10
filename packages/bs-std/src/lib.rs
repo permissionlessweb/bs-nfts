@@ -1,0 +1,1 @@
+pub const NATIVE_DENOM: &str = "ubtsg";

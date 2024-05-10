@@ -74,6 +74,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "56953345e39537a3e18bdaeba4cb0c58a78c1f61f361dc0fa7c5c7340ae87c5f"
 
 [[package]]
+name = "bs-std"
+version = "0.1.0-alpha.1"
+dependencies = [
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "schemars",
+ "serde",
+ "thiserror",
+]
+
+[[package]]
 name = "bs721"
 version = "0.1.0-alpha.1"
 dependencies = [
@@ -89,6 +100,7 @@ dependencies = [
 name = "bs721-base"
 version = "0.1.0-alpha.1"
 dependencies = [
+ "bs-std",
  "bs721",
  "cosmwasm-schema",
  "cosmwasm-std",

@@ -24,7 +24,7 @@ pub mod entry {
     use bs721::InstantiateMsg;
 
     // version info for migration info
-    pub const CONTRACT_NAME: &str = "crates.io:bs721-base";
+    pub const CONTRACT_NAME: &str = "crates.io:sg721-base";
     pub const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
     #[cfg_attr(not(feature = "library"), entry_point)]

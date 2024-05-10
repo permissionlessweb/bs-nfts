@@ -156,7 +156,7 @@ where
             ExecuteMsg::UpdateStartTradingTime(start_time) => {
                 self.update_start_trading_time(deps, env, info, start_time)
             }
-            // ExecuteMsg::FreezeCollectionInfo {} => self.freeze_collection_info(deps, env, info),
+            ExecuteMsg::FreezeCollectionInfo {} => self.freeze_collection_info(deps, env, info),
             ExecuteMsg::Mint {
                 token_id,
                 token_uri,
@@ -384,8 +384,8 @@ where
         })
     }
 
-    pub fn migrate(mut deps: DepsMut, _env: Env, _msg: Empty) -> Result<Response, ContractError> {
-        let prev_contract_version = cw2::get_contract_version(deps.storage)?;
+    pub fn migrate(mut _deps: DepsMut, _env: Env, _msg: Empty) -> Result<Response, ContractError> {
+        let prev_contract_version = cw2::get_contract_version(_deps.storage)?;
 
         let valid_contract_names = vec![CONTRACT_NAME.to_string()];
         if !valid_contract_names.contains(&prev_contract_version.contract) {
@@ -399,7 +399,7 @@ where
 
         let mut response = Response::new();
 
-        cw2::set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+        cw2::set_contract_version(_deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
         response = response.add_event(
             Event::new("migrate")

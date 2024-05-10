@@ -20,6 +20,7 @@ cw-controllers  = "1.1.0"
 cw2             = "0.16.0"
 cw20            = "0.16.0"
 bs721           = { version = "0.1.0-alpha.1", path = "./packages/bs721" }
+bs-std           = { version = "0.1.0-alpha.1", path = "./packages/bs-std" }
 bs721-base      = { version = "0.1.0-alpha.1", path = "./contracts/bs721-base" }
 bs721-royalty   = { version = "0.1.0-alpha.1", path = "./contracts/bs721-royalty" }
 cw-storage-plus = "0.16.0"
