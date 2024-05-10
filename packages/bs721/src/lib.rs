@@ -1,6 +1,7 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, Binary, Decimal, Timestamp};
-use cw_ownable::{cw_ownable_execute,Expiration};
+use cw_ownable::cw_ownable_execute;
+use cw_utils::Expiration;
 
 #[cw_ownable_execute]
 #[cw_serde]
