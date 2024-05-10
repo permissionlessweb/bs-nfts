@@ -74,6 +74,30 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "56953345e39537a3e18bdaeba4cb0c58a78c1f61f361dc0fa7c5c7340ae87c5f"
 
 [[package]]
+name = "bs-controllers"
+version = "0.1.0-alpha.1"
+dependencies = [
+ "bs-std",
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cw-storage-plus 0.16.0",
+ "cw-utils 0.16.0",
+ "schemars",
+ "serde",
+ "thiserror",
+]
+
+[[package]]
+name = "bs-mint-hooks-derive"
+version = "0.1.0"
+dependencies = [
+ "bs-controllers",
+ "proc-macro2",
+ "quote",
+ "syn 1.0.109",
+]
+
+[[package]]
 name = "bs-std"
 version = "0.1.0-alpha.1"
 dependencies = [
@@ -1034,6 +1058,21 @@ dependencies = [
  "itoa",
  "ryu",
  "serde",
+]
+
+[[package]]
+name = "sg-mint-hooks"
+version = "0.1.0-alpha.1"
+dependencies = [
+ "bs-controllers",
+ "bs-mint-hooks-derive",
+ "bs-std",
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cw-storage-plus 0.16.0",
+ "schemars",
+ "serde",
+ "thiserror",
 ]
 
 [[package]]
