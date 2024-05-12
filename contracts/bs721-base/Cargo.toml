@@ -1,7 +1,10 @@
 [package]
 name        = "bs721-base"
-authors     = ["Shane Vitarana <s@noreply.publicawesome.com>"]
-description = "Stargaze NFT collection contract"
+authors     = [
+  "Shane Vitarana <s@noreply.publicawesome.com>",
+  "A Hardnett <hard-nett@users.noreply.github.com>"
+]
+description = "Bitsong NFT collection contract"
 version     = { workspace = true }
 edition     = { workspace = true }
 homepage    = { workspace = true }

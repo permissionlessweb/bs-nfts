@@ -1,8 +1,11 @@
 [package]
 name        = "bs-mint-hooks-derive"
-version     = "0.1.0"
-description = "Macros for generating code used by the `sg-mint-hooks` crate"
-authors     = ["Shane Vitarana <s@users.noreply.publicawesome.com>"]
+version     = { workspace = true }
+description = "Macros for generating code used by the `bs-mint-hooks` crate"
+authors     = [
+  "Shane Vitarana <s@users.noreply.publicawesome.com>",
+  "A Hardnett <hard-nett@users.noreply.github.com>"
+]
 edition     = { workspace = true }
 homepage    = { workspace = true }
 repository  = { workspace = true }

@@ -1,6 +1,9 @@
 [package]
 name        = "bs-std"
-authors     = ["Permissionless Web Team"]
+authors     = [
+  "Shane Vitarana <s@noreply.publicawesome.com>",
+  "A Hardnett <hard-nett@users.noreply.github.com>"
+]
 description = "Bindings for CosmWasm contracts to call into custom modules of Bitsong"
 version      = { workspace = true }
 edition     = { workspace = true }

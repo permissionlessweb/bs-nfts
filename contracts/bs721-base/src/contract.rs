@@ -16,7 +16,7 @@ use bs721::{
 };
 
 use crate::msg::{CollectionInfoResponse, NftParams, QueryMsg};
-use crate::{ContractError, Bs721Contract};
+use crate::{Bs721Contract, ContractError};
 
 use crate::entry::{CONTRACT_NAME, CONTRACT_VERSION};
 

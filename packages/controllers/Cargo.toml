@@ -1,6 +1,9 @@
 [package]
 name        = "bs-controllers"
-authors     = ["Shane Vitarana <s@users.noreply.publicawesome.com>"]
+authors     = [
+  "Shane Vitarana <s@noreply.publicawesome.com>",
+  "A Hardnett <hard-nett@users.noreply.github.com>"
+]
 description = "Common controllers we can reuse in many contracts"
 version     = { workspace = true }
 edition     = { workspace = true }

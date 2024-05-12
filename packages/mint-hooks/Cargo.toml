@@ -1,6 +1,9 @@
 [package]
-name        = "sg-mint-hooks"
-authors     = ["Shane Vitarana <s@users.noreply.publicawesome.com>"]
+name        = "bs-mint-hooks"
+authors     = [
+  "Shane Vitarana <s@noreply.publicawesome.com>",
+  "A Hardnett <hard-nett@users.noreply.github.com>"
+]
 description = "Mint hooks to allow extending minting contracts"
 version     = { workspace = true }
 edition     = { workspace = true }

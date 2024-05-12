@@ -1,8 +1,7 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, Addr, BankMsg, Binary, Coin, Decimal, Deps, DepsMut, Env,
-    MessageInfo, Order, Response, StdResult, Storage, Uint128,
+     to_json_binary, Addr, BankMsg, Binary, Coin, Decimal, Deps, DepsMut, Env, MessageInfo, Order, Response, StdResult, Storage, Uint128
 };
 use cw2::set_contract_version;
 use cw_storage_plus::Bound;
@@ -187,10 +186,10 @@ pub fn execute_withdraw(deps: DepsMut, info: MessageInfo) -> Result<Response, Co
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::ListContributors { start_after, limit } => {
-            to_binary(&query_list_contributors(deps, start_after, limit)?)
+            to_json_binary(&query_list_contributors(deps, start_after, limit)?)
         }
-        QueryMsg::WithdrawableAmount {} => to_binary(&query_withdrawable_amount(deps)),
-        QueryMsg::DistributableAmount {} => to_binary(&query_distributable_amount(deps, env)?),
+        QueryMsg::WithdrawableAmount {} => to_json_binary(&query_withdrawable_amount(deps)),
+        QueryMsg::DistributableAmount {} => to_json_binary(&query_distributable_amount(deps, env)?),
     }
 }
 
