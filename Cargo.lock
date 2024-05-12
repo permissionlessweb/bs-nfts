@@ -75,7 +75,7 @@ checksum = "56953345e39537a3e18bdaeba4cb0c58a78c1f61f361dc0fa7c5c7340ae87c5f"
 
 [[package]]
 name = "bs-controllers"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "bs-std",
  "cosmwasm-schema",
@@ -89,7 +89,7 @@ dependencies = [
 
 [[package]]
 name = "bs-mint-hooks"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "bs-controllers",
  "bs-mint-hooks-derive",
@@ -104,7 +104,7 @@ dependencies = [
 
 [[package]]
 name = "bs-mint-hooks-derive"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "bs-controllers",
  "proc-macro2",
@@ -114,7 +114,7 @@ dependencies = [
 
 [[package]]
 name = "bs-std"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
@@ -125,7 +125,7 @@ dependencies = [
 
 [[package]]
 name = "bs721"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
@@ -137,7 +137,7 @@ dependencies = [
 
 [[package]]
 name = "bs721-base"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "bs-std",
  "bs721",
@@ -156,7 +156,7 @@ dependencies = [
 
 [[package]]
 name = "bs721-royalty"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "bs721-base",

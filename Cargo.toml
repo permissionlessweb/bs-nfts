@@ -5,7 +5,7 @@ members = ["packages/*", "contracts/*"]
 resolver = "2"
 
 [workspace.package]
-version       = "0.1.1"
+version       = "0.2.0"
 rust-version = "1.73.0"
 edition       = "2021"
 license       = "Apache-2.0"
@@ -19,11 +19,11 @@ cosmwasm-std    = "1.5.0"
 cw-controllers  = "1.1.0"
 cw2             = "0.16.0"
 cw20            = "0.16.0"
-bs721           = { version = "0.1.0-alpha.1", path = "./packages/bs721" }
-bs-std           = { version = "0.1.0-alpha.1", path = "./packages/bs-std" }
-bs-controllers        = { version = "0.1.0-alpha.1", path = "./packages/controllers" }
-bs721-base      = { version = "0.1.0-alpha.1", path = "./contracts/bs721-base" }
-bs721-royalty   = { version = "0.1.0-alpha.1", path = "./contracts/bs721-royalty" }
+bs721           = { version = "0.2.0", path = "./packages/bs721" }
+bs-std           = { version = "0.2.0", path = "./packages/bs-std" }
+bs-controllers        = { version = "0.2.0", path = "./packages/controllers" }
+bs721-base      = { version = "0.2.0", path = "./contracts/bs721-base" }
+bs721-royalty   = { version = "0.2.0", path = "./contracts/bs721-royalty" }
 cw-storage-plus = "0.16.0"
 cw-utils        = "1.0.1"
 cw721           = "0.18.0"
