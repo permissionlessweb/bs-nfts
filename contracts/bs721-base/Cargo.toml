@@ -3,6 +3,7 @@ name          = "bs721-base"
 description   = "Basic implementation bs721 NFTs based on the original cw721-base"
 authors       = [
   "Angelo Recca <angelorc@users.noreply.github.com>",
+  "A Hardnett <hard-nett@users.noreply.github.com>",
 ]
 version       = { workspace = true }
 edition       = { workspace = true }
@@ -24,7 +25,9 @@ library = []
 cosmwasm-schema = { workspace = true }
 cosmwasm-std    = { workspace = true }
 cw-utils        = { workspace = true }
+cw721-base      = { workspace = true }
 cw2             = { workspace = true }
+cw721             = { workspace = true }
 cw-ownable      = { workspace = true }
 bs721           = { workspace = true }
 bs-std          = { workspace = true }
@@ -32,3 +35,4 @@ cw-storage-plus = { workspace = true }
 schemars        = { workspace = true }
 serde           = { workspace = true }
 thiserror       = { workspace = true }
+url       = { workspace = true }

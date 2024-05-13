@@ -3,14 +3,16 @@ use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use std::marker::PhantomData;
 
-use cosmwasm_std::{Addr, BlockInfo, CustomMsg, StdResult, Storage};
+use cosmwasm_std::{Addr, BlockInfo, CustomMsg, Decimal, Empty, StdResult, Storage, Timestamp};
 
 use bs721::{
-    Bs721, CollectionInfo, ContractInfoResponse, Expiration, RoyaltyInfo, RoyaltyInfoResponse,
+    Bs721, CollectionInfo, ContractInfoResponse, Expiration, RoyaltyInfo,
 };
 use cw_storage_plus::{Index, IndexList, IndexedMap, Item, Map, MultiIndex};
 
-use crate::msg::CollectionInfoResponse;
+use crate::ContractError;
+
+type Parent<'a, T> = cw721_base::Cw721Contract<'a, T, Empty, Empty, Empty>;
 
 pub struct Bs721Contract<'a, T, C, E, Q>
 where
@@ -18,7 +20,9 @@ where
     Q: CustomMsg,
     E: CustomMsg,
 {
+    pub parent: Parent<'a, T>,
     pub contract_info: Item<'a, ContractInfoResponse>,
+    pub royalty_updated_at: Item<'a, Timestamp>,
     pub collection_info: Item<'a, CollectionInfo<RoyaltyInfo>>,
     pub minter: Item<'a, Addr>,
     pub token_count: Item<'a, u64>,
@@ -86,6 +90,8 @@ where
             _custom_query: PhantomData,
             _custom_execute: PhantomData,
             collection_info: Item::new("collection_info"),
+            parent: cw721_base::Cw721Contract::default(),
+            royalty_updated_at: Item::new("royalty_updated_at"),
         }
     }
 
@@ -103,6 +109,16 @@ where
         let val = self.token_count(storage)? - 1;
         self.token_count.save(storage, &val)?;
         Ok(val)
+    }
+
+    pub fn share_validate(share: Decimal) -> Result<Decimal, ContractError> {
+        if share > Decimal::one() {
+            return Err(ContractError::InvalidRoyalties(
+                "Share cannot be greater than 100%".to_string(),
+            ));
+        }
+    
+        Ok(share)
     }
 }
 

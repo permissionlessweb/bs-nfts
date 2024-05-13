@@ -1,7 +1,9 @@
 use bs721::{Expiration, RoyaltyInfoResponse};
 use bs_std::NATIVE_DENOM;
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{coin, Addr, BankMsg, Binary, Event, Response, StdError, StdResult, SubMsg, Timestamp, Uint128};
+use cosmwasm_std::{
+    coin, Addr, BankMsg, Binary, Event, Response, StdError, StdResult, SubMsg, Timestamp, Uint128,
+};
 use schemars::JsonSchema;
 
 /// This is like Bs721ExecuteMsg but we add a Mint command for an owner
@@ -178,7 +180,6 @@ pub struct CollectionInfoResponse {
     pub start_trading_time: Option<Timestamp>,
     pub royalty_info: Option<RoyaltyInfoResponse>,
 }
-
 
 impl CollectionInfoResponse {
     pub fn royalty_payout(

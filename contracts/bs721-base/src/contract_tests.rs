@@ -12,7 +12,6 @@ use crate::{Bs721Contract, ContractError, ExecuteMsg, Extension, MintMsg, QueryM
 const MINTER: &str = "merlin";
 const CONTRACT_NAME: &str = "Magic Power";
 const SYMBOL: &str = "MGK";
-const URI: &str = "";
 
 fn setup_contract(deps: DepsMut<'_>) -> Bs721Contract<'static, Extension, Empty, Empty, Empty> {
     let contract = Bs721Contract::default();
@@ -20,15 +19,7 @@ fn setup_contract(deps: DepsMut<'_>) -> Bs721Contract<'static, Extension, Empty,
         name: CONTRACT_NAME.to_string(),
         symbol: SYMBOL.to_string(),
         minter: String::from(MINTER),
-        collection_info: CollectionInfo {
-            creator: String::from(MINTER),
-            description: "description".to_string(),
-            image: "https:://www.".to_string(),
-            external_link: None,
-            explicit_content: None,
-            start_trading_time: None,
-            royalty_info: None,
-        },
+        collection_info: CollectionInfo::<RoyaltyInfoResponse>::default(),
     };
     let info = mock_info("creator", &[]);
     let res = contract.instantiate(deps, mock_env(), info, msg).unwrap();
@@ -64,7 +55,6 @@ fn proper_instantiation() {
         ContractInfoResponse {
             name: CONTRACT_NAME.to_string(),
             symbol: SYMBOL.to_string(),
-            uri: Some(URI.to_string()),
         }
     );
 

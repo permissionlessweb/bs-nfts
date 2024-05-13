@@ -33,11 +33,15 @@ pub mod entry {
         env: Env,
         info: MessageInfo,
         msg: InstantiateMsg,
-    ) -> StdResult<Response> {
+    ) -> Result<Response, ContractError> {
         cw2::set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
-        let tract = Bs721Contract::<Extension, Empty, Empty, Empty>::default();
-        tract.instantiate(deps, env, info, msg)
+        let res = Bs721Contract::<Extension, Empty, Empty, Empty>::default()
+            .instantiate(deps, env, info, msg)?;
+
+        Ok(res
+            .add_attribute("contract_name", CONTRACT_NAME)
+            .add_attribute("contract_version", CONTRACT_VERSION))
     }
 
     #[cfg_attr(not(feature = "library"), entry_point)]
@@ -47,13 +51,11 @@ pub mod entry {
         info: MessageInfo,
         msg: ExecuteMsg<Extension, Empty>,
     ) -> Result<Response, ContractError> {
-        let tract = Bs721Contract::<Extension, Empty, Empty, Empty>::default();
-        tract.execute(deps, env, info, msg)
+        Bs721Contract::<Extension, Empty, Empty, Empty>::default().execute(deps, env, info, msg)
     }
 
     #[cfg_attr(not(feature = "library"), entry_point)]
     pub fn query(deps: Deps, env: Env, msg: QueryMsg<Empty>) -> StdResult<Binary> {
-        let tract = Bs721Contract::<Extension, Empty, Empty, Empty>::default();
-        tract.query(deps, env, msg)
+        Bs721Contract::<Extension, Empty, Empty, Empty>::default().query(deps, env, msg)
     }
 }

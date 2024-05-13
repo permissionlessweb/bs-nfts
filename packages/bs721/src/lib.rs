@@ -132,10 +132,10 @@ where
 {
     fn default() -> Self {
         CollectionInfo {
-            creator: String::new(),
+            creator: "creator".to_string(),
             description: String::new(),
-            image: String::new(),
-            external_link: Some(String::new()),
+            image: "https://www.beautiful.network".to_string(),
+            external_link: Some("https://www.beautiful.network".to_string()),
             explicit_content: None,
             start_trading_time: None,
             royalty_info: Default::default(),

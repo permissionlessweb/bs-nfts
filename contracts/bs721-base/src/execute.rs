@@ -3,14 +3,20 @@ use serde::Serialize;
 
 use cosmwasm_std::{Binary, CustomMsg, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
 
-use bs721::{Bs721Execute, Bs721ReceiveMsg, ContractInfoResponse, Expiration, InstantiateMsg};
-use cw_utils::maybe_addr;
+use bs721::{
+    Bs721Execute, Bs721ReceiveMsg, CollectionInfo, Expiration, InstantiateMsg, RoyaltyInfo,
+    RoyaltyInfoResponse,
+};
+use cw_utils::{maybe_addr, nonpayable};
+use url::Url;
 
 use crate::error::ContractError;
-use crate::msg::{ExecuteMsg, MintMsg};
-use crate::state::{Approval, Bs721Contract, TokenInfo};
+use crate::msg::{CollectionInfoResponse, ExecuteMsg, MintMsg};
+use crate::state::{self, Approval, Bs721Contract, TokenInfo};
+use cw721::ContractInfoResponse as CW721ContractInfoResponse;
 
 const MAX_SELLER_FEE: u16 = 10000; // mean 100%
+const MAX_DESCRIPTION_LENGTH: u32 = 512;
 
 impl<'a, T, C, E, Q> Bs721Contract<'a, T, C, E, Q>
 where
@@ -22,25 +28,68 @@ where
     pub fn instantiate(
         &self,
         deps: DepsMut,
-        _env: Env,
-        _info: MessageInfo,
+        env: Env,
+        info: MessageInfo,
         msg: InstantiateMsg,
-    ) -> StdResult<Response<C>> {
-        //set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+    ) -> Result<Response, ContractError> {
+        // no funds should be sent to this contract
+        nonpayable(&info)?;
 
-        let info = ContractInfoResponse {
+        let info = CW721ContractInfoResponse {
             name: msg.name,
             symbol: msg.symbol,
-            uri: msg.collection_info.external_link,
         };
-        self.contract_info.save(deps.storage, &info)?;
+
+        self.parent.contract_info.save(deps.storage, &info)?;
+        cw_ownable::initialize_owner(deps.storage, deps.api, Some(&msg.minter))?;
 
         let minter = deps.api.addr_validate(&msg.minter)?;
         self.minter.save(deps.storage, &minter)?;
 
-        cw_ownable::initialize_owner(deps.storage, deps.api, Some(&msg.minter))?;
+        // bs721 instantiation
+        if msg.collection_info.description.len() > MAX_DESCRIPTION_LENGTH as usize {
+            return Err(ContractError::DescriptionTooLong {});
+        }
 
-        Ok(Response::default())
+        let image = Url::parse(&msg.collection_info.image)?;
+
+        if let Some(ref external_link) = msg.collection_info.external_link {
+            Url::parse(external_link)?;
+        }
+
+        let royalty_info: Option<RoyaltyInfo> = match msg.collection_info.royalty_info {
+            Some(royalty_info) => Some(RoyaltyInfo {
+                payment_address: deps.api.addr_validate(&royalty_info.payment_address)?,
+                share: state::Bs721Contract::<'a, T, C, E, Q>::share_validate(royalty_info.share)?,
+                payment_denom: royalty_info.payment_denom,
+            }),
+            None => None,
+        };
+
+        deps.api.addr_validate(&msg.collection_info.creator)?;
+
+        let collection_info = CollectionInfo {
+            creator: msg.collection_info.creator,
+            description: msg.collection_info.description,
+            image: msg.collection_info.image,
+            external_link: msg.collection_info.external_link,
+            explicit_content: msg.collection_info.explicit_content,
+            start_trading_time: msg.collection_info.start_trading_time,
+            royalty_info,
+        };
+
+        self.collection_info.save(deps.storage, &collection_info)?;
+
+        self.royalty_updated_at
+            .save(deps.storage, &env.block.time)?;
+
+            Ok(Response::new()
+            .add_attribute("action", "instantiate")
+            .add_attribute("collection_name", info.name)
+            .add_attribute("collection_symbol", info.symbol)
+            .add_attribute("collection_creator", collection_info.creator)
+            .add_attribute("minter", msg.minter)
+            .add_attribute("image", image.to_string()))
     }
 
     pub fn execute(
@@ -439,5 +488,27 @@ where
             }
             None => Err(ContractError::Unauthorized {}),
         }
+    }
+    pub fn query_collection_info(&self, deps: Deps) -> StdResult<CollectionInfoResponse> {
+        let info = self.collection_info.load(deps.storage)?;
+
+        let royalty_info_res: Option<RoyaltyInfoResponse> = match info.royalty_info {
+            Some(royalty_info) => Some(RoyaltyInfoResponse {
+                payment_address: royalty_info.payment_address.to_string(),
+                share: royalty_info.share,
+                payment_denom: royalty_info.payment_denom,
+            }),
+            None => None,
+        };
+
+        Ok(CollectionInfoResponse {
+            creator: info.creator,
+            description: info.description,
+            image: info.image,
+            external_link: info.external_link,
+            explicit_content: info.explicit_content,
+            start_trading_time: info.start_trading_time,
+            royalty_info: royalty_info_res,
+        })
     }
 }
