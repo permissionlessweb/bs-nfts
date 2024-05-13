@@ -24,6 +24,7 @@ bs-std           = { version = "0.2.0", path = "./packages/bs-std" }
 bs-controllers        = { version = "0.2.0", path = "./packages/controllers" }
 bs721-base      = { version = "0.2.0", path = "./contracts/bs721-base" }
 bs721-royalty   = { version = "0.2.0", path = "./contracts/bs721-royalty" }
+bs721-royalties   = { version = "0.2.0", path = "./contracts/bs721-royalties" }
 cw-storage-plus = "0.16.0"
 cw-utils        = "1.0.1"
 cw721           = "0.18.0"
