@@ -1,13 +1,13 @@
-# SG Mint Hooks Derive
+# Bs Mint Hooks Derive
 
 Adds macros for execute and query enums.
 
 ```rs
-#[sg_mint_hooks_execute]
+#[bs_mint_hooks_execute]
 ```
 
 ```rs
-#[sg_mint_hooks_query]
+#[bs_mint_hooks_query]
 ```
 
 These can be added to minters to enforce mint hooks.

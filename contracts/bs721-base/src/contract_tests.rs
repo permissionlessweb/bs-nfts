@@ -4,7 +4,7 @@ use cosmwasm_std::{from_json, to_json_binary, Addr, CosmosMsg, DepsMut, Empty, R
 
 use bs721::{
     Approval, ApprovalResponse, Bs721Query, Bs721ReceiveMsg, CollectionInfo, ContractInfoResponse,
-    Expiration, InstantiateMsg, NftInfoResponse, OperatorsResponse, OwnerOfResponse,
+    Expiration, InstantiateMsg, NftInfoResponse, OperatorsResponse, OwnerOfResponse, RoyaltyInfoResponse,
 };
 
 use crate::{Bs721Contract, ContractError, ExecuteMsg, Extension, MintMsg, QueryMsg};
@@ -45,15 +45,7 @@ fn proper_instantiation() {
         name: CONTRACT_NAME.to_string(),
         symbol: SYMBOL.to_string(),
         minter: String::from(MINTER),
-        collection_info: CollectionInfo {
-            creator: String::from(MINTER),
-            description: "description".to_string(),
-            image: "https:://www.".to_string(),
-            external_link: Some(URI.to_string()),
-            explicit_content: None,
-            start_trading_time: None,
-            royalty_info: None,
-        },
+        collection_info: CollectionInfo::<RoyaltyInfoResponse>::default(),
     };
     let info = mock_info("creator", &[]);
 

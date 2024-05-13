@@ -135,7 +135,7 @@ where
             creator: String::new(),
             description: String::new(),
             image: String::new(),
-            external_link: None,
+            external_link: Some(String::new()),
             explicit_content: None,
             start_trading_time: None,
             royalty_info: Default::default(),
