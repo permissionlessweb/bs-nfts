@@ -2,16 +2,17 @@ use std::marker::PhantomData;
 
 use bs721::{
     AllNftInfoResponse, Approval, ApprovalResponse, ApprovalsResponse, ContractInfoResponse,
-    NftInfoResponse, NumTokensResponse, OperatorsResponse, OwnerOfResponse, TokensResponse,
+    NftInfoResponse, NumTokensResponse, OperatorsResponse, OwnerOfResponse, RoyaltyInfoResponse,
+    TokensResponse,
 };
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
-    to_json_binary, Addr, CosmosMsg, CustomMsg, QuerierWrapper, StdResult, WasmMsg, WasmQuery,
+    to_json_binary, Addr, CosmosMsg, CustomMsg, Deps, QuerierWrapper, StdResult, WasmMsg, WasmQuery,
 };
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 
-use crate::{ExecuteMsg, QueryMsg};
+use crate::{msg::CollectionInfoResponse, ExecuteMsg, QueryMsg};
 
 #[cw_serde]
 pub struct Bs721Contract<Q: CustomMsg, E: CustomMsg>(

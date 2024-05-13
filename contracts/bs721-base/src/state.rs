@@ -5,8 +5,12 @@ use std::marker::PhantomData;
 
 use cosmwasm_std::{Addr, BlockInfo, CustomMsg, StdResult, Storage};
 
-use bs721::{Bs721, ContractInfoResponse, Expiration};
+use bs721::{
+    Bs721, CollectionInfo, ContractInfoResponse, Expiration, RoyaltyInfo, RoyaltyInfoResponse,
+};
 use cw_storage_plus::{Index, IndexList, IndexedMap, Item, Map, MultiIndex};
+
+use crate::msg::CollectionInfoResponse;
 
 pub struct Bs721Contract<'a, T, C, E, Q>
 where
@@ -15,6 +19,7 @@ where
     E: CustomMsg,
 {
     pub contract_info: Item<'a, ContractInfoResponse>,
+    pub collection_info: Item<'a, CollectionInfo<RoyaltyInfo>>,
     pub minter: Item<'a, Addr>,
     pub token_count: Item<'a, u64>,
     /// Stored as (granter, operator) giving operator full control over granter's account
@@ -78,8 +83,9 @@ where
             operators: Map::new(operator_key),
             tokens: IndexedMap::new(tokens_key, indexes),
             _custom_response: PhantomData,
-            _custom_execute: PhantomData,
             _custom_query: PhantomData,
+            _custom_execute: PhantomData,
+            collection_info: Item::new("collection_info"),
         }
     }
 

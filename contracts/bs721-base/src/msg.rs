@@ -1,6 +1,7 @@
-use bs721::Expiration;
+use bs721::{Expiration, RoyaltyInfoResponse};
+use bs_std::NATIVE_DENOM;
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::Binary;
+use cosmwasm_std::{coin, Addr, BankMsg, Binary, Event, Response, StdError, StdResult, SubMsg, Timestamp, Uint128};
 use schemars::JsonSchema;
 
 /// This is like Bs721ExecuteMsg but we add a Mint command for an owner
@@ -143,6 +144,9 @@ pub enum QueryMsg<Q: JsonSchema> {
     #[returns(MinterResponse)]
     Minter {},
 
+    #[returns(CollectionInfoResponse)]
+    CollectionInfo {},
+
     /// Extension query
     #[returns(())]
     Extension { msg: Q },
@@ -162,4 +166,51 @@ pub enum NftParams<T> {
         token_uri: Option<String>,
         extension: T,
     },
+}
+
+#[cw_serde]
+pub struct CollectionInfoResponse {
+    pub creator: String,
+    pub description: String,
+    pub image: String,
+    pub external_link: Option<String>,
+    pub explicit_content: Option<bool>,
+    pub start_trading_time: Option<Timestamp>,
+    pub royalty_info: Option<RoyaltyInfoResponse>,
+}
+
+
+impl CollectionInfoResponse {
+    pub fn royalty_payout(
+        &self,
+        collection: Addr,
+        payment: Uint128,
+        protocol_fee: Uint128,
+        finders_fee: Option<Uint128>,
+        res: &mut Response,
+    ) -> StdResult<Uint128> {
+        if let Some(royalty_info) = self.royalty_info.as_ref() {
+            if royalty_info.share.is_zero() {
+                return Ok(Uint128::zero());
+            }
+            let royalty = coin((payment * royalty_info.share).u128(), NATIVE_DENOM);
+            if payment < (protocol_fee + finders_fee.unwrap_or(Uint128::zero()) + royalty.amount) {
+                return Err(StdError::generic_err("Fees exceed payment"));
+            }
+            res.messages.push(SubMsg::new(BankMsg::Send {
+                to_address: royalty_info.payment_address.to_string(),
+                amount: vec![royalty.clone()],
+            }));
+
+            let event = Event::new("royalty-payout")
+                .add_attribute("collection", collection.to_string())
+                .add_attribute("amount", royalty.to_string())
+                .add_attribute("recipient", royalty_info.payment_address.to_string());
+            res.events.push(event);
+
+            Ok(royalty.amount)
+        } else {
+            Ok(Uint128::zero())
+        }
+    }
 }
