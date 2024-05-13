@@ -5,9 +5,9 @@ use cosmwasm_schema::{export_schema, export_schema_with_title, remove_schemas, s
 use cosmwasm_std::Empty;
 
 use bs721::{
-    AllNftInfoResponse, ApprovalResponse, ApprovalsResponse, Bs721ExecuteMsg, Bs721QueryMsg,
-    Bs721ReceiveMsg, ContractInfoResponse, NftInfoResponse, NumTokensResponse, OperatorsResponse,
-    OwnerOfResponse, TokensResponse,
+    AllNftInfoResponse, ApprovalResponse, ApprovalsResponse, Bs721QueryMsg, Bs721ReceiveMsg,
+    ContractInfoResponse, ExecuteMsg as Bs721ExecuteMsg, NftInfoResponse, NumTokensResponse,
+    OperatorsResponse, OwnerOfResponse, TokensResponse,
 };
 
 type Extension = Option<Empty>;
@@ -18,7 +18,7 @@ fn main() {
     create_dir_all(&out_dir).unwrap();
     remove_schemas(&out_dir).unwrap();
 
-    export_schema(&schema_for!(Bs721ExecuteMsg), &out_dir);
+    export_schema(&schema_for!(Bs721ExecuteMsg<Empty,Empty>), &out_dir);
     export_schema(&schema_for!(Bs721QueryMsg), &out_dir);
     export_schema(&schema_for!(Bs721ReceiveMsg), &out_dir);
     export_schema_with_title(

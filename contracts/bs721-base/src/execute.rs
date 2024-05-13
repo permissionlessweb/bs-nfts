@@ -3,11 +3,11 @@ use serde::Serialize;
 
 use cosmwasm_std::{Binary, CustomMsg, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
 
-use bs721::{Bs721Execute, Bs721ReceiveMsg, ContractInfoResponse, Expiration};
+use bs721::{Bs721Execute, Bs721ReceiveMsg, ContractInfoResponse, Expiration, InstantiateMsg};
 use cw_utils::maybe_addr;
 
 use crate::error::ContractError;
-use crate::msg::{ExecuteMsg, InstantiateMsg, MintMsg};
+use crate::msg::{ExecuteMsg, MintMsg};
 use crate::state::{Approval, Bs721Contract, TokenInfo};
 
 const MAX_SELLER_FEE: u16 = 10000; // mean 100%
@@ -31,7 +31,7 @@ where
         let info = ContractInfoResponse {
             name: msg.name,
             symbol: msg.symbol,
-            uri: msg.uri,
+            uri: msg.collection_info.external_link,
         };
         self.contract_info.save(deps.storage, &info)?;
 

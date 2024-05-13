@@ -1,6 +1,8 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::Addr;
+use cosmwasm_std::{Addr, Timestamp};
 use cw_utils::Expiration;
+
+use crate::RoyaltyInfoResponse;
 
 #[cw_serde]
 pub enum Bs721QueryMsg {
@@ -142,4 +144,16 @@ pub struct TokensResponse {
     /// If there are more than `limit`, use `start_from` in future queries
     /// to achieve pagination.
     pub tokens: Vec<String>,
+}
+
+
+#[cw_serde]
+pub struct CollectionInfoResponse {
+    pub creator: String,
+    pub description: String,
+    pub image: String,
+    pub external_link: Option<String>,
+    pub explicit_content: Option<bool>,
+    pub start_trading_time: Option<Timestamp>,
+    pub royalty_info: Option<RoyaltyInfoResponse>,
 }

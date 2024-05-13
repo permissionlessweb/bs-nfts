@@ -1,3 +1,4 @@
+use bs721::{CollectionInfo, RoyaltyInfoResponse};
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Env, StdError, Timestamp, Uint128};
 
@@ -12,6 +13,8 @@ pub struct InstantiateMsg {
     pub name: String,
     /// BS721 Uri
     pub uri: String,
+    // BS721 collection_info
+    pub collection_info: CollectionInfo<RoyaltyInfoResponse>,
     /// Denom used to pay for the NFTs
     pub payment_denom: String,
     /// Maximum amount of tokens an address can mint.

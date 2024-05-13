@@ -1,3 +1,4 @@
+use bs721::{CollectionInfo, RoyaltyInfoResponse};
 use bs721_royalties::msg::ContributorMsg;
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Coin, Env, Timestamp};
@@ -27,6 +28,7 @@ pub struct InstantiateMsg {
 
 #[cw_serde]
 pub struct MsgCreateLaunchparty {
+    pub collection_info: CollectionInfo<RoyaltyInfoResponse>,
     /// BS721 token symbol.
     pub symbol: String,
     /// BS721 token name.
@@ -61,6 +63,7 @@ pub struct MsgCreateCurve {
     pub name: String,
     /// BS721 Uri
     pub uri: String,
+    pub collection_info: CollectionInfo<RoyaltyInfoResponse>,
     /// Denom used to pay for the NFTs
     pub payment_denom: String,
     pub payment_address: String,

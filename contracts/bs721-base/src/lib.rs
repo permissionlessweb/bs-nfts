@@ -7,7 +7,7 @@ mod query;
 pub mod state;
 
 pub use crate::error::ContractError;
-pub use crate::msg::{ExecuteMsg, InstantiateMsg, MintMsg, MinterResponse, QueryMsg};
+pub use crate::msg::{ExecuteMsg, MintMsg, MinterResponse, QueryMsg};
 pub use crate::state::Bs721Contract;
 use cosmwasm_std::Empty;
 
@@ -21,6 +21,7 @@ pub const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 pub mod entry {
     use super::*;
 
+    use bs721::InstantiateMsg;
     #[cfg(not(feature = "library"))]
     use cosmwasm_std::entry_point;
     use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult};

@@ -3,13 +3,11 @@ use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
 use cosmwasm_std::{from_json, to_json_binary, Addr, CosmosMsg, DepsMut, Empty, Response, WasmMsg};
 
 use bs721::{
-    Approval, ApprovalResponse, Bs721Query, Bs721ReceiveMsg, ContractInfoResponse, Expiration,
-    NftInfoResponse, OperatorsResponse, OwnerOfResponse,
+    Approval, ApprovalResponse, Bs721Query, Bs721ReceiveMsg, CollectionInfo, ContractInfoResponse,
+    Expiration, InstantiateMsg, NftInfoResponse, OperatorsResponse, OwnerOfResponse,
 };
 
-use crate::{
-    Bs721Contract, ContractError, ExecuteMsg, Extension, InstantiateMsg, MintMsg, QueryMsg,
-};
+use crate::{Bs721Contract, ContractError, ExecuteMsg, Extension, MintMsg, QueryMsg};
 
 const MINTER: &str = "merlin";
 const CONTRACT_NAME: &str = "Magic Power";
@@ -21,8 +19,16 @@ fn setup_contract(deps: DepsMut<'_>) -> Bs721Contract<'static, Extension, Empty,
     let msg = InstantiateMsg {
         name: CONTRACT_NAME.to_string(),
         symbol: SYMBOL.to_string(),
-        uri: Some(URI.to_string()),
         minter: String::from(MINTER),
+        collection_info: CollectionInfo {
+            creator: String::from(MINTER),
+            description: "description".to_string(),
+            image: "https:://www.".to_string(),
+            external_link: None,
+            explicit_content: None,
+            start_trading_time: None,
+            royalty_info: None,
+        },
     };
     let info = mock_info("creator", &[]);
     let res = contract.instantiate(deps, mock_env(), info, msg).unwrap();
@@ -38,8 +44,16 @@ fn proper_instantiation() {
     let msg = InstantiateMsg {
         name: CONTRACT_NAME.to_string(),
         symbol: SYMBOL.to_string(),
-        uri: Some(URI.to_string()),
         minter: String::from(MINTER),
+        collection_info: CollectionInfo {
+            creator: String::from(MINTER),
+            description: "description".to_string(),
+            image: "https:://www.".to_string(),
+            external_link: Some(URI.to_string()),
+            explicit_content: None,
+            start_trading_time: None,
+            royalty_info: None,
+        },
     };
     let info = mock_info("creator", &[]);
 

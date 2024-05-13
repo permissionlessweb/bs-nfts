@@ -1,4 +1,5 @@
 use anyhow::Result as AnyResult;
+use bs721::{CollectionInfo, RoyaltyInfoResponse};
 use cosmwasm_std::{Addr, Coin, Empty, Timestamp};
 use cw_multi_test::{App, AppResponse, Contract, ContractWrapper, Executor};
 use derivative::Derivative;
@@ -69,6 +70,8 @@ pub struct TestSuiteBuilder {
     #[derivative(Default(value = "PartyType::MaxEdition(1)"))]
     pub party_type: PartyType,
     pub init_funds: Vec<(Addr, Vec<Coin>)>,
+    /// End condition of the collection launchparty.
+    pub collection_info: CollectionInfo<RoyaltyInfoResponse>,
 }
 
 impl TestSuiteBuilder {
@@ -87,6 +90,14 @@ impl TestSuiteBuilder {
     /// Helper function to define the end condition of the launchparty.
     pub fn with_party_type(mut self, party_type: PartyType) -> Self {
         self.party_type = party_type;
+        self
+    }
+    /// Helper function to define the end condition of the launchparty.
+    pub fn with_collection_info(
+        mut self,
+        collection_info: CollectionInfo<RoyaltyInfoResponse>,
+    ) -> Self {
+        self.collection_info = collection_info;
         self
     }
 
@@ -119,6 +130,7 @@ impl TestSuiteBuilder {
             bs721_code_id,
             payment_address: "contract2".to_string(),
             bs721_admin: String::from("bs721_admin"),
+            collection_info: self.collection_info.clone(),
         };
 
         app.instantiate_contract(

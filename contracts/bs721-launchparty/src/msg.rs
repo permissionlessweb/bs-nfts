@@ -1,3 +1,4 @@
+use bs721::{CollectionInfo, RoyaltyInfoResponse};
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Coin, Env, Timestamp};
 
@@ -21,6 +22,8 @@ pub struct InstantiateMsg {
     pub name: String,
     /// BS721 Uri
     pub uri: String,
+    /// BS721 Collection metadata
+    pub collection_info: CollectionInfo<RoyaltyInfoResponse>,
     /// Price of single nft minting.
     pub price: Coin,
     /// Maximum amount of tokens an address can mint.
@@ -179,6 +182,15 @@ mod test {
             party_type: PartyType::MaxEdition(1),
             bs721_code_id: 1,
             bs721_admin: "bs721_admin".to_string(),
+            collection_info: CollectionInfo {
+                creator: "creator".to_string(),
+                description: "description".to_string(),
+                image: "https:://www.".to_string(),
+                external_link: None,
+                explicit_content: None,
+                start_trading_time: None,
+                royalty_info: None,
+            },
         };
 
         {

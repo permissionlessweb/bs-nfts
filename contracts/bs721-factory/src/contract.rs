@@ -205,6 +205,7 @@ fn execute_create_curve(
             ratio: msg.ratio,
             bs721_code_id: config.bs721_code_id,
             bs721_admin: config.owner.to_string(),
+            collection_info: msg.collection_info,
         })?,
         funds: vec![],
         label: format!(
@@ -263,6 +264,7 @@ fn execute_create_launchparty(
             bs721_code_id: config.bs721_code_id,
             payment_address: msg.payment_address,
             bs721_admin: config.owner.to_string(),
+            collection_info: msg.collection_info,
         })?,
         funds: vec![],
         label: format!(

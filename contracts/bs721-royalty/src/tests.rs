@@ -3,12 +3,11 @@ use std::fmt::format;
 use cosmwasm_std::{
     coin, coins,
     testing::{mock_dependencies, mock_env, mock_info},
-    Attribute, BankMsg, CosmosMsg, Decimal, DepsMut, Storage, Uint128,
+    Attribute, BankMsg, CosmosMsg, Decimal, DepsMut, Uint128,
 };
 
 use crate::{
-    contract::{execute, query, query_distributable_amount, query_withdrawable_amount},
-    msg::QueryMsg,
+    contract::{execute, query_distributable_amount, query_withdrawable_amount},
     state::DENOM as STATE_DENOM,
 };
 use crate::{

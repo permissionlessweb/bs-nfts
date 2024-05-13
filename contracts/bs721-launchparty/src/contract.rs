@@ -2,17 +2,16 @@ use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InstantiateMsg, MaxPerAddressResponse, PartyType, QueryMsg};
 use crate::state::{Config, EditionMetadata, Trait, ADDRESS_TOKENS, CONFIG};
 
-use bs721_base::{
-    ExecuteMsg as Bs721BaseExecuteMsg, InstantiateMsg as Bs721BaseInstantiateMsg, MintMsg,
-};
+use bs721::{CollectionInfo, InstantiateMsg as Bs721BaseInstantiateMsg};
+use bs721_base::{ExecuteMsg as Bs721BaseExecuteMsg, MintMsg};
 
 use cosmos_sdk_proto::{cosmos::distribution::v1beta1::MsgFundCommunityPool, traits::Message};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    attr, coin, to_json_binary, Addr, Attribute, BankMsg, Binary, Coin, CosmosMsg, Deps, DepsMut, Empty,
-    Env, MessageInfo, Reply, ReplyOn, Response, StdError, StdResult, SubMsg, Timestamp, Uint128,
-    WasmMsg,
+    attr, coin, to_json_binary, Addr, Attribute, BankMsg, Binary, Coin, CosmosMsg, Deps, DepsMut,
+    Empty, Env, MessageInfo, Reply, ReplyOn, Response, StdError, StdResult, SubMsg, Timestamp,
+    Uint128, WasmMsg,
 };
 use cw2::set_contract_version;
 
@@ -54,7 +53,7 @@ pub fn instantiate(
     let bs721_admin = deps.api.addr_validate(msg.bs721_admin.as_str())?;
 
     let config = Config {
-        creator: info.sender,
+        creator: info.sender.clone(),
         symbol: msg.symbol.clone(),
         name: msg.name.clone(),
         uri: msg.uri.clone(),
@@ -81,7 +80,15 @@ pub fn instantiate(
                 name: msg.name.clone(),
                 symbol: msg.symbol.clone(),
                 minter: env.contract.address.to_string(),
-                uri: Some(msg.uri.clone()),
+                collection_info: CollectionInfo {
+                    creator: info.sender.to_string(),
+                    description: msg.collection_info.description.clone(),
+                    image: msg.collection_info.image.clone(),
+                    external_link: msg.collection_info.external_link.clone(),
+                    explicit_content: msg.collection_info.explicit_content.clone(),
+                    start_trading_time: msg.collection_info.start_trading_time.clone(),
+                    royalty_info: msg.collection_info.royalty_info.clone(),
+                },
             })?,
             label: "Bitsong Studio Launchparty Contract".to_string(),
             admin: Some(bs721_admin.to_string()),
@@ -430,7 +437,9 @@ pub fn party_is_active(
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::GetConfig {} => to_json_binary(&query_config(deps)?),
-        QueryMsg::MaxPerAddress { address } => to_json_binary(&query_max_per_address(deps, address)?),
+        QueryMsg::MaxPerAddress { address } => {
+            to_json_binary(&query_max_per_address(deps, address)?)
+        }
     }
 }
 
@@ -461,7 +470,10 @@ fn query_config(deps: Deps) -> StdResult<Config> {
 #[cfg(test)]
 mod tests {
 
+    use std::default;
+
     use super::*;
+    use bs721::RoyaltyInfoResponse;
     use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info, MOCK_CONTRACT_ADDR};
     use cosmwasm_std::{from_json, to_json_binary, SubMsgResponse, SubMsgResult, Timestamp};
     use prost::Message;
@@ -721,6 +733,7 @@ mod tests {
             party_type: PartyType::MaxEdition(1),
             bs721_code_id: BS721_CODE_ID,
             bs721_admin: String::from("bs721_admin"),
+            collection_info: CollectionInfo::<RoyaltyInfoResponse>::default(),
         };
 
         let info = mock_info("creator", &[]);
@@ -747,12 +760,13 @@ mod tests {
             bs721_code_id: BS721_CODE_ID,
             payment_address: String::from(ROYALTIES_CONTRACT_ADDR),
             bs721_admin: String::from("bs721_admin"),
+            collection_info: CollectionInfo::<RoyaltyInfoResponse>::default(),
         };
 
         let info = mock_info("creator", &[]);
         let res = instantiate(deps.as_mut(), env.clone(), info.clone(), msg.clone()).unwrap();
 
-        instantiate(deps.as_mut(), env.clone(), info, msg.clone()).unwrap();
+        instantiate(deps.as_mut(), env.clone(), info.clone(), msg.clone()).unwrap();
 
         assert_eq!(
             res.messages,
@@ -763,7 +777,15 @@ mod tests {
                         name: msg.name.clone(),
                         symbol: msg.symbol.clone(),
                         minter: MOCK_CONTRACT_ADDR.to_string(),
-                        uri: Some(String::from("")),
+                        collection_info: CollectionInfo {
+                            creator: info.sender.clone().to_string(),
+                            description: msg.collection_info.description.clone(),
+                            image: msg.collection_info.image.clone(),
+                            external_link: msg.collection_info.external_link.clone(),
+                            explicit_content: msg.collection_info.explicit_content.clone(),
+                            start_trading_time: msg.collection_info.start_trading_time.clone(),
+                            royalty_info: msg.collection_info.royalty_info.clone(),
+                        }
                     })
                     .unwrap(),
                     funds: vec![],
@@ -841,6 +863,7 @@ mod tests {
             protocol_fee_bps: 3,
             payment_address: String::from(ROYALTIES_CONTRACT_ADDR),
             bs721_admin: String::from("bs721_admin"),
+            collection_info: CollectionInfo::<RoyaltyInfoResponse>::default(),
         };
 
         let info = mock_info("creator", &[coin(1, "ubtsg")]);
@@ -938,6 +961,15 @@ mod tests {
             protocol_fee_bps: 3,
             payment_address: String::from(ROYALTIES_CONTRACT_ADDR),
             bs721_admin: String::from("bs721_admin"),
+            collection_info: CollectionInfo {
+                creator: "creator".to_string(),
+                description: "description".to_string(),
+                image: "https://www.".to_string(),
+                external_link: None,
+                explicit_content: None,
+                start_trading_time: None,
+                royalty_info: None,
+            },
         };
 
         let info = mock_info("creator", &[coin(3, "ubtsg")]);
