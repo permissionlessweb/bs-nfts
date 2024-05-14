@@ -1,22 +1,26 @@
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 
-use cosmwasm_std::{Binary, CustomMsg, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
+use cosmwasm_std::{
+    Binary, CustomMsg, Decimal, Deps, DepsMut, Env, Event, MessageInfo, Response, StdResult,
+};
 
 use bs721::{
-    Bs721Execute, Bs721ReceiveMsg, CollectionInfo, Expiration, InstantiateMsg, RoyaltyInfo,
-    RoyaltyInfoResponse,
+    Bs721Execute, Bs721ReceiveMsg, CollectionInfo, ContractInfoResponse, Expiration, RoyaltyInfo,
+    RoyaltyInfoResponse, UpdateCollectionInfoMsg,
 };
-use cw_utils::{maybe_addr, nonpayable};
+use cw721::ContractInfoResponse as CW721ContractInfoResponse;
+use cw_utils::maybe_addr;
 use url::Url;
 
 use crate::error::ContractError;
-use crate::msg::{CollectionInfoResponse, ExecuteMsg, MintMsg};
+use crate::msg::{ExecuteMsg, InstantiateMsg, MintMsg};
 use crate::state::{self, Approval, Bs721Contract, TokenInfo};
-use cw721::ContractInfoResponse as CW721ContractInfoResponse;
 
 const MAX_SELLER_FEE: u16 = 10000; // mean 100%
 const MAX_DESCRIPTION_LENGTH: u32 = 512;
+const MAX_SHARE_DELTA_PCT: u64 = 2;
+const MAX_ROYALTY_SHARE_PCT: u64 = 10;
 
 impl<'a, T, C, E, Q> Bs721Contract<'a, T, C, E, Q>
 where
@@ -29,17 +33,18 @@ where
         &self,
         deps: DepsMut,
         env: Env,
-        info: MessageInfo,
+        _info: MessageInfo,
         msg: InstantiateMsg,
     ) -> Result<Response, ContractError> {
         // no funds should be sent to this contract
-        nonpayable(&info)?;
+        // nonpayable(&info)?;
+
+        //set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
         let info = CW721ContractInfoResponse {
             name: msg.name,
             symbol: msg.symbol,
         };
-
         self.parent.contract_info.save(deps.storage, &info)?;
         cw_ownable::initialize_owner(deps.storage, deps.api, Some(&msg.minter))?;
 
@@ -50,7 +55,6 @@ where
         if msg.collection_info.description.len() > MAX_DESCRIPTION_LENGTH as usize {
             return Err(ContractError::DescriptionTooLong {});
         }
-
         let image = Url::parse(&msg.collection_info.image)?;
 
         if let Some(ref external_link) = msg.collection_info.external_link {
@@ -83,7 +87,7 @@ where
         self.royalty_updated_at
             .save(deps.storage, &env.block.time)?;
 
-            Ok(Response::new()
+        Ok(Response::default()
             .add_attribute("action", "instantiate")
             .add_attribute("collection_name", info.name)
             .add_attribute("collection_symbol", info.symbol)
@@ -125,6 +129,9 @@ where
             } => self.send_nft(deps, env, info, contract, token_id, msg),
             ExecuteMsg::Burn { token_id } => self.burn(deps, env, info, token_id),
             ExecuteMsg::Extension { msg: _ } => Ok(Response::default()),
+            ExecuteMsg::UpdateCollectionInfo {
+                new_collection_info,
+            } =>self.update_collection_info(deps, env, info, new_collection_info)
         }
     }
 }
@@ -137,6 +144,96 @@ where
     E: CustomMsg,
     Q: CustomMsg,
 {
+    pub fn update_collection_info(
+        &self,
+        deps: DepsMut,
+        env: Env,
+        info: MessageInfo,
+        new_collection_info: UpdateCollectionInfoMsg<RoyaltyInfoResponse>,
+    ) -> Result<Response<C>, ContractError> {
+        let mut collection = self.collection_info.load(deps.storage)?;
+
+        // if self.frozen_collection_info.load(deps.storage)? {
+        //     return Err(ContractError::CollectionInfoFrozen {});
+        // }
+
+        // only creator can update collection info
+        if collection.creator != info.sender {
+            return Err(ContractError::Unauthorized {});
+        }
+
+        if let Some(new_creator) = new_collection_info.creator {
+            deps.api.addr_validate(&new_creator)?;
+            collection.creator = new_creator;
+        }
+
+        collection.description = new_collection_info
+            .description
+            .unwrap_or_else(|| collection.description.to_string());
+        if collection.description.len() > MAX_DESCRIPTION_LENGTH as usize {
+            return Err(ContractError::DescriptionTooLong {});
+        }
+
+        collection.image = new_collection_info
+            .image
+            .unwrap_or_else(|| collection.image.to_string());
+        Url::parse(&collection.image)?;
+
+        collection.external_link = new_collection_info
+            .external_link
+            .unwrap_or_else(|| collection.external_link.as_ref().map(|s| s.to_string()));
+        if collection.external_link.as_ref().is_some() {
+            Url::parse(collection.external_link.as_ref().unwrap())?;
+        }
+
+        collection.explicit_content = new_collection_info.explicit_content;
+
+        if let Some(Some(new_royalty_info_response)) = new_collection_info.royalty_info {
+            let last_royalty_update = self.royalty_updated_at.load(deps.storage)?;
+            if last_royalty_update.plus_seconds(24 * 60 * 60) > env.block.time {
+                return Err(ContractError::InvalidRoyalties(
+                    "Royalties can only be updated once per day".to_string(),
+                ));
+            }
+
+            let new_royalty_info = RoyaltyInfo {
+                payment_address: deps
+                    .api
+                    .addr_validate(&new_royalty_info_response.payment_address)?,
+                share: state::Bs721Contract::<'a, T, C, E, Q>::share_validate(
+                    new_royalty_info_response.share,
+                )?,
+                payment_denom: new_royalty_info_response.payment_denom,
+            };
+
+            if let Some(old_royalty_info) = collection.royalty_info {
+                if old_royalty_info.share < new_royalty_info.share {
+                    let share_delta = new_royalty_info.share.abs_diff(old_royalty_info.share);
+
+                    if share_delta > Decimal::percent(MAX_SHARE_DELTA_PCT) {
+                        return Err(ContractError::InvalidRoyalties(format!(
+                            "Share increase cannot be greater than {MAX_SHARE_DELTA_PCT}%"
+                        )));
+                    }
+                    if new_royalty_info.share > Decimal::percent(MAX_ROYALTY_SHARE_PCT) {
+                        return Err(ContractError::InvalidRoyalties(format!(
+                            "Share cannot be greater than {MAX_ROYALTY_SHARE_PCT}%"
+                        )));
+                    }
+                }
+            }
+
+            collection.royalty_info = Some(new_royalty_info);
+            self.royalty_updated_at
+                .save(deps.storage, &env.block.time)?;
+        }
+
+        self.collection_info.save(deps.storage, &collection)?;
+
+        let event = Event::new("update_collection_info").add_attribute("sender", info.sender);
+        Ok(Response::new().add_event(event))
+    }
+
     pub fn set_minter(
         &self,
         deps: DepsMut,
@@ -488,27 +585,5 @@ where
             }
             None => Err(ContractError::Unauthorized {}),
         }
-    }
-    pub fn query_collection_info(&self, deps: Deps) -> StdResult<CollectionInfoResponse> {
-        let info = self.collection_info.load(deps.storage)?;
-
-        let royalty_info_res: Option<RoyaltyInfoResponse> = match info.royalty_info {
-            Some(royalty_info) => Some(RoyaltyInfoResponse {
-                payment_address: royalty_info.payment_address.to_string(),
-                share: royalty_info.share,
-                payment_denom: royalty_info.payment_denom,
-            }),
-            None => None,
-        };
-
-        Ok(CollectionInfoResponse {
-            creator: info.creator,
-            description: info.description,
-            image: info.image,
-            external_link: info.external_link,
-            explicit_content: info.explicit_content,
-            start_trading_time: info.start_trading_time,
-            royalty_info: royalty_info_res,
-        })
     }
 }

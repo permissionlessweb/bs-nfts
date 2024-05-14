@@ -1,12 +1,8 @@
 [workspace]
 members = ["packages/*", "contracts/*"]
 
-
-resolver = "2"
-
 [workspace.package]
-version       = "0.2.0"
-rust-version = "1.73.0"
+version       = "0.1.0-rc1"
 edition       = "2021"
 license       = "Apache-2.0"
 repository    = "https://github.com/bitsongofficial/bs-nfts"
@@ -14,35 +10,44 @@ homepage      = "https://bitsong.io"
 documentation = "https://docs.bitsong.io"
 
 [workspace.dependencies]
-cosmwasm-schema = "1.5.0"
+cosmwasm-schema = "1.1.5"
 cosmwasm-std    = "1.5.0"
-cw-controllers  = "1.1.0"
 cw2             = "0.16.0"
 cw20            = "0.16.0"
-bs721           = { version = "0.2.0", path = "./packages/bs721" }
-bs-std           = { version = "0.2.0", path = "./packages/bs-std" }
-bs-controllers        = { version = "0.2.0", path = "./packages/controllers" }
-bs721-base      = { version = "0.2.0", path = "./contracts/bs721-base" }
-bs721-royalty   = { version = "0.2.0", path = "./contracts/bs721-royalty" }
-bs721-royalties   = { version = "0.2.0", path = "./contracts/bs721-royalties" }
-cw-storage-plus = "1.2.0"
-cw-utils        = "1.0.1"
 cw721           = "0.18.0"
 cw721-base      = "0.18.0"
+bs721           = { version = "0.1.0-rc1", path = "./packages/bs721" }
+bs721-base      = { version = "0.1.0-rc1", path = "./contracts/bs721-base" }
+bs721-royalties = { version = "0.1.0-rc1", path = "./contracts/bs721-royalties" }
+bs721-factory   = { version = "0.1.0-rc1", path = "./contracts/bs721-factory" }
+cw-storage-plus = "0.16.0"
+cw-utils        = "0.16.0"
+cw-ownable      = "0.5.1"
 schemars        = "0.8.10"
 serde           = { version = "1.0.140", default-features = false, features = ["derive"] }
 thiserror       = "1.0.31"
-url             = "2.2.2"
 
-semver     = "1"
-cw-ownable = "0.5.1"
-anybuf     = "0.3.0"
+url             = "2.2.2"
+bs-std           = { version = "0.1.0-rc1", path = "./packages/bs-std" }
+bs-controllers        = { version = "0.1.0-rc1", path = "./packages/controllers" }
 
 [profile.release.package.bs721-base]
 codegen-units = 1
 incremental = false
 
-[profile.release.package.bs721-royalty]
+[profile.release.package.bs721-curve]
+codegen-units = 1
+incremental = false
+
+[profile.release.package.bs721-factory]
+codegen-units = 1
+incremental = false
+
+[profile.release.package.bs721-launchparty]
+codegen-units = 1
+incremental = false
+
+[profile.release.package.bs721-royalties]
 codegen-units = 1
 incremental = false
 

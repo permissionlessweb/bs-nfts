@@ -1,23 +1,28 @@
 #![cfg(test)]
 use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
-use cosmwasm_std::{from_json, to_json_binary, Addr, CosmosMsg, DepsMut, Empty, Response, WasmMsg};
-
-use bs721::{
-    Approval, ApprovalResponse, Bs721Query, Bs721ReceiveMsg, CollectionInfo, ContractInfoResponse,
-    Expiration, InstantiateMsg, NftInfoResponse, OperatorsResponse, OwnerOfResponse, RoyaltyInfoResponse,
+use cosmwasm_std::{
+    from_json, to_json_binary, Addr, CosmosMsg, DepsMut, Empty, Response, WasmMsg,
 };
 
-use crate::{Bs721Contract, ContractError, ExecuteMsg, Extension, MintMsg, QueryMsg};
+use bs721::{
+    Approval, ApprovalResponse, Bs721Query, Bs721ReceiveMsg, CollectionInfo, ContractInfoResponse, Expiration, NftInfoResponse, OperatorsResponse, OwnerOfResponse, RoyaltyInfoResponse
+};
+
+use crate::{
+    Bs721Contract, ContractError, ExecuteMsg, Extension, InstantiateMsg, MintMsg, QueryMsg,
+};
 
 const MINTER: &str = "merlin";
 const CONTRACT_NAME: &str = "Magic Power";
 const SYMBOL: &str = "MGK";
+const URI: &str = "";
 
 fn setup_contract(deps: DepsMut<'_>) -> Bs721Contract<'static, Extension, Empty, Empty, Empty> {
     let contract = Bs721Contract::default();
     let msg = InstantiateMsg {
         name: CONTRACT_NAME.to_string(),
         symbol: SYMBOL.to_string(),
+        uri: Some(URI.to_string()),
         minter: String::from(MINTER),
         collection_info: CollectionInfo::<RoyaltyInfoResponse>::default(),
     };
@@ -35,6 +40,7 @@ fn proper_instantiation() {
     let msg = InstantiateMsg {
         name: CONTRACT_NAME.to_string(),
         symbol: SYMBOL.to_string(),
+        uri: Some(URI.to_string()),
         minter: String::from(MINTER),
         collection_info: CollectionInfo::<RoyaltyInfoResponse>::default(),
     };

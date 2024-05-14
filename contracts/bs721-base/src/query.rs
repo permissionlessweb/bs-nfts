@@ -8,12 +8,12 @@ use cosmwasm_std::{
 use bs721::{
     AllNftInfoResponse, ApprovalResponse, ApprovalsResponse, Bs721Query, ContractInfoResponse,
     Expiration, NftInfoResponse, NumTokensResponse, OperatorsResponse, OwnerOfResponse,
-    TokensResponse,
+    RoyaltyInfoResponse, TokensResponse,
 };
 use cw_storage_plus::Bound;
 use cw_utils::maybe_addr;
 
-use crate::msg::{MinterResponse, QueryMsg};
+use crate::msg::{CollectionInfoResponse, MinterResponse, QueryMsg};
 use crate::state::{Approval, Bs721Contract, TokenInfo};
 
 const DEFAULT_LIMIT: u32 = 10;
@@ -292,9 +292,33 @@ where
                 token_id,
                 include_expired.unwrap_or(false),
             )?),
-            QueryMsg::Extension { msg: _ } => Ok(Binary::default()),
             QueryMsg::CollectionInfo {} => to_json_binary(&self.query_collection_info(deps)?),
+
+            QueryMsg::Extension { msg: _ } => Ok(Binary::default()),
         }
+    }
+
+    pub fn query_collection_info(&self, deps: Deps) -> StdResult<CollectionInfoResponse> {
+        let info = self.collection_info.load(deps.storage)?;
+
+        let royalty_info_res: Option<RoyaltyInfoResponse> = match info.royalty_info {
+            Some(royalty_info) => Some(RoyaltyInfoResponse {
+                payment_address: royalty_info.payment_address.to_string(),
+                share: royalty_info.share,
+                payment_denom: royalty_info.payment_denom,
+            }),
+            None => None,
+        };
+
+        Ok(CollectionInfoResponse {
+            creator: info.creator,
+            description: info.description,
+            image: info.image,
+            external_link: info.external_link,
+            explicit_content: info.explicit_content,
+            start_trading_time: info.start_trading_time,
+            royalty_info: royalty_info_res,
+        })
     }
 }
 

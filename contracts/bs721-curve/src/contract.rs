@@ -6,9 +6,10 @@ use crate::state::{Config, EditionMetadata, Trait, ADDRESS_TOKENS, CONFIG};
 
 use cosmos_sdk_proto::{cosmos::distribution::v1beta1::MsgFundCommunityPool, traits::Message};
 
-use bs721::{Bs721QueryMsg, NumTokensResponse};
-use bs721::{CollectionInfo, InstantiateMsg as Bs721BaseInstantiateMsg};
-use bs721_base::{ExecuteMsg as Bs721BaseExecuteMsg, MintMsg};
+use bs721::{Bs721QueryMsg, CollectionInfo, NumTokensResponse, RoyaltyInfoResponse};
+use bs721_base::{
+    ExecuteMsg as Bs721BaseExecuteMsg, InstantiateMsg as Bs721BaseInstantiateMsg, MintMsg,
+};
 
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
@@ -48,7 +49,7 @@ pub fn instantiate(
     let bs721_admin = deps.api.addr_validate(msg.bs721_admin.as_str())?;
 
     let config = Config {
-        creator: info.sender.clone(),
+        creator: info.sender,
         symbol: msg.symbol.clone(),
         name: msg.name.clone(),
         uri: msg.uri.clone(),
@@ -76,15 +77,8 @@ pub fn instantiate(
                 name: msg.name.clone(),
                 symbol: msg.symbol.clone(),
                 minter: env.contract.address.to_string(),
-                collection_info: CollectionInfo {
-                    creator: info.sender.to_string(),
-                    description: msg.collection_info.description.clone(),
-                    image: msg.collection_info.image.clone(),
-                    external_link: Some(msg.uri.clone()),
-                    explicit_content: msg.collection_info.explicit_content.clone(),
-                    start_trading_time: msg.collection_info.start_trading_time.clone(),
-                    royalty_info: msg.collection_info.royalty_info.clone(),
-                },
+                uri: Some(msg.uri.clone()),
+                collection_info: CollectionInfo::<RoyaltyInfoResponse>::default(),
             })?,
             label: "Bitsong Studio Curve Contract".to_string(),
             admin: Some(bs721_admin.to_string()),

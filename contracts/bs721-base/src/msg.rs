@@ -1,10 +1,22 @@
-use bs721::{Expiration, RoyaltyInfoResponse};
-use bs_std::NATIVE_DENOM;
+use bs721::{CollectionInfo, Expiration, RoyaltyInfoResponse, UpdateCollectionInfoMsg};
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{
-    coin, Addr, BankMsg, Binary, Event, Response, StdError, StdResult, SubMsg, Timestamp, Uint128,
-};
+use cosmwasm_std::{Binary, Timestamp};
 use schemars::JsonSchema;
+
+#[cw_serde]
+pub struct InstantiateMsg {
+    /// Name of the NFT contract
+    pub name: String,
+    /// Symbol of the NFT contract
+    pub symbol: String,
+    /// Uri, optional uri to get more information about the NFT
+    pub uri: Option<String>,
+    /// The minter is the only one who can create new NFTs.
+    /// This is designed for a base NFT that is controlled by an external program
+    /// or contract. You will likely replace this with custom logic in custom NFTs
+    pub minter: String,
+    pub collection_info: CollectionInfo<RoyaltyInfoResponse>,
+}
 
 /// This is like Bs721ExecuteMsg but we add a Mint command for an owner
 /// to make this stand-alone. You will likely want to remove mint and
@@ -12,7 +24,10 @@ use schemars::JsonSchema;
 #[cw_serde]
 pub enum ExecuteMsg<T, E> {
     /// Transfer is a base message to move a token to another account without triggering actions
-    TransferNft { recipient: String, token_id: String },
+    TransferNft {
+        recipient: String,
+        token_id: String,
+    },
     /// Send is a base message to transfer a token to a contract and trigger an action
     /// on the receiving contract.
     SendNft {
@@ -28,7 +43,10 @@ pub enum ExecuteMsg<T, E> {
         expires: Option<Expiration>,
     },
     /// Remove previously granted Approval
-    Revoke { spender: String, token_id: String },
+    Revoke {
+        spender: String,
+        token_id: String,
+    },
     /// Allows operator to transfer / send any token from the owner's account.
     /// If expiration is set, then this allowance has a time/height limit
     ApproveAll {
@@ -36,19 +54,30 @@ pub enum ExecuteMsg<T, E> {
         expires: Option<Expiration>,
     },
     /// Remove previously granted ApproveAll permission
-    RevokeAll { operator: String },
+    RevokeAll {
+        operator: String,
+    },
 
     /// Mint a new NFT, can only be called by the contract minter
     Mint(MintMsg<T>),
 
     /// Set a new minter
-    SetMinter { new_minter: String },
+    SetMinter {
+        new_minter: String,
+    },
 
     /// Burn an NFT the sender has access to
-    Burn { token_id: String },
+    Burn {
+        token_id: String,
+    },
 
-    /// Extension msg
-    Extension { msg: E },
+    /// Update collection info
+    UpdateCollectionInfo {
+        new_collection_info: UpdateCollectionInfoMsg<RoyaltyInfoResponse>,
+    },
+    Extension {
+        msg: E,
+    },
 }
 
 #[cw_serde]
@@ -149,6 +178,7 @@ pub enum QueryMsg<Q: JsonSchema> {
     #[returns(CollectionInfoResponse)]
     CollectionInfo {},
 
+
     /// Extension query
     #[returns(())]
     Extension { msg: Q },
@@ -161,16 +191,6 @@ pub struct MinterResponse {
 }
 
 #[cw_serde]
-pub enum NftParams<T> {
-    NftData {
-        token_id: String,
-        owner: String,
-        token_uri: Option<String>,
-        extension: T,
-    },
-}
-
-#[cw_serde]
 pub struct CollectionInfoResponse {
     pub creator: String,
     pub description: String,
@@ -179,39 +199,4 @@ pub struct CollectionInfoResponse {
     pub explicit_content: Option<bool>,
     pub start_trading_time: Option<Timestamp>,
     pub royalty_info: Option<RoyaltyInfoResponse>,
-}
-
-impl CollectionInfoResponse {
-    pub fn royalty_payout(
-        &self,
-        collection: Addr,
-        payment: Uint128,
-        protocol_fee: Uint128,
-        finders_fee: Option<Uint128>,
-        res: &mut Response,
-    ) -> StdResult<Uint128> {
-        if let Some(royalty_info) = self.royalty_info.as_ref() {
-            if royalty_info.share.is_zero() {
-                return Ok(Uint128::zero());
-            }
-            let royalty = coin((payment * royalty_info.share).u128(), NATIVE_DENOM);
-            if payment < (protocol_fee + finders_fee.unwrap_or(Uint128::zero()) + royalty.amount) {
-                return Err(StdError::generic_err("Fees exceed payment"));
-            }
-            res.messages.push(SubMsg::new(BankMsg::Send {
-                to_address: royalty_info.payment_address.to_string(),
-                amount: vec![royalty.clone()],
-            }));
-
-            let event = Event::new("royalty-payout")
-                .add_attribute("collection", collection.to_string())
-                .add_attribute("amount", royalty.to_string())
-                .add_attribute("recipient", royalty_info.payment_address.to_string());
-            res.events.push(event);
-
-            Ok(royalty.amount)
-        } else {
-            Ok(Uint128::zero())
-        }
-    }
 }
