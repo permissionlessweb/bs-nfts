@@ -20,8 +20,8 @@ bs721           = { version = "0.1.0-rc1", path = "./packages/bs721" }
 bs721-base      = { version = "0.1.0-rc1", path = "./contracts/bs721-base" }
 bs721-royalties = { version = "0.1.0-rc1", path = "./contracts/bs721-royalties" }
 bs721-factory   = { version = "0.1.0-rc1", path = "./contracts/bs721-factory" }
-cw-storage-plus = "0.16.0"
-cw-utils        = "0.16.0"
+cw-storage-plus = "1.2.0"
+cw-utils        = "1.0.3"
 cw-ownable      = "0.5.1"
 schemars        = "0.8.10"
 serde           = { version = "1.0.140", default-features = false, features = ["derive"] }

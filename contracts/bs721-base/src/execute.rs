@@ -2,11 +2,11 @@ use serde::de::DeserializeOwned;
 use serde::Serialize;
 
 use cosmwasm_std::{
-    Binary, CustomMsg, Decimal, Deps, DepsMut, Env, Event, MessageInfo, Response, StdResult,
+    Binary, CustomMsg, Decimal, Deps, DepsMut, Env, Event, MessageInfo, Response,
 };
 
 use bs721::{
-    Bs721Execute, Bs721ReceiveMsg, CollectionInfo, ContractInfoResponse, Expiration, RoyaltyInfo,
+    Bs721Execute, Bs721ReceiveMsg, CollectionInfo, Expiration, RoyaltyInfo,
     RoyaltyInfoResponse, UpdateCollectionInfoMsg,
 };
 use cw721::ContractInfoResponse as CW721ContractInfoResponse;
