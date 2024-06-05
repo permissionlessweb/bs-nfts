@@ -1134,6 +1134,33 @@ dependencies = [
 ]
 
 [[package]]
+name = "profile-minter"
+version = "0.1.0-rc1"
+dependencies = [
+ "anyhow",
+ "bs-profile",
+ "bs-std",
+ "bs721",
+ "bs721-base",
+ "bs721-profile",
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cw-controllers",
+ "cw-multi-test 1.1.0",
+ "cw-storage-macro",
+ "cw-storage-plus 1.2.0",
+ "cw-utils 1.0.3",
+ "cw2 1.1.2",
+ "cw721 0.18.0",
+ "cw721-base 0.18.0",
+ "profile-marketplace",
+ "schemars",
+ "semver",
+ "serde",
+ "thiserror",
+]
+
+[[package]]
 name = "prost"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"

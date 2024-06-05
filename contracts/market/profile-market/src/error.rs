@@ -1,4 +1,4 @@
-use cosmwasm_std::{Instantiate2AddressError, StdError, Uint128};
+use cosmwasm_std::{Coin, Instantiate2AddressError, StdError, Uint128};
 use cw_utils::PaymentError;
 use bs_controllers::HookError;
 use thiserror::Error;
@@ -28,6 +28,9 @@ pub enum ContractError {
 
     #[error("UnauthorizedMinter")]
     UnauthorizedMinter {},
+
+    #[error("InsufficientRenewalFunds: expected {expected}, actual {actual}")]
+    InsufficientRenewalFunds { expected: Coin, actual: Coin },
 
     #[error("UnauthorizedOwner")]
     UnauthorizedOwner {},

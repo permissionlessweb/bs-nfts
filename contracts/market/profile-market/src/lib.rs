@@ -1,5 +1,5 @@
 mod error;
-mod helpers;
+pub mod helpers;
 pub mod hooks;
 pub mod commands;
 pub mod contract;

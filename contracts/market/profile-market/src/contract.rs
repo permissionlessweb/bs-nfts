@@ -32,6 +32,11 @@ pub fn instantiate(
         trading_fee_percent: Decimal::percent(msg.trading_fee_bps) / Uint128::from(100u128),
         min_price: msg.min_price,
         ask_interval: msg.ask_interval,
+        max_renewals_per_block: msg.max_renewals_per_block,
+        valid_bid_query_limit: msg.valid_bid_query_limit,
+        renew_window: msg.renew_window,
+        renewal_bid_percentage: msg.renewal_bid_percentage,
+        operator: deps.api.addr_validate(&msg.operator)?,
     };
 
     SUDO_PARAMS.save(deps.storage, &params)?;
@@ -72,6 +77,7 @@ pub fn execute(
         ExecuteMsg::FundRenewal { token_id } => execute_fund_renewal(deps, info, &token_id),
         ExecuteMsg::RefundRenewal { token_id } => execute_refund_renewal(deps, info, &token_id),
         ExecuteMsg::ProcessRenewals { time } => execute_process_renewal(deps, env, time),
+        ExecuteMsg::Renew { token_id } => execute_renew(deps, env, info, &token_id),
     }
 }
 
@@ -94,6 +100,24 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
             start_after,
             limit,
         )?),
+        QueryMsg::AsksByRenewTime {
+            max_time,
+            start_after,
+            limit,
+        } => to_json_binary(&query_asks_by_renew_time(
+            deps,
+            max_time,
+            start_after,
+            limit,
+        )?),
+        QueryMsg::AskRenewPrice {
+            current_time,
+            token_id,
+        } => to_json_binary(&query_ask_renew_price(deps, current_time, token_id)?),
+        QueryMsg::AskRenewalPrices {
+            current_time,
+            token_ids,
+        } => to_json_binary(&query_ask_renew_prices(deps, current_time, token_ids)?),
         QueryMsg::AskCount {} => to_json_binary(&query_ask_count(deps)?),
         QueryMsg::Bid { token_id, bidder } => {
             to_json_binary(&query_bid(deps, token_id, api.addr_validate(&bidder)?)?)
@@ -179,4 +203,37 @@ pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, C
     // set new contract version
     set_contract_version(deps.storage, PROFILE_MARKETPLACE, CONTRACT_VERSION)?;
     Ok(Response::new())
+}
+
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn sudo(deps: DepsMut, env: Env, msg: SudoMsg) -> Result<Response, ContractError> {
+    let api = deps.api;
+
+    match msg {
+        SudoMsg::UpdateParams {
+            trading_fee_bps,
+            min_price,
+            ask_interval,
+        } => sudo_update_params(
+            deps,
+            env,
+            ParamInfo {
+                trading_fee_bps,
+                min_price,
+                ask_interval,
+            },
+        ),
+        SudoMsg::AddSaleHook { hook } => sudo_add_sale_hook(deps, api.addr_validate(&hook)?),
+        SudoMsg::AddAskHook { hook } => sudo_add_ask_hook(deps, env, api.addr_validate(&hook)?),
+        SudoMsg::AddBidHook { hook } => sudo_add_bid_hook(deps, env, api.addr_validate(&hook)?),
+        SudoMsg::RemoveSaleHook { hook } => sudo_remove_sale_hook(deps, api.addr_validate(&hook)?),
+        SudoMsg::RemoveAskHook { hook } => sudo_remove_ask_hook(deps, api.addr_validate(&hook)?),
+        SudoMsg::RemoveBidHook { hook } => sudo_remove_bid_hook(deps, api.addr_validate(&hook)?),
+        SudoMsg::UpdateProfileCollection { collection } => {
+            sudo_update_name_collection(deps, api.addr_validate(&collection)?)
+        }
+        SudoMsg::UpdateAccountFactory { factory } => {
+            sudo_update_name_minter(deps, api.addr_validate(&factory)?)
+        }
+    }
 }

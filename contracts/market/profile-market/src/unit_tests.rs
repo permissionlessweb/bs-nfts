@@ -92,6 +92,11 @@ fn setup_contract(deps: DepsMut) {
         ask_interval: 60,
         factory: Addr::unchecked("factory".to_string()),
         collection: Addr::unchecked("profile_collection".to_string()),
+        max_renewals_per_block: todo!(),
+        valid_bid_query_limit: todo!(),
+        renew_window: todo!(),
+        renewal_bid_percentage: todo!(),
+        operator: todo!(),
     };
     let info = mock_info(CREATOR, &[]);
     let res = instantiate(deps, mock_env(), info, msg).unwrap();
@@ -108,6 +113,11 @@ fn proper_initialization() {
         ask_interval: 60,
         factory: Addr::unchecked("factory".to_string()),
         collection: Addr::unchecked("profile_collection".to_string()),
+        max_renewals_per_block: todo!(),
+        valid_bid_query_limit: todo!(),
+        renew_window: todo!(),
+        renewal_bid_percentage: todo!(),
+        operator: todo!(),
     };
     let info = mock_info("creator", &coins(1000, NATIVE_DENOM));
 
@@ -127,6 +137,11 @@ fn bad_fees_initialization() {
         ask_interval: 60,
         factory: Addr::unchecked("factory".to_string()),
         collection: Addr::unchecked("profile_collection".to_string()),
+        max_renewals_per_block: todo!(),
+        valid_bid_query_limit: todo!(),
+        renew_window: todo!(),
+        renewal_bid_percentage: todo!(),
+        operator: todo!(),
     };
     let info = mock_info("creator", &coins(1000, NATIVE_DENOM));
     let res = instantiate(deps.as_mut(), mock_env(), info, msg);

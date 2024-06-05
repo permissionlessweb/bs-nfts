@@ -1,26 +1,26 @@
+use crate::helpers::{get_renewal_price_and_bid, renew_name};
 use crate::{
     error::ContractError,
     hooks::{prepare_ask_hook, prepare_bid_hook, prepare_sale_hook},
 };
-use bs_profile::market::{state::*, *};
+use bs_profile::{market::{state::*, *}, minter::BsProfileMinterQueryMsg};
 use bs_profile::{
     common::{charge_fees, SECONDS_PER_YEAR},
     market::SudoMsg,
+    minter::SudoParams as BsProfileMinterSudoParams,
 };
 use bs_std::NATIVE_DENOM;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    coin, coins, to_json_binary, Addr, BankMsg, Decimal, Deps, DepsMut, Empty, Env, Event,
-    MessageInfo, Order, Response, StdError, StdResult, Storage, SubMsg, SubMsgResult, Timestamp,
-    Uint128, WasmMsg,
+    coin, coins, ensure, to_json_binary, Addr, BankMsg, Coin, Decimal, Deps, DepsMut, Empty, Env, Event, MessageInfo, Order, Response, StdError, StdResult, Storage, SubMsg, SubMsgResult, Timestamp, Uint128, WasmMsg
 };
 use std::marker::PhantomData;
 
 use cw721::{Cw721ExecuteMsg, OwnerOfResponse};
 use cw721_base::helpers::Cw721Contract;
 use cw_storage_plus::Bound;
-use cw_utils::{must_pay, nonpayable};
+use cw_utils::{may_pay, must_pay, nonpayable};
 
 // Query limits
 const DEFAULT_QUERY_LIMIT: u32 = 10;
@@ -359,6 +359,54 @@ pub fn execute_refund_renewal(
     Ok(Response::new().add_event(event).add_message(msg))
 }
 
+pub fn execute_renew(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    token_id: &str,
+) -> Result<Response, ContractError> {
+    let mut ask = asks().load(deps.storage, ask_key(token_id))?;
+    let sudo_params = SUDO_PARAMS.load(deps.storage)?;
+
+    let ask_renew_start_time = ask.renewal_time.seconds() - sudo_params.renew_window;
+
+    ensure!(
+        env.block.time.seconds() >= ask_renew_start_time,
+        ContractError::CannotProcessFutureRenewal {}
+    );
+
+    let name_minter = PROFILE_MINTER.load(deps.storage)?;
+    let name_minter_params = deps
+        .querier
+        .query_wasm_smart::<BsProfileMinterSudoParams>(name_minter, &BsProfileMinterQueryMsg::Params {})?;
+
+    let (renewal_price, _valid_bid) = get_renewal_price_and_bid(
+        deps.as_ref(),
+        &env.block.time,
+        &sudo_params,
+        &ask.token_id,
+        name_minter_params.base_price.u128(),
+    )?;
+
+    let payment = may_pay(&info, NATIVE_DENOM)?;
+
+    ask.renewal_fund += payment;
+
+    ensure!(
+        ask.renewal_fund >= renewal_price,
+        ContractError::InsufficientRenewalFunds {
+            expected: coin(renewal_price.u128(), NATIVE_DENOM),
+            actual: coin(ask.renewal_fund.u128(), NATIVE_DENOM),
+        }
+    );
+
+    let mut response = Response::new();
+
+    response = renew_name(deps, &env, &sudo_params, ask, renewal_price, response)?;
+
+    Ok(response)
+}
+
 /// Anyone can call this to process renewals for a block and earn a reward
 pub fn execute_process_renewal(
     _deps: DepsMut,
@@ -469,7 +517,7 @@ fn store_bid(store: &mut dyn Storage, bid: &Bid) -> StdResult<()> {
     bids().save(store, bid_key(&bid.token_id, &bid.bidder), bid)
 }
 
-fn store_ask(store: &mut dyn Storage, ask: &Ask) -> StdResult<()> {
+pub fn store_ask(store: &mut dyn Storage, ask: &Ask) -> StdResult<()> {
     asks().save(store, ask_key(&ask.token_id), ask)
 }
 
@@ -552,6 +600,25 @@ pub fn query_asks_by_seller(
         .range(deps.storage, start, None, Order::Ascending)
         .take(limit)
         .map(|res| res.map(|item| item.1))
+        .collect::<StdResult<Vec<_>>>()
+}
+
+pub fn query_ask_renew_prices(
+    deps: Deps,
+    current_time: Timestamp,
+    token_ids: Vec<String>,
+) -> StdResult<Vec<AskRenewPriceResponse>> {
+    token_ids
+        .iter()
+        .map(|token_id| {
+            let (coin_option, bid_option) =
+                query_ask_renew_price(deps, current_time, token_id.to_string())?;
+            Ok(AskRenewPriceResponse {
+                token_id: token_id.to_string(),
+                price: coin_option.unwrap_or_default(),
+                bid: bid_option,
+            })
+        })
         .collect::<StdResult<Vec<_>>>()
 }
 
@@ -702,43 +769,60 @@ pub fn reverse_query_bids_sorted_by_price(
 pub fn query_params(deps: Deps) -> StdResult<SudoParams> {
     SUDO_PARAMS.load(deps.storage)
 }
-pub struct ParamInfo {
-    trading_fee_bps: Option<u64>,
-    min_price: Option<Uint128>,
-    ask_interval: Option<u64>,
+
+pub fn query_asks_by_renew_time(
+    deps: Deps,
+    max_time: Timestamp,
+    start_after: Option<Timestamp>,
+    limit: Option<u32>,
+) -> StdResult<Vec<Ask>> {
+    let limit = limit.unwrap_or(DEFAULT_QUERY_LIMIT) as usize;
+
+    let renewable_asks = asks()
+        .idx
+        .renewal_time
+        .range(
+            deps.storage,
+            start_after.map(|start| Bound::inclusive((start.seconds() + 1, "".to_string()))),
+            Some(Bound::exclusive((max_time.seconds() + 1, "".to_string()))),
+            Order::Ascending,
+        )
+        .take(limit)
+        .map(|item| item.map(|(_, v)| v))
+        .collect::<StdResult<Vec<_>>>()?;
+
+    Ok(renewable_asks)
 }
 
-#[cfg_attr(not(feature = "library"), entry_point)]
-pub fn sudo(deps: DepsMut, env: Env, msg: SudoMsg) -> Result<Response, ContractError> {
-    let api = deps.api;
+pub fn query_ask_renew_price(
+    deps: Deps,
+    current_time: Timestamp,
+    token_id: String,
+) -> StdResult<(Option<Coin>, Option<Bid>)> {
+    let ask = asks().load(deps.storage, ask_key(&token_id))?;
+    let sudo_params = SUDO_PARAMS.load(deps.storage)?;
 
-    match msg {
-        SudoMsg::UpdateParams {
-            trading_fee_bps,
-            min_price,
-            ask_interval,
-        } => sudo_update_params(
-            deps,
-            env,
-            ParamInfo {
-                trading_fee_bps,
-                min_price,
-                ask_interval,
-            },
-        ),
-        SudoMsg::AddSaleHook { hook } => sudo_add_sale_hook(deps, api.addr_validate(&hook)?),
-        SudoMsg::AddAskHook { hook } => sudo_add_ask_hook(deps, env, api.addr_validate(&hook)?),
-        SudoMsg::AddBidHook { hook } => sudo_add_bid_hook(deps, env, api.addr_validate(&hook)?),
-        SudoMsg::RemoveSaleHook { hook } => sudo_remove_sale_hook(deps, api.addr_validate(&hook)?),
-        SudoMsg::RemoveAskHook { hook } => sudo_remove_ask_hook(deps, api.addr_validate(&hook)?),
-        SudoMsg::RemoveBidHook { hook } => sudo_remove_bid_hook(deps, api.addr_validate(&hook)?),
-        SudoMsg::UpdateProfileCollection { collection } => {
-            sudo_update_name_collection(deps, api.addr_validate(&collection)?)
-        }
-        SudoMsg::UpdateAccountFactory { factory } => {
-            sudo_update_name_minter(deps, api.addr_validate(&factory)?)
-        }
+    let ask_renew_start_time = ask.renewal_time.seconds() - sudo_params.renew_window;
+
+    if current_time.seconds() < ask_renew_start_time {
+        return Ok((None, None));
     }
+
+    let name_minter = PROFILE_MINTER.load(deps.storage)?;
+    let name_minter_params = deps
+        .querier
+        .query_wasm_smart::<BsProfileMinterSudoParams>(name_minter, &(BsProfileMinterQueryMsg::Params {}))?;
+
+    let (renewal_price, valid_bid) = get_renewal_price_and_bid(
+        deps,
+        &current_time,
+        &sudo_params,
+        &ask.token_id,
+        name_minter_params.base_price.u128(),
+    )
+    .map_err(|_| StdError::generic_err("failed to fetch renewal price".to_string()))?;
+
+    Ok((Some(coin(renewal_price.u128(), NATIVE_DENOM)), valid_bid))
 }
 
 /// Only governance can update contract params
