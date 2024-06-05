@@ -199,9 +199,9 @@ pub struct InstantiateMsg {
     /// Interval to rate limit setting asks (in seconds)
     pub ask_interval: u64,
     /// Account Factory contract address
-    pub factory: Addr,
+    // pub factory: Addr,
     /// Account Profile contract address
-    pub collection: Addr,
+    // pub collection: Addr,
     /// The maximum number of renewals that can be processed in each block
     pub max_renewals_per_block: u32,
     /// The number of bids to query to when searching for the highest bid
@@ -234,14 +234,16 @@ pub enum ExecuteMsg {
     /// Accept a bid on an existing ask
     AcceptBid { token_id: TokenId, bidder: String },
     /// Fully renew a name if within the renewal period
-    Renew { token_id: TokenId },
+    // Renew { token_id: TokenId },
     /// Fund renewal of a name
-    FundRenewal { token_id: TokenId },
+    // FundRenewal { token_id: TokenId },
     /// Refund a renewal of a name
-    RefundRenewal { token_id: TokenId },
+    // RefundRenewal { token_id: TokenId },
     /// Check if expired names have been paid for, and collect fees.
     /// If not paid, transfer ownership to the highest bidder.
-    ProcessRenewals { time: Timestamp },
+    // ProcessRenewals { time: Timestamp },
+    /// Can only be run once
+    Setup { minter: String, collection: String },
 }
 
 #[cosmwasm_schema::cw_serde]

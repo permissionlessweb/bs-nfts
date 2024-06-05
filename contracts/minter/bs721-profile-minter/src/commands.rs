@@ -54,10 +54,10 @@ pub fn execute_mint_and_list(
     //     });
 
     // if not on any whitelist, check public mint start time
-    if env.block.time < config.public_mint_start_time {
-        // list.is_none() &&
-        return Err(ContractError::MintingNotStarted {});
-    }
+    // if env.block.time < config.public_mint_start_time {
+    //     // list.is_none() &&
+    //     return Err(ContractError::MintingNotStarted {});
+    // }
 
     // if let Some(list) = list {
     //     match list.contract_type {

@@ -3,17 +3,21 @@ use crate::{
     error::ContractError,
     hooks::{prepare_ask_hook, prepare_bid_hook, prepare_sale_hook},
 };
-use bs_profile::{market::{state::*, *}, minter::BsProfileMinterQueryMsg};
 use bs_profile::{
     common::{charge_fees, SECONDS_PER_YEAR},
-    market::SudoMsg,
     minter::SudoParams as BsProfileMinterSudoParams,
+};
+use bs_profile::{
+    market::{state::*, *},
+    minter::BsProfileMinterQueryMsg,
 };
 use bs_std::NATIVE_DENOM;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    coin, coins, ensure, to_json_binary, Addr, BankMsg, Coin, Decimal, Deps, DepsMut, Empty, Env, Event, MessageInfo, Order, Response, StdError, StdResult, Storage, SubMsg, SubMsgResult, Timestamp, Uint128, WasmMsg
+    coin, coins, ensure, to_json_binary, Addr, BankMsg, Coin, Decimal, Deps, DepsMut, Empty, Env,
+    Event, MessageInfo, Order, Response, StdError, StdResult, Storage, SubMsg, SubMsgResult,
+    Timestamp, Uint128, WasmMsg,
 };
 use std::marker::PhantomData;
 
@@ -29,6 +33,25 @@ pub const PROPOSE_BIDDER_A: u64 = 1;
 pub const ACCEPT_BIDDER_A: u64 = 2;
 pub const PROPOSE_BIDDER_B: u64 = 3;
 pub const ACCEPT_BIDDER_B: u64 = 4;
+
+/// Setup this contract (can be run once only)
+pub fn execute_setup(
+    deps: DepsMut,
+    minter: Addr,
+    collection: Addr,
+) -> Result<Response, ContractError> {
+    if IS_SETUP.load(deps.storage)? {
+        return Err(ContractError::AlreadySetup {});
+    }
+    PROFILE_MINTER.save(deps.storage, &minter)?;
+    PROFILE_COLLECTION.save(deps.storage, &collection)?;
+    IS_SETUP.save(deps.storage, &true)?;
+
+    let event = Event::new("setup")
+        .add_attribute("minter", minter)
+        .add_attribute("collection", collection);
+    Ok(Response::new().add_event(event))
+}
 
 /// A seller may set an Ask on their NFT to list it on Marketplace
 pub fn execute_set_ask(
@@ -376,9 +399,10 @@ pub fn execute_renew(
     );
 
     let name_minter = PROFILE_MINTER.load(deps.storage)?;
-    let name_minter_params = deps
-        .querier
-        .query_wasm_smart::<BsProfileMinterSudoParams>(name_minter, &BsProfileMinterQueryMsg::Params {})?;
+    let name_minter_params = deps.querier.query_wasm_smart::<BsProfileMinterSudoParams>(
+        name_minter,
+        &BsProfileMinterQueryMsg::Params {},
+    )?;
 
     let (renewal_price, _valid_bid) = get_renewal_price_and_bid(
         deps.as_ref(),
@@ -809,9 +833,10 @@ pub fn query_ask_renew_price(
     }
 
     let name_minter = PROFILE_MINTER.load(deps.storage)?;
-    let name_minter_params = deps
-        .querier
-        .query_wasm_smart::<BsProfileMinterSudoParams>(name_minter, &(BsProfileMinterQueryMsg::Params {}))?;
+    let name_minter_params = deps.querier.query_wasm_smart::<BsProfileMinterSudoParams>(
+        name_minter,
+        &(BsProfileMinterQueryMsg::Params {}),
+    )?;
 
     let (renewal_price, valid_bid) = get_renewal_price_and_bid(
         deps,

@@ -5,7 +5,7 @@ use bs_profile::market::{state::*, *};
 use bs_profile::market::{ExecuteMsg, InstantiateMsg};
 use bs_std::NATIVE_DENOM;
 use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
-use cosmwasm_std::{coins, Addr, DepsMut, Timestamp, Uint128};
+use cosmwasm_std::{coins, Addr, Decimal, DepsMut, Timestamp, Uint128};
 
 const CREATOR: &str = "creator";
 const TOKEN_ID: &str = "name";
@@ -90,13 +90,13 @@ fn setup_contract(deps: DepsMut) {
         trading_fee_bps: TRADING_FEE_BASIS_POINTS,
         min_price: Uint128::from(5u128),
         ask_interval: 60,
-        factory: Addr::unchecked("factory".to_string()),
-        collection: Addr::unchecked("profile_collection".to_string()),
-        max_renewals_per_block: todo!(),
-        valid_bid_query_limit: todo!(),
-        renew_window: todo!(),
-        renewal_bid_percentage: todo!(),
-        operator: todo!(),
+        // factory: Addr::unchecked("factory".to_string()),
+        // collection: Addr::unchecked("profile_collection".to_string()),
+        max_renewals_per_block: 10,
+        valid_bid_query_limit: 100,
+        renew_window: 420,
+        renewal_bid_percentage: Decimal::zero(),
+        operator: CREATOR.to_string(),
     };
     let info = mock_info(CREATOR, &[]);
     let res = instantiate(deps, mock_env(), info, msg).unwrap();
@@ -111,13 +111,13 @@ fn proper_initialization() {
         trading_fee_bps: TRADING_FEE_BASIS_POINTS,
         min_price: Uint128::from(5u128),
         ask_interval: 60,
-        factory: Addr::unchecked("factory".to_string()),
-        collection: Addr::unchecked("profile_collection".to_string()),
-        max_renewals_per_block: todo!(),
-        valid_bid_query_limit: todo!(),
-        renew_window: todo!(),
-        renewal_bid_percentage: todo!(),
-        operator: todo!(),
+        // factory: Addr::unchecked("factory".to_string()),
+        // collection: Addr::unchecked("profile_collection".to_string()),
+        max_renewals_per_block: 10,
+        valid_bid_query_limit: 100,
+        renew_window: 420,
+        renewal_bid_percentage: Decimal::zero(),
+        operator: CREATOR.to_string(),
     };
     let info = mock_info("creator", &coins(1000, NATIVE_DENOM));
 
@@ -135,13 +135,13 @@ fn bad_fees_initialization() {
         trading_fee_bps: 10001,
         min_price: Uint128::from(5u128),
         ask_interval: 60,
-        factory: Addr::unchecked("factory".to_string()),
-        collection: Addr::unchecked("profile_collection".to_string()),
-        max_renewals_per_block: todo!(),
-        valid_bid_query_limit: todo!(),
-        renew_window: todo!(),
-        renewal_bid_percentage: todo!(),
-        operator: todo!(),
+        // factory: Addr::unchecked("factory".to_string()),
+        // collection: Addr::unchecked("profile_collection".to_string()),
+        max_renewals_per_block: 10,
+        valid_bid_query_limit: 100,
+        renew_window: 420,
+        renewal_bid_percentage: Decimal::zero(),
+        operator: CREATOR.to_string(),
     };
     let info = mock_info("creator", &coins(1000, NATIVE_DENOM));
     let res = instantiate(deps.as_mut(), mock_env(), info, msg);

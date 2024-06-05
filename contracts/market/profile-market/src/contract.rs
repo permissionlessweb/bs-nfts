@@ -40,16 +40,18 @@ pub fn instantiate(
     };
 
     SUDO_PARAMS.save(deps.storage, &params)?;
+    IS_SETUP.save(deps.storage, &false)?;
     // Saves the profile minter & collection to internal state
 
-    PROFILE_MINTER.save(deps.storage, &msg.factory)?;
-    PROFILE_COLLECTION.save(deps.storage, &msg.collection)?;
+    // PROFILE_MINTER.save(deps.storage, &msg.factory)?;
+    // PROFILE_COLLECTION.save(deps.storage, &msg.collection)?;
     // VERSION_CONTROL.save(deps.storage, &msg.version_control)?;
 
     Ok(Response::new()
         .add_attribute("action", "instantiate")
-        .add_attribute("minter", msg.factory)
-        .add_attribute("collection", msg.collection))
+        // .add_attribute("minter", msg.factory)
+        // .add_attribute("collection", msg.collection))
+    )
 }
 
 #[cfg_attr(not(feature = "library"), cosmwasm_std::entry_point)]
@@ -74,10 +76,15 @@ pub fn execute(
         ExecuteMsg::AcceptBid { token_id, bidder } => {
             execute_accept_bid(deps, env, info, &token_id, api.addr_validate(&bidder)?)
         }
-        ExecuteMsg::FundRenewal { token_id } => execute_fund_renewal(deps, info, &token_id),
-        ExecuteMsg::RefundRenewal { token_id } => execute_refund_renewal(deps, info, &token_id),
-        ExecuteMsg::ProcessRenewals { time } => execute_process_renewal(deps, env, time),
-        ExecuteMsg::Renew { token_id } => execute_renew(deps, env, info, &token_id),
+        // ExecuteMsg::FundRenewal { token_id } => execute_fund_renewal(deps, info, &token_id),
+        // ExecuteMsg::RefundRenewal { token_id } => execute_refund_renewal(deps, info, &token_id),
+        // ExecuteMsg::ProcessRenewals { time } => execute_process_renewal(deps, env, time),
+        // ExecuteMsg::Renew { token_id } => execute_renew(deps, env, info, &token_id),
+        ExecuteMsg::Setup { minter, collection } => execute_setup(
+            deps,
+            api.addr_validate(&minter)?,
+            api.addr_validate(&collection)?,
+        ),
     }
 }
 
@@ -205,7 +212,7 @@ pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, C
     Ok(Response::new())
 }
 
-#[cfg_attr(not(feature = "library"), entry_point)]
+#[cfg_attr(not(feature = "library"), cosmwasm_std::entry_point)]
 pub fn sudo(deps: DepsMut, env: Env, msg: SudoMsg) -> Result<Response, ContractError> {
     let api = deps.api;
 

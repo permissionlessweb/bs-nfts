@@ -145,7 +145,7 @@ pub fn get_char_price(base_price: u128, name_len: usize) -> Uint128 {
 pub fn renew_name(
     deps: DepsMut,
     _env: &Env,
-    sudo_params: &SudoParams,
+    _sudo_params: &SudoParams,
     mut ask: Ask,
     renewal_price: Uint128,
     mut response: Response,
