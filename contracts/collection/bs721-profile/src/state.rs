@@ -1,0 +1,180 @@
+use schemars::JsonSchema;
+use serde::de::DeserializeOwned;
+use serde::{Deserialize, Serialize};
+use std::marker::PhantomData;
+
+use cosmwasm_std::{Addr, BlockInfo, CustomMsg, Decimal, Empty, StdResult, Storage, Timestamp};
+
+use bs721::{Bs721, CollectionInfo, ContractInfoResponse, Expiration, RoyaltyInfo};
+use cw_storage_plus::{Index, IndexList, IndexedMap, Item, Map, MultiIndex};
+
+use crate::ContractError;
+
+type Parent<'a, T> = cw721_base::Cw721Contract<'a, T, Empty, Empty, Empty>;
+
+pub struct Bs721Contract<'a, T, C, E, Q>
+where
+    T: Serialize + DeserializeOwned + Clone,
+    Q: CustomMsg,
+    E: CustomMsg,
+{
+    pub parent: Parent<'a, T>,
+    pub collection_info: Item<'a, CollectionInfo<RoyaltyInfo>>,
+    pub royalty_updated_at: Item<'a, Timestamp>,
+    pub contract_info: Item<'a, ContractInfoResponse>,
+    pub minter: Item<'a, Addr>,
+    pub token_count: Item<'a, u64>,
+    /// Stored as (granter, operator) giving operator full control over granter's account
+    pub operators: Map<'a, (&'a Addr, &'a Addr), Expiration>,
+    pub tokens: IndexedMap<'a, &'a str, TokenInfo<T>, TokenIndexes<'a, T>>,
+
+    pub(crate) _custom_response: PhantomData<C>,
+    pub(crate) _custom_query: PhantomData<Q>,
+    pub(crate) _custom_execute: PhantomData<E>,
+}
+
+// This is a signal, the implementations are in other files
+impl<'a, T, C, E, Q> Bs721<T, C> for Bs721Contract<'a, T, C, E, Q>
+where
+    T: Serialize + DeserializeOwned + Clone,
+    C: CustomMsg,
+    E: CustomMsg,
+    Q: CustomMsg,
+{
+}
+
+impl<T, C, E, Q> Default for Bs721Contract<'static, T, C, E, Q>
+where
+    T: Serialize + DeserializeOwned + Clone,
+    E: CustomMsg,
+    Q: CustomMsg,
+{
+    fn default() -> Self {
+        Self::new(
+            "nft_info",
+            "minter",
+            "num_tokens",
+            "operators",
+            "tokens",
+            "tokens__owner",
+        )
+    }
+}
+
+impl<'a, T, C, E, Q> Bs721Contract<'a, T, C, E, Q>
+where
+    T: Serialize + DeserializeOwned + Clone,
+    E: CustomMsg,
+    Q: CustomMsg,
+{
+    fn new(
+        contract_key: &'a str,
+        minter_key: &'a str,
+        token_count_key: &'a str,
+        operator_key: &'a str,
+        tokens_key: &'a str,
+        tokens_owner_key: &'a str,
+    ) -> Self {
+        let indexes = TokenIndexes {
+            owner: MultiIndex::new(token_owner_idx, tokens_key, tokens_owner_key),
+        };
+        Self {
+            contract_info: Item::new(contract_key),
+            minter: Item::new(minter_key),
+            token_count: Item::new(token_count_key),
+            operators: Map::new(operator_key),
+            tokens: IndexedMap::new(tokens_key, indexes),
+            _custom_response: PhantomData,
+            _custom_execute: PhantomData,
+            _custom_query: PhantomData,
+            collection_info: Item::new("collection_info"),
+            parent: cw721_base::Cw721Contract::default(),
+            royalty_updated_at: Item::new("royalty_updated_at"),
+        }
+    }
+
+    pub fn token_count(&self, storage: &dyn Storage) -> StdResult<u64> {
+        Ok(self.token_count.may_load(storage)?.unwrap_or_default())
+    }
+
+    pub fn increment_tokens(&self, storage: &mut dyn Storage) -> StdResult<u64> {
+        let val = self.token_count(storage)? + 1;
+        self.token_count.save(storage, &val)?;
+        Ok(val)
+    }
+
+    pub fn decrement_tokens(&self, storage: &mut dyn Storage) -> StdResult<u64> {
+        let val = self.token_count(storage)? - 1;
+        self.token_count.save(storage, &val)?;
+        Ok(val)
+    }
+
+    pub fn share_validate(share: Decimal) -> Result<Decimal, ContractError> {
+        if share > Decimal::one() {
+            return Err(ContractError::InvalidRoyalties(
+                "Share cannot be greater than 100%".to_string(),
+            ));
+        }
+    
+        Ok(share)
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct TokenInfo<T> {
+    /// The owner of the newly minted NFT
+    pub owner: Addr,
+    /// Approvals are stored here, as we clear them all upon transfer and cannot accumulate much
+    pub approvals: Vec<Approval>,
+
+    /// Universal resource identifier for this NFT
+    /// Should point to a JSON file that conforms to the ERC721
+    /// Metadata JSON Schema
+    pub token_uri: Option<String>,
+
+    /// Seller fee basis points, 0-10000
+    /// 0 means no fee, 100 means 1%, 10000 means 100%
+    /// This is the fee paid by the buyer to the original creator
+    pub seller_fee_bps: Option<u16>,
+
+    /// Payment address, is the address that will receive the payment
+    pub payment_addr: Option<Addr>,
+
+    /// You can add any custom metadata here when you extend cw721-base
+    pub extension: T,
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+pub struct Approval {
+    /// Account that can transfer/send the token
+    pub spender: Addr,
+    /// When the Approval expires (maybe Expiration::never)
+    pub expires: Expiration,
+}
+
+impl Approval {
+    pub fn is_expired(&self, block: &BlockInfo) -> bool {
+        self.expires.is_expired(block)
+    }
+}
+
+pub struct TokenIndexes<'a, T>
+where
+    T: Serialize + DeserializeOwned + Clone,
+{
+    pub owner: MultiIndex<'a, Addr, TokenInfo<T>, String>,
+}
+
+impl<'a, T> IndexList<TokenInfo<T>> for TokenIndexes<'a, T>
+where
+    T: Serialize + DeserializeOwned + Clone,
+{
+    fn get_indexes(&'_ self) -> Box<dyn Iterator<Item = &'_ dyn Index<TokenInfo<T>>> + '_> {
+        let v: Vec<&dyn Index<TokenInfo<T>>> = vec![&self.owner];
+        Box::new(v.into_iter())
+    }
+}
+
+pub fn token_owner_idx<T>(_pk: &[u8], d: &TokenInfo<T>) -> Addr {
+    d.owner.clone()
+}
