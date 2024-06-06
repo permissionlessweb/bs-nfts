@@ -107,24 +107,24 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
             start_after,
             limit,
         )?),
-        QueryMsg::AsksByRenewTime {
-            max_time,
-            start_after,
-            limit,
-        } => to_json_binary(&query_asks_by_renew_time(
-            deps,
-            max_time,
-            start_after,
-            limit,
-        )?),
-        QueryMsg::AskRenewPrice {
-            current_time,
-            token_id,
-        } => to_json_binary(&query_ask_renew_price(deps, current_time, token_id)?),
-        QueryMsg::AskRenewalPrices {
-            current_time,
-            token_ids,
-        } => to_json_binary(&query_ask_renew_prices(deps, current_time, token_ids)?),
+        // QueryMsg::AsksByRenewTime {
+        //     max_time,
+        //     start_after,
+        //     limit,
+        // } => to_json_binary(&query_asks_by_renew_time(
+        //     deps,
+        //     max_time,
+        //     start_after,
+        //     limit,
+        // )?),
+        // QueryMsg::AskRenewPrice {
+        //     current_time,
+        //     token_id,
+        // } => to_json_binary(&query_ask_renew_price(deps, current_time, token_id)?),
+        // QueryMsg::AskRenewalPrices {
+        //     current_time,
+        //     token_ids,
+        // } => to_json_binary(&query_ask_renew_prices(deps, current_time, token_ids)?),
         QueryMsg::AskCount {} => to_json_binary(&query_ask_count(deps)?),
         QueryMsg::Bid { token_id, bidder } => {
             to_json_binary(&query_bid(deps, token_id, api.addr_validate(&bidder)?)?)
@@ -170,7 +170,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::AskHooks {} => to_json_binary(&ASK_HOOKS.query_hooks(deps)?),
         QueryMsg::BidHooks {} => to_json_binary(&BID_HOOKS.query_hooks(deps)?),
         QueryMsg::SaleHooks {} => to_json_binary(&SALE_HOOKS.query_hooks(deps)?),
-        QueryMsg::RenewalQueue { time } => to_json_binary(&query_renewal_queue(deps, time)?),
+        // QueryMsg::RenewalQueue { time } => to_json_binary(&query_renewal_queue(deps, time)?),
         QueryMsg::Config {} => to_json_binary(&query_config(deps)?),
     }
 }

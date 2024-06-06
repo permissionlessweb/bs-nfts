@@ -1047,28 +1047,28 @@ mod query {
         assert_eq!(res.unwrap().amount.u128(), BID_AMOUNT * 5);
     }
 
-    #[test]
-    fn query_renewal_queue() {
-        let mut app = instantiate_contracts(None, None, None);
+    // #[test]
+    // fn query_renewal_queue() {
+    //     let mut app = instantiate_contracts(None, None, None);
 
-        // mint two names at the same time
-        let res = mint_and_list(&mut app, NAME, USER, None);
-        assert!(res.is_ok());
-        let res = mint_and_list(&mut app, "hack", ADMIN2, None);
-        assert!(res.is_ok());
+    //     // mint two names at the same time
+    //     let res = mint_and_list(&mut app, NAME, USER, None);
+    //     assert!(res.is_ok());
+    //     let res = mint_and_list(&mut app, "hack", ADMIN2, None);
+    //     assert!(res.is_ok());
 
-        let res: Vec<Ask> = app
-            .wrap()
-            .query_wasm_smart(
-                MKT,
-                &(MarketplaceQueryMsg::RenewalQueue {
-                    time: app.block_info().time.plus_seconds(SECONDS_PER_YEAR),
-                }),
-            )
-            .unwrap();
-        assert_eq!(res.len(), 2);
-        assert_eq!(res[1].token_id, "hack".to_string());
-    }
+    //     let res: Vec<Ask> = app
+    //         .wrap()
+    //         .query_wasm_smart(
+    //             MKT,
+    //             &(MarketplaceQueryMsg::RenewalQueue {
+    //                 time: app.block_info().time.plus_seconds(SECONDS_PER_YEAR),
+    //             }),
+    //         )
+    //         .unwrap();
+    //     assert_eq!(res.len(), 2);
+    //     assert_eq!(res[1].token_id, "hack".to_string());
+    // }
 
     // #[test]
     // fn renewal_fee_transfer_refund() {
