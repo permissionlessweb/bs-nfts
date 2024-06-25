@@ -24,8 +24,7 @@ use crate::commands::{execute_mint_and_list, execute_pause, execute_update_confi
 use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InstantiateMsg, SudoMsg};
 use crate::state::{
-    profile_marketplace, WhitelistContract, WhitelistContractType, ADMIN, CONFIG, NAME_COLLECTION,
-    PAUSED, SUDO_PARAMS, WHITELISTS,
+    WhitelistContract, WhitelistContractType, ADMIN, CONFIG, PAUSED, PROFILE_COLLECTION, PROFILE_MARKETPLACE, SUDO_PARAMS, WHITELISTS
 };
 use crate::sudo::*;
 
@@ -65,7 +64,7 @@ pub fn instantiate(
     PAUSED.save(deps.storage, &false)?;
 
     let marketplace = deps.api.addr_validate(&msg.marketplace_addr)?;
-    profile_marketplace.save(deps.storage, &marketplace)?;
+    PROFILE_MARKETPLACE.save(deps.storage, &marketplace)?;
 
     let params = SudoParams {
         min_name_length: msg.min_name_length,
@@ -157,14 +156,14 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractE
         Ok(res) => {
             let collection_address = &res.contract_address;
 
-            NAME_COLLECTION.save(deps.storage, &Addr::unchecked(collection_address))?;
+            PROFILE_COLLECTION.save(deps.storage, &Addr::unchecked(collection_address))?;
 
             let msg = WasmMsg::Execute {
                 contract_addr: collection_address.to_string(),
                 funds: vec![],
                 msg: to_json_binary(
-                    &(BsProfileExecuteMsg::SetNameMarketplace {
-                        address: profile_marketplace.load(deps.storage)?.to_string(),
+                    &(BsProfileExecuteMsg::SetProfileMarketplace {
+                        address: PROFILE_MARKETPLACE.load(deps.storage)?.to_string(),
                     }),
                 )?,
             };
@@ -221,10 +220,10 @@ pub fn sudo(deps: DepsMut, _env: Env, msg: SudoMsg) -> Result<Response, Contract
             base_price,
             fair_burn_bps,
         ),
-        SudoMsg::UpdateNameCollection { collection } => {
+        SudoMsg::UpdateProfileCollection { collection } => {
             sudo_update_name_collection(deps, api.addr_validate(&collection)?)
         }
-        SudoMsg::UpdateNameMarketplace { marketplace } => {
+        SudoMsg::UpdateProfileMarketplace { marketplace } => {
             sudo_update_profile_marketplace(deps, api.addr_validate(&marketplace)?)
         }
     }

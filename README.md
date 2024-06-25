@@ -2,7 +2,7 @@
 
 ## Overview
 
-This repository is a fork of the original [cw-nfts](https://github.com/CosmWasm/cw-nfts) project. The purpose of this fork is to provide additional functionality to the NFT collections created with this codebase.
+This repository is a fork of the original [cw-nfts](https://github.com/CosmWasm/cw-nfts) project, as well as the [stargaze-launchpad](https://github.com/public-awesome/launchpad). The purpose of this fork is to provide additional functionality to the NFT collections created with this codebase.
 
 ## Optimize
 
@@ -12,7 +12,7 @@ To optimize the contract, we use the following tools:
 docker run --rm -v "$(pwd)":/code \
   --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target \
   --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
-  cosmwasm/workspace-optimizer:0.12.13
+  cosmwasm/workspace-optimizer:0.15.1
 ```
 
 ## Codebase
@@ -26,3 +26,14 @@ Additional maintainers can be added if they show commitment to the project.
 
 You can also join the [BitSong Discord](https://discord.bitsong.io) server
 for more interactive discussions on these themes.
+
+### Deployments 
+| Contract          | testnet code-id | main-net code-id |
+|-------------------|---------|---------|
+| bs721-base        |   18    |-|
+| bs721-curve       |   19    |-|
+| bs721-factory     |   20    |-|
+| bs721-launchparty |   21    |-|
+| bs721-profile     |   22    |-|
+| profile-market    |   24    |-|
+| profile-minter    |   25    |-|

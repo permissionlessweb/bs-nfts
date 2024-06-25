@@ -10,8 +10,9 @@ use cosmwasm_std::{
 };
 use cw_utils::must_pay;
 
+use crate::state::PROFILE_MARKETPLACE;
 use crate::{
-    state::{ADMIN, CONFIG, NAME_COLLECTION, PAUSED, SUDO_PARAMS, WHITELISTS},
+    state::{ADMIN, CONFIG, PROFILE_COLLECTION, PAUSED, SUDO_PARAMS, WHITELISTS},
     ContractError,
 };
 
@@ -25,14 +26,14 @@ pub fn execute_mint_and_list(
         return Err(ContractError::MintingPaused {});
     }
 
-    let whitelists = WHITELISTS.load(deps.storage)?;
     let sender = &info.sender.to_string();
     let mut res = Response::new();
-    let config = CONFIG.load(deps.storage)?;
-
+    // let config = CONFIG.load(deps.storage)?;    
     let params = SUDO_PARAMS.load(deps.storage)?;
-    validate_name(name, params.min_name_length, params.max_name_length)?;
 
+    validate_name(name, params.min_name_length, params.max_name_length)?;
+    
+    // let whitelists = WHITELISTS.load(deps.storage)?;
     // Assumes no duplicate addresses between whitelists
     // Otherwise there will be edge cases with per addr limit between the whitelists
     // currently this is going to match the _first_ WL they appear in...
@@ -104,9 +105,9 @@ pub fn execute_mint_and_list(
         );
     }
 
-    let collection = NAME_COLLECTION.load(deps.storage)?;
-    let marketplace = crate::state::profile_marketplace.load(deps.storage)?;
-
+    let marketplace = PROFILE_MARKETPLACE.load(deps.storage)?;
+    let collection = PROFILE_COLLECTION.load(deps.storage)?;
+    
     let mint_msg = ExecuteMsg::Mint(MintMsg::<Metadata> {
         token_id: name.to_string(),
         owner: sender.to_string(),

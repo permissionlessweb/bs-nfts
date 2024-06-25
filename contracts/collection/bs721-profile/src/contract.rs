@@ -16,7 +16,7 @@ use cw_utils::maybe_addr;
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 const PROFILE: &str = "bs721-profile";
 
-pub type Bs721NameContract<'a> = bs721_base::Bs721Contract<'a, Metadata, Empty, Empty, Empty>;
+pub type Bs721ProfileContract<'a> = bs721_base::Bs721Contract<'a, Metadata, Empty, Empty, Empty>;
 pub type ExecuteMsg = crate::ExecuteMsg<Metadata>;
 pub type QueryMsg = crate::QueryMsg;
 
@@ -42,7 +42,7 @@ pub fn instantiate(
     PROFILE_MARKETPLACE.save(deps.storage, &msg.marketplace)?;
 
     let res =
-        Bs721NameContract::default().instantiate(deps, env.clone(), info, msg.base_init_msg)?;
+        Bs721ProfileContract::default().instantiate(deps, env.clone(), info, msg.base_init_msg)?;
 
     Ok(res
         .add_attribute("action", "instantiate")
@@ -80,7 +80,7 @@ pub fn execute(
         ExecuteMsg::UpdateVerifier { verifier } => {
             Ok(VERIFIER.execute_update_admin(deps, info, maybe_addr(api, verifier)?)?)
         }
-        ExecuteMsg::SetNameMarketplace { address } => {
+        ExecuteMsg::SetProfileMarketplace { address } => {
             execute_set_profile_marketplace(deps, info, address)
         }
         ExecuteMsg::TransferNft {
@@ -105,7 +105,7 @@ pub fn execute(
             }),
         ),
         ExecuteMsg::Burn { token_id } => execute_burn(deps, env, info, token_id),
-        _ => Bs721NameContract::default()
+        _ => Bs721ProfileContract::default()
             .execute(deps, env, info, msg.into())
             .map_err(|e| e.into()),
     }
@@ -115,8 +115,8 @@ pub fn execute(
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::Params {} => to_json_binary(&query_params(deps)?),
-        QueryMsg::NameMarketplace {} => to_json_binary(&query_profile_marketplace(deps)?),
-        QueryMsg::Name { address } => to_json_binary(&query_name(deps, address)?),
+        QueryMsg::ProfileMarketplace {} => to_json_binary(&query_profile_marketplace(deps)?),
+        QueryMsg::Profile { address } => to_json_binary(&query_name(deps, address)?),
         QueryMsg::Verifier {} => to_json_binary(&VERIFIER.query_admin(deps)?),
         QueryMsg::AssociatedAddress { name } => {
             to_json_binary(&query_associated_address(deps, &name)?)
@@ -126,7 +126,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::IsTwitterVerified { name } => {
             to_json_binary(&query_is_twitter_verified(deps, &name)?)
         }
-        _ => Bs721NameContract::default().query(deps, env, msg.into()),
+        _ => Bs721ProfileContract::default().query(deps, env, msg.into()),
     }
 }
 

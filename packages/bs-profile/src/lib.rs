@@ -62,7 +62,7 @@ impl Metadata {
 #[cosmwasm_schema::cw_serde]
 pub enum BsProfileExecuteMsg {
     /// Set name marketplace contract address
-    SetNameMarketplace { address: String },
+    SetProfileMarketplace { address: String },
     /// Set an address for name reverse lookup
     /// Can be an EOA or a contract address
     AssociateAddress {
@@ -98,9 +98,9 @@ pub enum BsProfileQueryMsg {
     /// `address` can be any Bech32 encoded address. It will be
     /// converted to a bitsong address for internal mapping.
     #[returns(String)]
-    Name { address: String },
+    Profile { address: String },
     #[returns(Addr)]
-    NameMarketplace {},
+    ProfileMarketplace {},
     #[returns(String)]
     AssociatedAddress { name: String },
     #[returns(Option<NFT>)]

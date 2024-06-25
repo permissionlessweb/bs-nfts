@@ -2,8 +2,8 @@ use cosmwasm_std::Addr;
 use cw_controllers::Admin;
 use cw_storage_plus::Item;
 
-use serde::{Deserialize, Serialize};
 use bs_profile::minter::{Config, SudoParams};
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
 pub struct WhitelistContract {
@@ -19,9 +19,9 @@ pub enum WhitelistContractType {
 
 pub const SUDO_PARAMS: Item<SudoParams> = Item::new("params");
 
-pub const NAME_COLLECTION: Item<Addr> = Item::new("name-collection");
+pub const PROFILE_COLLECTION: Item<Addr> = Item::new("profile-collection");
 
-pub const profile_marketplace: Item<Addr> = Item::new("name-marketplace");
+pub const PROFILE_MARKETPLACE: Item<Addr> = Item::new("profile-market");
 
 pub const ADMIN: Admin = Admin::new("admin");
 

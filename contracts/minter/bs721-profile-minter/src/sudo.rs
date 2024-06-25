@@ -5,7 +5,7 @@ use bs_profile::minter::SudoParams;
 
 use crate::{
     msg::SudoMsg,
-    state::{NAME_COLLECTION, profile_marketplace, SUDO_PARAMS},
+    state::{PROFILE_COLLECTION, PROFILE_MARKETPLACE, SUDO_PARAMS},
     ContractError,
 };
 
@@ -33,7 +33,7 @@ pub fn sudo_update_name_collection(
     deps: DepsMut,
     collection: Addr,
 ) -> Result<Response, ContractError> {
-    NAME_COLLECTION.save(deps.storage, &collection)?;
+    PROFILE_COLLECTION.save(deps.storage, &collection)?;
 
     let event = Event::new("update-name-collection").add_attribute("collection", collection);
     Ok(Response::new().add_event(event))
@@ -43,7 +43,7 @@ pub fn sudo_update_profile_marketplace(
     deps: DepsMut,
     marketplace: Addr,
 ) -> Result<Response, ContractError> {
-    profile_marketplace.save(deps.storage, &marketplace)?;
+    PROFILE_MARKETPLACE.save(deps.storage, &marketplace)?;
 
     let event = Event::new("update-name-marketplace").add_attribute("marketplace", marketplace);
     Ok(Response::new().add_event(event))

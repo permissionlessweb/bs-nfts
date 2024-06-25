@@ -5,7 +5,7 @@ use cosmwasm_std::{to_json_binary, Addr, Binary, Deps, Env, StdResult};
 
 use crate::{
     msg::QueryMsg,
-    state::{ADMIN, CONFIG, NAME_COLLECTION, SUDO_PARAMS, WHITELISTS},
+    state::{ADMIN, CONFIG, PROFILE_COLLECTION, SUDO_PARAMS, WHITELISTS},
 };
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -25,7 +25,7 @@ fn query_whitelists(deps: Deps) -> StdResult<Vec<Addr>> {
 }
 
 fn query_collection(deps: Deps) -> StdResult<Addr> {
-    NAME_COLLECTION.load(deps.storage)
+    PROFILE_COLLECTION.load(deps.storage)
 }
 
 fn query_params(deps: Deps) -> StdResult<SudoParams> {

@@ -15,7 +15,7 @@ impl NameCollectionContract {
     pub fn name(&self, querier: &QuerierWrapper, address: &str) -> StdResult<String> {
         let res: String = querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
             contract_addr: self.addr().into(),
-            msg: to_json_binary(&QueryMsg::Name {
+            msg: to_json_binary(&QueryMsg::Profile {
                 address: address.to_string(),
             })?,
         }))?;

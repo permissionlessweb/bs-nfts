@@ -13,7 +13,7 @@ use std::marker::PhantomData;
 
 use crate::{commands::*, contract::*, ContractError};
 
-pub type Bs721NameContract<'a> = bs721_base::Bs721Contract<'a, Metadata, Empty, Empty, Empty>;
+pub type Bs721ProfileContract<'a> = bs721_base::Bs721Contract<'a, Metadata, Empty, Empty, Empty>;
 const CREATOR: &str = "creator";
 const IMPOSTER: &str = "imposter";
 
@@ -99,7 +99,7 @@ fn init() {
 
 #[test]
 fn mint_and_update() {
-    let contract = Bs721NameContract::default();
+    let contract = Bs721ProfileContract::default();
     // instantiate sg-names collection
     let mut deps = mock_deps();
     let info = mock_info(CREATOR, &[]);

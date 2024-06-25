@@ -24,7 +24,7 @@ use bs_profile::{
 
 use subtle_encoding::bech32;
 
-pub type Bs721NameContract<'a> = bs721_base::Bs721Contract<'a, Metadata, Empty, Empty, Empty>;
+pub type Bs721ProfileContract<'a> = bs721_base::Bs721Contract<'a, Metadata, Empty, Empty, Empty>;
 
 pub fn execute_associate_address(
     deps: DepsMut,
@@ -35,7 +35,7 @@ pub fn execute_associate_address(
     only_owner(deps.as_ref(), &info.sender, &name)?;
 
     // 1. remove old token_uri from reverse map if it exists
-    Bs721NameContract::default()
+    Bs721ProfileContract::default()
         .tokens
         .load(deps.storage, &name)
         .map(|prev_token_info| {
@@ -61,7 +61,7 @@ pub fn execute_associate_address(
 
     // 4. remove old token_uri / address from previous name
     old_name.map(|token_id| {
-        Bs721NameContract::default()
+        Bs721ProfileContract::default()
             .tokens
             .update(deps.storage, &token_id, |token| match token {
                 Some(mut token_info) => {
@@ -73,7 +73,7 @@ pub fn execute_associate_address(
     });
 
     // 5. associate new token_uri / address with new name / token_id
-    Bs721NameContract::default()
+    Bs721ProfileContract::default()
         .tokens
         .update(deps.storage, &name, |token| match token {
             Some(mut token_info) => {
@@ -133,14 +133,14 @@ pub fn execute_mint(
         seller_fee_bps: None,
         payment_addr: None,
     };
-    Bs721NameContract::default()
+    Bs721ProfileContract::default()
         .tokens
         .update(deps.storage, &token_id, |old| match old {
             Some(_) => Err(ContractError::Base(Claimed {})),
             None => Ok(token),
         })?;
 
-    Bs721NameContract::default().increment_tokens(deps.storage)?;
+    Bs721ProfileContract::default().increment_tokens(deps.storage)?;
 
     let event = Event::new("mint")
         .add_attribute("minter", info.sender)
@@ -199,13 +199,13 @@ fn update_ask_on_marketplace(
 }
 
 fn reset_token_metadata_and_reverse_map(deps: &mut DepsMut, token_id: &str) -> StdResult<()> {
-    let mut token = Bs721NameContract::default()
+    let mut token = Bs721ProfileContract::default()
         .tokens
         .load(deps.storage, token_id)?;
 
     // Reset image, records
     token.extension = Metadata::default();
-    Bs721NameContract::default()
+    Bs721ProfileContract::default()
         .tokens
         .save(deps.storage, token_id, &token)?;
 
@@ -215,7 +215,7 @@ fn reset_token_metadata_and_reverse_map(deps: &mut DepsMut, token_id: &str) -> S
 }
 
 fn remove_reverse_mapping(deps: &mut DepsMut, token_id: &str) -> StdResult<()> {
-    let mut token = Bs721NameContract::default()
+    let mut token = Bs721ProfileContract::default()
         .tokens
         .load(deps.storage, token_id)?;
 
@@ -225,7 +225,7 @@ fn remove_reverse_mapping(deps: &mut DepsMut, token_id: &str) -> StdResult<()> {
         token.token_uri = None;
     }
 
-    Bs721NameContract::default()
+    Bs721ProfileContract::default()
         .tokens
         .save(deps.storage, token_id, &token)?;
 
@@ -248,7 +248,7 @@ fn _transfer_nft(
         token_id: token_id.to_string(),
     };
 
-    Bs721NameContract::default().execute(deps, env, info.clone(), msg)?;
+    Bs721ProfileContract::default().execute(deps, env, info.clone(), msg)?;
 
     Ok(update_ask_msg)
 }
@@ -273,7 +273,7 @@ pub fn execute_send_nft(
         msg,
     };
 
-    Bs721NameContract::default().execute(deps, env, info.clone(), msg)?;
+    Bs721ProfileContract::default().execute(deps, env, info.clone(), msg)?;
 
     let event = Event::new("send")
         .add_attribute("sender", info.sender)
@@ -298,7 +298,7 @@ pub fn execute_update_image_nft(
         .add_attribute("owner", info.sender.to_string())
         .add_attribute("token_id", name);
 
-    Bs721NameContract::default()
+    Bs721ProfileContract::default()
         .tokens
         .update(deps.storage, &token_id, |token| match token {
             Some(mut token_info) => {
@@ -332,7 +332,7 @@ pub fn execute_add_text_record(
     only_owner(deps.as_ref(), &info.sender, &token_id)?;
     validate_record(&record)?;
 
-    Bs721NameContract::default()
+    Bs721ProfileContract::default()
         .tokens
         .update(deps.storage, &token_id, |token| match token {
             Some(mut token_info) => {
@@ -372,7 +372,7 @@ pub fn execute_remove_text_record(
     nonpayable(&info)?;
     only_owner(deps.as_ref(), &info.sender, &token_id)?;
 
-    Bs721NameContract::default()
+    Bs721ProfileContract::default()
         .tokens
         .update(deps.storage, &token_id, |token| match token {
             Some(mut token_info) => {
@@ -409,7 +409,7 @@ pub fn execute_update_text_record(
     only_owner(deps.as_ref(), &info.sender, &token_id)?;
     validate_record(&record)?;
 
-    Bs721NameContract::default()
+    Bs721ProfileContract::default()
         .tokens
         .update(deps.storage, &token_id, |token| match token {
             Some(mut token_info) => {
@@ -448,7 +448,7 @@ pub fn execute_verify_text_record(
 
     let token_id = name;
 
-    Bs721NameContract::default()
+    Bs721ProfileContract::default()
         .tokens
         .update(deps.storage, &token_id, |token| match token {
             Some(mut token_info) => {
@@ -480,7 +480,7 @@ pub fn execute_set_profile_marketplace(
 ) -> Result<Response, ContractError> {
     nonpayable(&info)?;
 
-    let minter = Bs721NameContract::default().minter(deps.as_ref())?;
+    let minter = Bs721ProfileContract::default().minter(deps.as_ref())?;
     if minter.minter != info.sender {
         return Err(ContractError::Base(Unauthorized {}));
     }
@@ -494,7 +494,7 @@ pub fn execute_set_profile_marketplace(
 }
 
 fn only_owner(deps: Deps, sender: &Addr, token_id: &str) -> Result<Addr, ContractError> {
-    let owner = Bs721NameContract::default()
+    let owner = Bs721ProfileContract::default()
         .tokens
         .load(deps.storage, token_id)?
         .owner;
@@ -544,7 +544,7 @@ pub fn query_params(deps: Deps) -> StdResult<SudoParams> {
 }
 
 pub fn query_associated_address(deps: Deps, name: &str) -> StdResult<String> {
-    Bs721NameContract::default()
+    Bs721ProfileContract::default()
         .tokens
         .load(deps.storage, name)?
         .token_uri
@@ -552,7 +552,7 @@ pub fn query_associated_address(deps: Deps, name: &str) -> StdResult<String> {
 }
 
 pub fn query_image_nft(deps: Deps, name: &str) -> StdResult<Option<NFT>> {
-    Ok(Bs721NameContract::default()
+    Ok(Bs721ProfileContract::default()
         .tokens
         .load(deps.storage, name)?
         .extension
@@ -560,14 +560,14 @@ pub fn query_image_nft(deps: Deps, name: &str) -> StdResult<Option<NFT>> {
 }
 
 pub fn query_text_records(deps: Deps, name: &str) -> StdResult<Vec<TextRecord>> {
-    Ok(Bs721NameContract::default()
+    Ok(Bs721ProfileContract::default()
         .tokens
         .load(deps.storage, name)?
         .extension
         .records)
 }
 pub fn query_is_twitter_verified(deps: Deps, name: &str) -> StdResult<bool> {
-    let records = Bs721NameContract::default()
+    let records = Bs721ProfileContract::default()
         .tokens
         .load(deps.storage, name)?
         .extension

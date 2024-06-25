@@ -55,7 +55,7 @@ pub struct InstantiateMsg {
 #[cfg_attr(feature = "interface", derive(cw_orch::ExecuteFns))]
 pub enum ExecuteMsg<T> {
     /// Set name marketplace contract address
-    SetNameMarketplace { address: String },
+    SetProfileMarketplace { address: String },
     /// Set an address for name reverse lookup and updates token_uri
     /// Can be an EOA or a contract address.
     AssociateAddress {
@@ -179,10 +179,10 @@ pub enum QueryMsg {
     Params {},
     /// Reverse lookup of name for address
     #[returns(String)]
-    Name { address: String },
+    Profile { address: String },
     /// Returns the marketplace contract address
     #[returns(Addr)]
-    NameMarketplace {},
+    ProfileMarketplace {},
     /// Returns the associated address for a name
     #[returns(Addr)]
     AssociatedAddress { name: String },

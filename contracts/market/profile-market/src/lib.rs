@@ -7,4 +7,4 @@ pub mod contract;
 mod unit_tests;
 
 pub use error::ContractError;
-pub use helpers::NameMarketplaceContract;
+pub use helpers::ProfileMarketplaceContract;

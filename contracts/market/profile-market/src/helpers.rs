@@ -15,9 +15,9 @@ use crate::{commands::store_ask, ContractError};
 
 /// MarketplaceContract is a wrapper around Addr that provides a lot of helpers
 #[cw_serde]
-pub struct NameMarketplaceContract(pub Addr);
+pub struct ProfileMarketplaceContract(pub Addr);
 
-impl NameMarketplaceContract {
+impl ProfileMarketplaceContract {
     pub fn addr(&self) -> Addr {
         self.0.clone()
     }

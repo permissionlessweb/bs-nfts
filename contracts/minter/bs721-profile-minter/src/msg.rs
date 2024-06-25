@@ -45,10 +45,10 @@ pub enum SudoMsg {
         base_price: Uint128,
         fair_burn_bps: u64,
     },
-    UpdateNameCollection {
+    UpdateProfileCollection {
         collection: String,
     },
-    UpdateNameMarketplace {
+    UpdateProfileMarketplace {
         marketplace: String,
     },
 }

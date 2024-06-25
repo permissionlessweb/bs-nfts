@@ -211,7 +211,7 @@ fn instantiate_contracts(
 
     let res: Addr = app
         .wrap()
-        .query_wasm_smart(COLLECTION, &(BsProfileQueryMsg::NameMarketplace {}))
+        .query_wasm_smart(COLLECTION, &(BsProfileQueryMsg::ProfileMarketplace {}))
         .unwrap();
     assert_eq!(res, marketplace.to_string());
 
@@ -605,7 +605,7 @@ mod execute {
             .wrap()
             .query_wasm_smart(
                 Addr::unchecked(COLLECTION),
-                &(BsProfileQueryMsg::Name {
+                &(BsProfileQueryMsg::Profile {
                     address: user.to_string(),
                 }),
             )
@@ -677,7 +677,7 @@ mod execute {
         // confirm removed from reverse names map
         let res: Result<String, StdError> = app.wrap().query_wasm_smart(
             Addr::unchecked(COLLECTION),
-            &(BsProfileQueryMsg::Name {
+            &(BsProfileQueryMsg::Profile {
                 address: user.to_string(),
             }),
         );
@@ -1142,7 +1142,7 @@ mod query {
 
     //     let res: StdResult<String> = app.wrap().query_wasm_smart(
     //         COLLECTION,
-    //         &BsProfileQueryMsg::Name {
+    //         &BsProfileQueryMsg::Profile {
     //             address: USER.to_string(),
     //         },
     //     );
@@ -1573,7 +1573,7 @@ mod query {
         // fails with "user" string, has to be a bech32 address
         let res: StdResult<String> = app.wrap().query_wasm_smart(
             COLLECTION,
-            &(BsProfileQueryMsg::Name {
+            &(BsProfileQueryMsg::Profile {
                 address: USER.to_string(),
             }),
         );
@@ -1601,7 +1601,7 @@ mod query {
             .wrap()
             .query_wasm_smart(
                 COLLECTION,
-                &(BsProfileQueryMsg::Name {
+                &(BsProfileQueryMsg::Profile {
                     address: cosmos_address.to_string(),
                 }),
             )
@@ -1977,7 +1977,7 @@ mod collection {
         );
         assert!(res.is_ok());
 
-        let msg = BsProfileQueryMsg::Name {
+        let msg = BsProfileQueryMsg::Profile {
             address: user.to_string(),
         };
         let res: String = app.wrap().query_wasm_smart(COLLECTION, &msg).unwrap();
@@ -1985,13 +1985,13 @@ mod collection {
 
         transfer(&mut app, user, user2);
 
-        let msg = BsProfileQueryMsg::Name {
+        let msg = BsProfileQueryMsg::Profile {
             address: user.to_string(),
         };
         let err: StdResult<String> = app.wrap().query_wasm_smart(COLLECTION, &msg);
         assert!(err.is_err());
 
-        let msg = BsProfileQueryMsg::Name {
+        let msg = BsProfileQueryMsg::Profile {
             address: user2.to_string(),
         };
         let err: StdResult<String> = app.wrap().query_wasm_smart(COLLECTION, &msg);
@@ -2075,7 +2075,7 @@ mod collection {
         );
         assert!(res.is_ok());
 
-        let msg = BsProfileQueryMsg::Name {
+        let msg = BsProfileQueryMsg::Profile {
             address: user.to_string(),
         };
         let res: String = app.wrap().query_wasm_smart(COLLECTION, &msg).unwrap();
@@ -2098,7 +2098,7 @@ mod collection {
         let res: Option<Ask> = app.wrap().query_wasm_smart(MKT, &msg).unwrap();
         assert!(res.is_some());
 
-        let msg = BsProfileQueryMsg::Name {
+        let msg = BsProfileQueryMsg::Profile {
             address: user.to_string(),
         };
         let res: StdResult<String> = app.wrap().query_wasm_smart(COLLECTION, &msg);
