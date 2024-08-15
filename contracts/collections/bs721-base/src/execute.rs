@@ -1,11 +1,9 @@
-use cw2::set_contract_version;
-use cw_ownable::update_ownership;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 
 use cosmwasm_std::{Binary, CustomMsg, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
 
-use bs721::{Bs721Execute, Bs721Query, Bs721ReceiveMsg, ContractInfoResponse, Expiration};
+use bs721::{Bs721Execute, Bs721ReceiveMsg, ContractInfoResponse, Expiration};
 use cw_utils::maybe_addr;
 
 use crate::error::ContractError;

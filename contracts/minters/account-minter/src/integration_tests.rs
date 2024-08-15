@@ -495,7 +495,7 @@ mod execute {
 
         let msg = Bs721AccountsExecuteMsg::AssociateAddress {
             name: NAME.to_string(),
-            address: Some(user.to_string()),
+            address: Some(USER.to_string()),
         };
         let res = app
             .execute_contract(
@@ -516,7 +516,7 @@ mod execute {
                 }),
             )
             .unwrap();
-        assert_eq!(res, user.to_string());
+        assert_eq!(res, USER.to_string());
 
         // added to get around rate limiting
         update_block_time(&mut app, 60);
@@ -530,13 +530,14 @@ mod execute {
             name: name2.to_string(),
             address: Some(user.to_string()),
         };
-        let res = app.execute_contract(
-            Addr::unchecked(user),
-            Addr::unchecked(COLLECTION),
-            &msg,
-            &[],
-        );
-        assert!(res.is_ok());
+        let res = app
+            .execute_contract(
+                Addr::unchecked(USER),
+                Addr::unchecked(COLLECTION),
+                &msg,
+                &[],
+            )
+            .unwrap();
 
         let res: String = app
             .wrap()
@@ -940,541 +941,23 @@ mod query {
         Ok(())
     }
 
-    // #[test]
-    // fn query_renewal_queue() {
-    //     let mut app = instantiate_contracts(None, None, None);
-
-    //     // mint two names at the same time
-    //     let res = mint_and_list(&mut app, NAME, USER);
-    //     assert!(res.is_ok());
-    //     let res = mint_and_list(&mut app, "hack", ADMIN2);
-    //     assert!(res.is_ok());
-
-    //     let res: Vec<Ask> = app
-    //         .wrap()
-    //         .query_wasm_smart(
-    //             MKT,
-    //             &(MarketplaceQueryMsg::RenewalQueue {
-    //                 time: app.block_info().time.plus_seconds(SECONDS_PER_YEAR),
-    //             }),
-    //         )
-    //         .unwrap();
-    //     assert_eq!(res.len(), 2);
-    //     assert_eq!(res[1].token_id, "hack".to_string());
-    // }
-
-    // #[test]
-    // fn renewal_fee_transfer_refund() {
-    //     let mut app = instantiate_contracts(None, None, None);
-
-    //     mint_and_list(&mut app, NAME, USER).unwrap();
-
-    //     // mint 1000 funds to user
-    //     let renewal_fee = coins(1000_u128, NATIVE_DENOM);
-
-    //     app.sudo(CwSudoMsg::Bank({
-    //         BankSudo::Mint {
-    //             to_address: USER.to_string(),
-    //             amount: renewal_fee.clone(),
-    //         }
-    //     }))
-    //     .unwrap();
-
-    //     // user renew domain name
-    //     let msg = MarketplaceExecuteMsg::FundRenewal {
-    //         token_id: NAME.to_string(),
-    //     };
-
-    //     app.execute_contract(
-    //         Addr::unchecked(USER),
-    //         Addr::unchecked(MKT),
-    //         &msg,
-    //         &renewal_fee,
-    //     )
-    //     .unwrap();
-
-    //     // verify user have no money
-    //     let res = app
-    //         .wrap()
-    //         .query_balance(USER.to_string(), NATIVE_DENOM)
-    //         .unwrap();
-    //     assert_eq!(res.amount, Uint128::new(0));
-
-    //     // user sends the nft to bob
-    //     let bob: &str = "bob";
-
-    //     let msg = Bs721AccountsExecuteMsg::TransferNft {
-    //         recipient: bob.to_string(),
-    //         token_id: NAME.to_string(),
-    //     };
-    //     app.execute_contract(
-    //         Addr::unchecked(USER),
-    //         Addr::unchecked(COLLECTION),
-    //         &msg,
-    //         &[],
-    //     )
-    //     .unwrap();
-
-    //     // the renewal fee should refunded back to user
-    //     let user_balance = app
-    //         .wrap()
-    //         .query_balance(USER.to_string(), NATIVE_DENOM)
-    //         .unwrap()
-    //         .amount;
-    //     assert_eq!(user_balance, renewal_fee[0].amount);
-
-    //     let bob_balance = app.wrap().query_balance(bob, NATIVE_DENOM).unwrap().amount;
-    //     assert_eq!(bob_balance, Uint128::zero());
-    // }
-
-    // #[test]
-    // fn renew_price_no_bid() {
-    //     let mut app = instantiate_contracts(None, None, None);
-
-    //     mint_and_list(&mut app, NAME, USER).unwrap();
-
-    //     let res: StdResult<String> = app.wrap().query_wasm_smart(
-    //         COLLECTION,
-    //         &BsAccountQueryMsg::Account {
-    //             address: USER.to_string(),
-    //         },
-    //     );
-    //     assert!(res.is_err());
-
-    //     let result = app.wrap().query_wasm_smart::<(Option<Coin>, Option<Bid>)>(
-    //         MKT,
-    //         &MarketplaceQueryMsg::AskRenewPrice {
-    //             current_time: app.block_info().time,
-    //             token_id: NAME.to_string(),
-    //         },
-    //     );
-    //     assert!(result.is_ok());
-
-    //     let (renewal_price, _renewal_bid) = result.unwrap();
-    //     assert!(renewal_price.is_none());
-
-    //     update_block_time(&mut app, SECONDS_PER_YEAR - (60 * 60 * 24 * 30));
-
-    //     let result = app.wrap().query_wasm_smart::<(Option<Coin>, Option<Bid>)>(
-    //         MKT,
-    //         &MarketplaceQueryMsg::AskRenewPrice {
-    //             current_time: app.block_info().time,
-    //             token_id: NAME.to_string(),
-    //         },
-    //     );
-    //     assert!(result.is_ok());
-
-    //     let (renewal_price, _renewal_bid) = result.unwrap();
-
-    //     let params: NameMinterParams = app
-    //         .wrap()
-    //         .query_wasm_smart(MINTER, &BsProfileMinterQueryMsg::Params {})
-    //         .unwrap();
-
-    //     let char_price = get_char_price(params.base_price.u128(), NAME.len());
-
-    //     println!("char_price: {}", char_price);
-
-    //     assert_eq!(renewal_price.unwrap().amount, char_price);
-    // }
-
-    // #[test]
-    // fn renew_price_with_bid() {
-    //     let mut app = instantiate_contracts(None, None, None);
-
-    //     mint_and_list(&mut app, NAME, USER).unwrap();
-
-    //     // Amount to make it just above the char price
-    //     let bid_amount = 1_000_000_000u128 * 201u128;
-
-    //     update_block_time(&mut app, SECONDS_PER_YEAR - (60 * 60 * 24 * 31));
-
-    //     bid(&mut app, NAME, BIDDER, bid_amount);
-
-    //     update_block_time(&mut app, 60 * 60 * 24 * 31);
-
-    //     let result = app.wrap().query_wasm_smart::<(Option<Coin>, Option<Bid>)>(
-    //         MKT,
-    //         &MarketplaceQueryMsg::AskRenewPrice {
-    //             current_time: app.block_info().time,
-    //             token_id: NAME.to_string(),
-    //         },
-    //     );
-    //     assert!(result.is_ok());
-
-    //     let (renewal_price, _renewal_bid) = result.unwrap();
-
-    //     let params: ProfileMarketplaceParams = app
-    //         .wrap()
-    //         .query_wasm_smart(MKT, &ProfileMarketplaceQueryMsg::Params {})
-    //         .unwrap();
-
-    //     let expect_price = Uint128::from(bid_amount) * params.renewal_bid_percentage;
-    //     assert_eq!(renewal_price.unwrap().amount, expect_price);
-    // }
-
-    // #[test]
-    // fn multiple_renew_prices() {
-    //     // test that QueryRenewPrices returns multiple entires
-    //     let mut app = instantiate_contracts(None, None, None);
-
-    //     mint_and_list(&mut app, NAME, USER).unwrap();
-    //     mint_and_list(&mut app, NAME2, USER).unwrap();
-
-    //     // Amount to make it just above the char price
-    //     let bid_amount = 1_000_000_000u128 * 201u128;
-
-    //     update_block_time(&mut app, SECONDS_PER_YEAR - (60 * 60 * 24 * 31));
-
-    //     bid(&mut app, NAME, BIDDER, bid_amount);
-    //     bid(&mut app, NAME2, BIDDER, bid_amount);
-
-    //     update_block_time(&mut app, 60 * 60 * 24 * 31);
-
-    //     let result = app.wrap().query_wasm_smart::<Vec<AskRenewPriceResponse>>(
-    //         MKT,
-    //         &MarketplaceQueryMsg::AskRenewalPrices {
-    //             current_time: app.block_info().time,
-    //             token_ids: vec![NAME.to_string(), NAME2.to_string()],
-    //         },
-    //     );
-    //     println!("{:?}", result);
-    //     assert!(result.is_ok());
-    // }
-
-    // #[test]
-    // fn renew_execute_msg() {
-    //     let mut app = instantiate_contracts(None, None, None);
-
-    //     mint_and_list(&mut app, NAME, USER).unwrap();
-
-    //     // Amount to make it just above the char price
-    //     let bid_amount = 1_000_000_000u128 * 201u128;
-
-    //     update_block_time(&mut app, SECONDS_PER_YEAR - (60 * 60 * 24 * 30));
-
-    //     bid(&mut app, NAME, BIDDER, bid_amount);
-
-    //     update_block_time(&mut app, 1);
-
-    //     let result = app.wrap().query_wasm_smart::<(Option<Coin>, Option<Bid>)>(
-    //         MKT,
-    //         &MarketplaceQueryMsg::AskRenewPrice {
-    //             current_time: app.block_info().time,
-    //             token_id: NAME.to_string(),
-    //         },
-    //     );
-    //     assert!(result.is_ok());
-
-    //     let (renewal_price, _renewal_bid) = result.unwrap();
-    //     let renewal_amount = renewal_price.unwrap().amount;
-
-    //     let fund_amount = coins(renewal_amount.u128() * 100_u128, NATIVE_DENOM);
-    //     app.sudo(CwSudoMsg::Bank({
-    //         BankSudo::Mint {
-    //             to_address: USER.to_string(),
-    //             amount: fund_amount,
-    //         }
-    //     }))
-    //     .map_err(|err| println!("{:?}", err))
-    //     .ok();
-
-    //     let ask = app
-    //         .wrap()
-    //         .query_wasm_smart::<Option<Ask>>(
-    //             MKT,
-    //             &MarketplaceQueryMsg::Ask {
-    //                 token_id: NAME.to_string(),
-    //             },
-    //         )
-    //         .unwrap()
-    //         .unwrap();
-    //     let expected_renewal_time = ask.renewal_time.plus_seconds(SECONDS_PER_YEAR);
-
-    //     let result = app.execute_contract(
-    //         Addr::unchecked(USER),
-    //         Addr::unchecked(MKT),
-    //         &MarketplaceExecuteMsg::Renew {
-    //             token_id: NAME.to_string(),
-    //         },
-    //         &[coin(renewal_amount.u128(), NATIVE_DENOM)],
-    //     );
-    //     assert!(result.is_ok());
-
-    //     let result = app.wrap().query_wasm_smart::<Option<Ask>>(
-    //         MKT,
-    //         &MarketplaceQueryMsg::Ask {
-    //             token_id: NAME.to_string(),
-    //         },
-    //     );
-    //     assert!(result.is_ok());
-    //     let ask = result.unwrap().unwrap();
-
-    //     assert_eq!(ask.renewal_fund, Uint128::zero());
-    //     assert_eq!(ask.renewal_time, expected_renewal_time);
-
-    //     let result = app.wrap().query_wasm_smart::<Vec<Ask>>(
-    //         MKT,
-    //         &MarketplaceQueryMsg::RenewalQueue {
-    //             time: expected_renewal_time,
-    //         },
-    //     );
-    //     assert!(result.is_ok());
-
-    //     let asks = result.unwrap();
-    //     assert_eq!(asks.len(), 1);
-    // }
-
-    // #[test]
-    // fn process_renewals_renew() {
-    //     let mut app = instantiate_contracts(None, None, None);
-
-    //     mint_and_list(&mut app, NAME, USER).unwrap();
-
-    //     update_block_time(&mut app, SECONDS_PER_YEAR - (60 * 60 * 24 * 30));
-
-    //     let response = app.wrap().query_wasm_smart::<(Option<Coin>, Option<Bid>)>(
-    //         MKT,
-    //         &MarketplaceQueryMsg::AskRenewPrice {
-    //             current_time: app.block_info().time,
-    //             token_id: NAME.to_string(),
-    //         },
-    //     );
-    //     assert!(response.is_ok());
-    //     let renewal_price = response.unwrap().0.unwrap();
-
-    //     let fund_amount = coins(renewal_price.amount.u128() * 100_u128, NATIVE_DENOM);
-    //     app.sudo(CwSudoMsg::Bank({
-    //         BankSudo::Mint {
-    //             to_address: USER.to_string(),
-    //             amount: fund_amount,
-    //         }
-    //     }))
-    //     .map_err(|err| println!("{:?}", err))
-    //     .ok();
-    //     let result = app.execute_contract(
-    //         Addr::unchecked(USER),
-    //         Addr::unchecked(MKT),
-    //         &MarketplaceExecuteMsg::FundRenewal {
-    //             token_id: NAME.to_string(),
-    //         },
-    //         &[coin(renewal_price.amount.u128(), NATIVE_DENOM)],
-    //     );
-    //     assert!(result.is_ok());
-
-    //     update_block_time(&mut app, 60 * 60 * 24 * 30);
-
-    //     let result = app.execute_contract(
-    //         Addr::unchecked(OPERATOR),
-    //         Addr::unchecked(MKT),
-    //         &MarketplaceExecuteMsg::ProcessRenewals {
-    //             time: app.block_info().time,
-    //         },
-    //         &[],
-    //     );
-    //     assert!(result.is_ok());
-
-    //     let result = app.wrap().query_wasm_smart::<Option<Ask>>(
-    //         MKT,
-    //         &MarketplaceQueryMsg::Ask {
-    //             token_id: NAME.to_string(),
-    //         },
-    //     );
-    //     assert!(result.is_ok());
-    //     let ask = result.unwrap().unwrap();
-
-    //     assert_eq!(ask.seller, USER.to_string());
-    //     assert_eq!(ask.renewal_fund, renewal_price.amount);
-
-    //     let expected_renewal_time = app.block_info().time.plus_seconds(SECONDS_PER_YEAR);
-    //     assert_eq!(ask.renewal_time, expected_renewal_time);
-
-    //     let result = app.wrap().query_wasm_smart::<Vec<Ask>>(
-    //         MKT,
-    //         &MarketplaceQueryMsg::RenewalQueue {
-    //             time: expected_renewal_time,
-    //         },
-    //     );
-    //     assert!(result.is_ok());
-
-    //     let asks = result.unwrap();
-    //     assert_eq!(asks.len(), 1);
-    // }
-
-    // #[test]
-    // fn process_renewals_sell() {
-    //     let mut app = instantiate_contracts(None, None, None);
-
-    //     mint_and_list(&mut app, NAME, USER).unwrap();
-
-    //     // Amount to make it just above the char price
-    //     let bid_amount = 1_000_000_000u128 * 201u128;
-
-    //     update_block_time(&mut app, SECONDS_PER_YEAR - (60 * 60 * 24 * 31));
-
-    //     bid(&mut app, NAME, BIDDER, bid_amount);
-
-    //     update_block_time(&mut app, 60 * 60 * 24 * 31);
-
-    //     let response = app.wrap().query_wasm_smart::<(Option<Coin>, Option<Bid>)>(
-    //         MKT,
-    //         &MarketplaceQueryMsg::AskRenewPrice {
-    //             current_time: app.block_info().time,
-    //             token_id: NAME.to_string(),
-    //         },
-    //     );
-    //     println!("xxx {:?}", response);
-    //     assert!(response.is_ok());
-    //     let response = response.unwrap();
-
-    //     assert!(response.1.is_some());
-    //     let renewal_price = response.0.unwrap();
-
-    //     let fund_amount = coins(renewal_price.amount.u128() * 100_u128, NATIVE_DENOM);
-    //     app.sudo(CwSudoMsg::Bank({
-    //         BankSudo::Mint {
-    //             to_address: USER.to_string(),
-    //             amount: fund_amount,
-    //         }
-    //     }))
-    //     .map_err(|err| println!("{:?}", err))
-    //     .ok();
-    //     let result = app.execute_contract(
-    //         Addr::unchecked(USER),
-    //         Addr::unchecked(MKT),
-    //         &MarketplaceExecuteMsg::FundRenewal {
-    //             token_id: NAME.to_string(),
-    //         },
-    //         &[coin(renewal_price.amount.u128() - 1u128, NATIVE_DENOM)],
-    //     );
-    //     assert!(result.is_ok());
-
-    //     let user_balance_before = app
-    //         .wrap()
-    //         .query_balance(USER.to_string(), NATIVE_DENOM)
-    //         .unwrap();
-
-    //     let result = app.execute_contract(
-    //         Addr::unchecked(OPERATOR),
-    //         Addr::unchecked(MKT),
-    //         &MarketplaceExecuteMsg::ProcessRenewals {
-    //             time: app.block_info().time,
-    //         },
-    //         &[],
-    //     );
-    //     assert!(result.is_ok());
-
-    //     let result = app.wrap().query_wasm_smart::<Option<Ask>>(
-    //         MKT,
-    //         &MarketplaceQueryMsg::Ask {
-    //             token_id: NAME.to_string(),
-    //         },
-    //     );
-    //     assert!(result.is_ok());
-    //     let ask = result.unwrap().unwrap();
-
-    //     assert_eq!(ask.seller, BIDDER.to_string());
-    //     assert_eq!(ask.renewal_fund, Uint128::zero());
-
-    //     let expected_renewal_time = app.block_info().time.plus_seconds(SECONDS_PER_YEAR);
-    //     assert_eq!(ask.renewal_time, expected_renewal_time);
-
-    //     let result = app.wrap().query_wasm_smart::<Vec<Ask>>(
-    //         MKT,
-    //         &MarketplaceQueryMsg::RenewalQueue {
-    //             time: expected_renewal_time,
-    //         },
-    //     );
-    //     assert!(result.is_ok());
-
-    //     let asks = result.unwrap();
-    //     assert_eq!(asks.len(), 1);
-
-    //     let user_balance_after = app
-    //         .wrap()
-    //         .query_balance(USER.to_string(), NATIVE_DENOM)
-    //         .unwrap();
-    //     assert!(user_balance_before.amount < user_balance_after.amount);
-    // }
-
-    // #[test]
-    // fn process_renewals_renew_free() {
-    //     let mut app = instantiate_contracts(None, None, None);
-
-    //     mint_and_list(&mut app, NAME, USER).unwrap();
-
-    //     update_block_time(&mut app, SECONDS_PER_YEAR - (60 * 60 * 24 * 30));
-
-    //     let response = app.wrap().query_wasm_smart::<(Option<Coin>, Option<Bid>)>(
-    //         MKT,
-    //         &MarketplaceQueryMsg::AskRenewPrice {
-    //             current_time: app.block_info().time,
-    //             token_id: NAME.to_string(),
-    //         },
-    //     );
-    //     assert!(response.is_ok());
-    //     let renewal_price = response.unwrap().0.unwrap();
-
-    //     let fund_amount = coins(renewal_price.amount.u128() * 100_u128, NATIVE_DENOM);
-    //     app.sudo(CwSudoMsg::Bank({
-    //         BankSudo::Mint {
-    //             to_address: USER.to_string(),
-    //             amount: fund_amount,
-    //         }
-    //     }))
-    //     .map_err(|err| println!("{:?}", err))
-    //     .ok();
-    //     let result = app.execute_contract(
-    //         Addr::unchecked(USER),
-    //         Addr::unchecked(MKT),
-    //         &MarketplaceExecuteMsg::FundRenewal {
-    //             token_id: NAME.to_string(),
-    //         },
-    //         &[coin(renewal_price.amount.u128() - 1u128, NATIVE_DENOM)],
-    //     );
-    //     assert!(result.is_ok());
-
-    //     update_block_time(&mut app, 60 * 60 * 24 * 30);
-
-    //     let result = app.execute_contract(
-    //         Addr::unchecked(OPERATOR),
-    //         Addr::unchecked(MKT),
-    //         &MarketplaceExecuteMsg::ProcessRenewals {
-    //             time: app.block_info().time,
-    //         },
-    //         &[],
-    //     );
-    //     assert!(result.is_ok());
-
-    //     let result = app.wrap().query_wasm_smart::<Option<Ask>>(
-    //         MKT,
-    //         &MarketplaceQueryMsg::Ask {
-    //             token_id: NAME.to_string(),
-    //         },
-    //     );
-    //     assert!(result.is_ok());
-    //     assert!(result.unwrap().is_some());
-    // }
-
     #[test]
     fn query_name() {
         let mut app = instantiate_contracts(None, None, None);
-
         let res = mint_and_list(&mut app, NAME, USER).unwrap();
 
         // fails with "user" string, has to be a bech32 address
         let res: StdResult<String> = app.wrap().query_wasm_smart(
             COLLECTION,
             &(BsAccountQueryMsg::Account {
-                address: USER.to_string(),
+                address: USER2.to_string(),
             }),
         );
         assert!(res.is_err());
 
         let user = "bitsong1hsk6jryyqjfhp5dhc55tc9jtckygx0epmnl9d9";
-        let cosmos_address = "bitsong1hsk6jryyqjfhp5dhc55tc9jtckygx0epmnl9d9";
 
-        let res = mint_and_list(&mut app, "yoyo", USER).unwrap();
+        mint_and_list(&mut app, "yoyo", USER).unwrap();
 
         let msg = Bs721AccountsExecuteMsg::AssociateAddress {
             name: "yoyo".to_string(),
@@ -1494,7 +977,7 @@ mod query {
             .query_wasm_smart(
                 COLLECTION,
                 &(BsAccountQueryMsg::Account {
-                    address: cosmos_address.to_string(),
+                    address: user.to_string(),
                 }),
             )
             .unwrap();
@@ -1859,20 +1342,22 @@ mod collection {
 
         let msg = Bs721AccountsExecuteMsg::AssociateAddress {
             name: NAME.to_string(),
-            address: Some(USER.to_string()),
+            address: Some(user.to_string()),
         };
-        let res = app.execute_contract(
-            Addr::unchecked(USER),
-            Addr::unchecked(COLLECTION),
-            &msg,
-            &[],
-        ).unwrap();
+        let res = app
+            .execute_contract(
+                Addr::unchecked(USER),
+                Addr::unchecked(COLLECTION),
+                &msg,
+                &[],
+            )
+            .unwrap();
 
         let msg = BsAccountQueryMsg::Account {
             address: user.to_string(),
         };
         let res: String = app.wrap().query_wasm_smart(COLLECTION, &msg).unwrap();
-        assert_eq!(res, NAME.to_string());
+        assert_eq!(res, user.to_string());
 
         transfer(&mut app, user, user2);
 

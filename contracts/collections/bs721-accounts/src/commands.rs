@@ -122,7 +122,7 @@ pub fn execute_mint(
         owner: deps.api.addr_validate(&owner)?,
         approvals: vec![],
         token_uri: None,
-        extension: extension.clone(),
+        extension,
         seller_fee_bps: None,
         payment_addr: None,
     };
