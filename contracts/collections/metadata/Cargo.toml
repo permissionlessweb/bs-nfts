@@ -1,7 +1,11 @@
 [package]
-name          = "cw721-track"
-description   = "TODO: add description"
-authors       = ["Angelo Recca <hello@bitsong.io>"]
+name          = "cw721-metadata-onchain"
+description   = "An opionated `cw721-base` explicitly defining `NftExtension` for metadata on chain"
+authors       = [
+  "mr-t <mr-t@arkprotocol.io>",
+  "Ethan Frey <ethanfrey@users.noreply.github.com>",
+  "Orkun Külçe <orkun@deuslabs.fi>",
+]
 version       = { workspace = true }
 edition       = { workspace = true }
 license       = { workspace = true }
@@ -10,6 +14,7 @@ homepage      = { workspace = true }
 documentation = { workspace = true }
 
 [lib]
+doctest      = false # disable doc tests
 crate-type = ["cdylib", "rlib"]
 
 [features]
@@ -21,11 +26,8 @@ library = []
 [dependencies]
 cosmwasm-schema = { workspace = true }
 cosmwasm-std    = { workspace = true }
-bs721-royalties         = { workspace = true, features = ["library"] }
 cw2             = { workspace = true }
 cw721           = { workspace = true }
-cw721-base      = { workspace = true, features = ["library"] }
-cw-storage-plus = { workspace = true }
+cw721-base      = { workspace = true }
 schemars        = { workspace = true }
 serde           = { workspace = true }
-thiserror       = { workspace = true }

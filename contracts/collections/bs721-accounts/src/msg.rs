@@ -3,13 +3,13 @@ use bs721_base::msg::ExecuteMsg as Bs721ExecuteMsg;
 use bs721_base::InstantiateMsg as Bs721InstantiateMsg;
 use bs_account::{Metadata, TextRecord, NFT};
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Addr, Binary, Empty};
+use cosmwasm_std::{Addr, Binary, CustomMsg, Empty};
 
 use bs721::{
     AllNftInfoResponse, ApprovalResponse, ApprovalsResponse, ContractInfoResponse,
     NumTokensResponse, OperatorsResponse, OwnerOfResponse, TokensResponse,
 };
-use bs721_base::{MintMsg, MinterResponse, QueryMsg as Bs721QueryMsg};
+use bs721_base::{MinterResponse, QueryMsg as Bs721QueryMsg};
 
 #[cw_serde]
 pub struct InstantiateMsg {
@@ -73,7 +73,24 @@ pub enum ExecuteMsg<T> {
     /// Remove previously granted ApproveAll permission
     RevokeAll { operator: String },
     /// Mint a new NFT, can only be called by the contract minter
-    Mint(MintMsg<T>),
+    Mint {
+        /// Unique ID of the NFT
+        token_id: String,
+        /// The owner of the newly minted NFT
+        owner: String,
+        /// Universal resource identifier for this NFT
+        /// Should point to a JSON file that conforms to the ERC721
+        /// Metadata JSON Schema
+        token_uri: Option<String>,
+        /// Seller fee basis points, 0-10000
+        /// 0 means no fee, 100 means 1%, 10000 means 100%
+        /// This is the fee paid by the buyer to the original creator
+        seller_fee_bps: Option<u16>,
+        /// Payment address, is the address that will receive the payment
+        payment_addr: Option<String>,
+        /// Any custom extension used by this contract
+        extension: T,
+    },
     /// Burn an NFT the sender has access to
     Burn { token_id: String },
     /// Freeze collection info from further updates
@@ -116,21 +133,14 @@ impl<T> From<ExecuteMsg<T>> for Bs721ExecuteMsg<T> {
             }
             ExecuteMsg::RevokeAll { operator } => Bs721ExecuteMsg::RevokeAll { operator },
             ExecuteMsg::Burn { token_id } => Bs721ExecuteMsg::Burn { token_id },
-            // ExecuteMsg::UpdateCollectionInfo { collection_info } => {
-            //     Bs721ExecuteMsg::UpdateCollectionInfo { collection_info }
-            // }
-            // ExecuteMsg::UpdateStartTradingTime(start_time) => {
-            //     Bs721ExecuteMsg::UpdateStartTradingTime(start_time)
-            // }
-            // ExecuteMsg::FreezeCollectionInfo {} => Bs721ExecuteMsg::FreezeCollectionInfo {},
-            ExecuteMsg::Mint(MintMsg {
+            ExecuteMsg::Mint {
                 token_id,
                 owner,
                 token_uri,
                 extension,
                 seller_fee_bps,
                 payment_addr,
-            }) => Bs721ExecuteMsg::Mint {
+            } => Bs721ExecuteMsg::Mint {
                 token_id,
                 owner,
                 token_uri,
@@ -150,7 +160,7 @@ pub enum SudoMsg {
 
 #[cw_serde]
 #[derive(QueryResponses)]
-pub enum QueryMsg {
+pub enum Bs721AccountsQueryMsg {
     /// Returns sudo params
     #[returns(SudoParams)]
     Params {},
@@ -227,17 +237,17 @@ pub enum QueryMsg {
     // CollectionInfo {},
 }
 
-impl From<QueryMsg> for Bs721QueryMsg<Empty> {
-    fn from(msg: QueryMsg) -> Bs721QueryMsg<Empty> {
+impl From<Bs721AccountsQueryMsg> for Bs721QueryMsg<Bs721AccountsQueryMsg> {
+    fn from(msg: Bs721AccountsQueryMsg) -> Bs721QueryMsg<Bs721AccountsQueryMsg> {
         match msg {
-            QueryMsg::OwnerOf {
+            Bs721AccountsQueryMsg::OwnerOf {
                 token_id,
                 include_expired,
             } => Bs721QueryMsg::OwnerOf {
                 token_id,
                 include_expired,
             },
-            QueryMsg::Approval {
+            Bs721AccountsQueryMsg::Approval {
                 token_id,
                 spender,
                 include_expired,
@@ -246,14 +256,14 @@ impl From<QueryMsg> for Bs721QueryMsg<Empty> {
                 spender,
                 include_expired,
             },
-            QueryMsg::Approvals {
+            Bs721AccountsQueryMsg::Approvals {
                 token_id,
                 include_expired,
             } => Bs721QueryMsg::Approvals {
                 token_id,
                 include_expired,
             },
-            QueryMsg::AllOperators {
+            Bs721AccountsQueryMsg::AllOperators {
                 owner,
                 include_expired,
                 start_after,
@@ -264,17 +274,17 @@ impl From<QueryMsg> for Bs721QueryMsg<Empty> {
                 start_after,
                 limit,
             },
-            QueryMsg::NumTokens {} => Bs721QueryMsg::NumTokens {},
-            QueryMsg::ContractInfo {} => Bs721QueryMsg::ContractInfo {},
-            QueryMsg::NftInfo { token_id } => Bs721QueryMsg::NftInfo { token_id },
-            QueryMsg::AllNftInfo {
+            Bs721AccountsQueryMsg::NumTokens {} => Bs721QueryMsg::NumTokens {},
+            Bs721AccountsQueryMsg::ContractInfo {} => Bs721QueryMsg::ContractInfo {},
+            Bs721AccountsQueryMsg::NftInfo { token_id } => Bs721QueryMsg::NftInfo { token_id },
+            Bs721AccountsQueryMsg::AllNftInfo {
                 token_id,
                 include_expired,
             } => Bs721QueryMsg::AllNftInfo {
                 token_id,
                 include_expired,
             },
-            QueryMsg::Tokens {
+            Bs721AccountsQueryMsg::Tokens {
                 owner,
                 start_after,
                 limit,
@@ -283,15 +293,23 @@ impl From<QueryMsg> for Bs721QueryMsg<Empty> {
                 start_after,
                 limit,
             },
-            QueryMsg::AllTokens { start_after, limit } => {
+            Bs721AccountsQueryMsg::AllTokens { start_after, limit } => {
                 Bs721QueryMsg::AllTokens { start_after, limit }
             }
-            QueryMsg::Minter {} => Bs721QueryMsg::Minter {},
+            Bs721AccountsQueryMsg::Minter {} => Bs721QueryMsg::Minter {},
             // QueryMsg::CollectionInfo {} => Bs721QueryMsg::CollectionInfo {},
             _ => unreachable!("cannot convert {:?} to Cw721QueryMsg", msg),
         }
     }
 }
+
+// impl Default for Bs721AccountsQueryMsg {
+//     fn default() -> Self {
+//         Bs721AccountsQueryMsg::CheckRoyalties {}
+//     }
+// }
+
+impl CustomMsg for Bs721AccountsQueryMsg {}
 
 #[cosmwasm_schema::cw_serde]
 pub struct SudoParams {

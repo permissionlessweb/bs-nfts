@@ -8,26 +8,26 @@ use std::marker::PhantomData;
 
 pub use error::ContractError;
 
+use crate::commands::*;
 use crate::{
-    msg::{InstantiateMsg, SudoParams},
+    msg::{Bs721AccountsQueryMsg, InstantiateMsg, SudoParams},
     state::{ACCOUNT_MARKETPLACE, SUDO_PARAMS, VERIFIER},
 };
-use semver::Version;
-
-use crate::commands::*;
-use bs721_base::{ContractError as Bs721ContractError, MintMsg};
+use bs721_base::ContractError as Bs721ContractError;
 use bs_account::Metadata;
 use cosmwasm_std::{
-    to_json_binary, Binary, Deps, DepsMut, Empty, Env, MessageInfo, Response, StdError, StdResult,
+    to_json_binary, Binary, Deps, DepsMut, Empty, Env, MessageInfo, Response, StdResult,
 };
+use cw2::set_contract_version;
 use cw_utils::maybe_addr;
 
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
-const CONTRACT_NAME: &str = "bs721-accounts";
+const CONTRACT_NAME: &str = "crates.io:bs721-accounts";
 
-pub type Bs721AccountsContract<'a> = bs721_base::Bs721Contract<'a, Metadata, Empty, Empty, Empty>;
+pub type Bs721AccountsContract<'a> =
+    bs721_base::Bs721Contract<'a, Metadata, Empty, Empty, Bs721AccountsQueryMsg>;
 pub type ExecuteMsg = crate::msg::ExecuteMsg<Metadata>;
-pub type QueryMsg = crate::msg::QueryMsg;
+pub type QueryMsg = Bs721AccountsQueryMsg;
 
 #[cfg_attr(not(feature = "library"), cosmwasm_std::entry_point)]
 pub fn instantiate(
@@ -36,7 +36,7 @@ pub fn instantiate(
     info: MessageInfo,
     msg: InstantiateMsg,
 ) -> Result<Response, Bs721ContractError> {
-    cw2::set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+    set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
     // Initialize max record count to 10, can be changed by sudo params
     SUDO_PARAMS.save(
         deps.storage,
@@ -49,8 +49,12 @@ pub fn instantiate(
     VERIFIER.set(deps.branch(), maybe_addr(api, msg.verifier)?)?;
     ACCOUNT_MARKETPLACE.save(deps.storage, &msg.marketplace)?;
 
-    let res =
-        Bs721AccountsContract::default().instantiate(deps, env.clone(), info, msg.base_init_msg)?;
+    let res = Bs721AccountsContract::default().instantiate(
+        deps.branch(),
+        env.clone(),
+        info,
+        msg.base_init_msg,
+    )?;
 
     Ok(res
         .add_attribute("action", "instantiate")
@@ -100,14 +104,14 @@ pub fn execute(
             token_id,
             msg,
         } => execute_send_nft(deps, env, info, contract, token_id, msg),
-        ExecuteMsg::Mint(MintMsg {
+        ExecuteMsg::Mint {
             token_id,
             owner,
             token_uri,
             seller_fee_bps,
             payment_addr,
             extension,
-        }) => execute_mint(
+        } => execute_mint(
             deps,
             info,
             bs721_base::ExecuteMsg::Mint {

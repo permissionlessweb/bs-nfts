@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use crate::{
     contract::{execute, instantiate, reply},
-    msg::{ExecuteMsg, InstantiateMsg},
+    msg::{ExecuteMsg, InstantiateMsg, QueryMsg},
     query::query,
 };
 
@@ -19,7 +19,7 @@ use bs_account::{
     minter::{
         BsAccountMinterQueryMsg, SudoParams as NameMinterParams, PUBLIC_MINT_START_TIME_IN_SECONDS,
     },
-    BsAccountQueryMsg, Metadata,
+    Metadata,
 };
 use bs_std::NATIVE_DENOM;
 use cosmwasm_std::{coins, Addr, Decimal, Empty, Timestamp, Uint128};
@@ -183,7 +183,10 @@ fn instantiate_contracts(
 
     let res: Addr = app
         .wrap()
-        .query_wasm_smart(COLLECTION, &(BsAccountQueryMsg::AccountMarketplace {}))
+        .query_wasm_smart(
+            COLLECTION,
+            &(bs721_accounts::QueryMsg::AccountMarketplace {}),
+        )
         .unwrap();
     assert_eq!(res, marketplace.to_string());
 
@@ -487,7 +490,7 @@ mod execute {
         // when no associated address, query should throw error
         let res: Result<String, cosmwasm_std::StdError> = app.wrap().query_wasm_smart(
             COLLECTION,
-            &(BsAccountQueryMsg::AssociatedAddress {
+            &(bs721_accounts::QueryMsg::AssociatedAddress {
                 name: NAME.to_string(),
             }),
         );
@@ -511,7 +514,7 @@ mod execute {
             .wrap()
             .query_wasm_smart(
                 COLLECTION,
-                &(BsAccountQueryMsg::AssociatedAddress {
+                &(bs721_accounts::QueryMsg::AssociatedAddress {
                     name: NAME.to_string(),
                 }),
             )
@@ -543,7 +546,7 @@ mod execute {
             .wrap()
             .query_wasm_smart(
                 Addr::unchecked(COLLECTION),
-                &(BsAccountQueryMsg::Account {
+                &(bs721_accounts::QueryMsg::Account {
                     address: user.to_string(),
                 }),
             )
@@ -615,7 +618,7 @@ mod execute {
         // confirm removed from reverse names map
         let res: Result<String, StdError> = app.wrap().query_wasm_smart(
             Addr::unchecked(COLLECTION),
-            &(BsAccountQueryMsg::Account {
+            &(bs721_accounts::QueryMsg::Account {
                 address: user.to_string(),
             }),
         );
@@ -944,12 +947,12 @@ mod query {
     #[test]
     fn query_name() {
         let mut app = instantiate_contracts(None, None, None);
-        let res = mint_and_list(&mut app, NAME, USER).unwrap();
+        mint_and_list(&mut app, NAME, USER).unwrap();
 
         // fails with "user" string, has to be a bech32 address
         let res: StdResult<String> = app.wrap().query_wasm_smart(
             COLLECTION,
-            &(BsAccountQueryMsg::Account {
+            &(bs721_accounts::QueryMsg::Account {
                 address: USER2.to_string(),
             }),
         );
@@ -976,7 +979,7 @@ mod query {
             .wrap()
             .query_wasm_smart(
                 COLLECTION,
-                &(BsAccountQueryMsg::Account {
+                &(bs721_accounts::QueryMsg::Account {
                     address: user.to_string(),
                 }),
             )
@@ -1003,7 +1006,7 @@ mod query {
 
 mod collection {
     use bs721::NftInfoResponse;
-    use bs721_accounts::msg::QueryMsg as Bs721ProfileQueryMsg;
+    use bs721_accounts::msg::Bs721AccountsQueryMsg;
     use bs_account::{
         market::state::Ask,
         {Metadata, TextRecord, NFT},
@@ -1083,7 +1086,7 @@ mod collection {
             .wrap()
             .query_wasm_smart(
                 COLLECTION,
-                &(Bs721ProfileQueryMsg::NftInfo {
+                &(Bs721AccountsQueryMsg::NftInfo {
                     token_id: NAME.to_string(),
                 }),
             )
@@ -1113,7 +1116,7 @@ mod collection {
         );
         assert!(res.is_ok());
 
-        let msg = Bs721ProfileQueryMsg::Verifier {};
+        let msg = Bs721AccountsQueryMsg::Verifier {};
         let verifier: AdminResponse = app.wrap().query_wasm_smart(COLLECTION, &msg).unwrap();
         assert_eq!(verifier.admin, Some(VERIFIER.to_string()));
 
@@ -1122,7 +1125,7 @@ mod collection {
             .wrap()
             .query_wasm_smart(
                 COLLECTION,
-                &(Bs721ProfileQueryMsg::NftInfo {
+                &(Bs721AccountsQueryMsg::NftInfo {
                     token_id: NAME.to_string(),
                 }),
             )
@@ -1172,7 +1175,7 @@ mod collection {
             .wrap()
             .query_wasm_smart(
                 COLLECTION,
-                &(Bs721ProfileQueryMsg::NftInfo {
+                &(Bs721AccountsQueryMsg::NftInfo {
                     token_id: NAME.to_string(),
                 }),
             )
@@ -1243,7 +1246,7 @@ mod collection {
             .wrap()
             .query_wasm_smart(
                 COLLECTION,
-                &(Bs721ProfileQueryMsg::NftInfo {
+                &(Bs721AccountsQueryMsg::NftInfo {
                     token_id: NAME.to_string(),
                 }),
             )
@@ -1256,7 +1259,7 @@ mod collection {
             .wrap()
             .query_wasm_smart(
                 COLLECTION,
-                &(Bs721ProfileQueryMsg::NftInfo {
+                &(Bs721AccountsQueryMsg::NftInfo {
                     token_id: NAME.to_string(),
                 }),
             )
@@ -1269,7 +1272,7 @@ mod collection {
             .wrap()
             .query_wasm_smart(
                 COLLECTION,
-                &(Bs721ProfileQueryMsg::ImageNFT {
+                &(Bs721AccountsQueryMsg::ImageNFT {
                     name: NAME.to_string(),
                 }),
             )
@@ -1353,7 +1356,7 @@ mod collection {
             )
             .unwrap();
 
-        let msg = BsAccountQueryMsg::Account {
+        let msg = bs721_accounts::QueryMsg::Account {
             address: user.to_string(),
         };
         let res: String = app.wrap().query_wasm_smart(COLLECTION, &msg).unwrap();
@@ -1361,13 +1364,13 @@ mod collection {
 
         transfer(&mut app, user, user2);
 
-        let msg = BsAccountQueryMsg::Account {
+        let msg = bs721_accounts::QueryMsg::Account {
             address: user.to_string(),
         };
         let err: StdResult<String> = app.wrap().query_wasm_smart(COLLECTION, &msg);
         assert!(err.is_err());
 
-        let msg = BsAccountQueryMsg::Account {
+        let msg = bs721_accounts::QueryMsg::Account {
             address: user2.to_string(),
         };
         let err: StdResult<String> = app.wrap().query_wasm_smart(COLLECTION, &msg);
@@ -1443,16 +1446,15 @@ mod collection {
             name: NAME.to_string(),
             address: Some(user.to_string()),
         };
-        let res = app
-            .execute_contract(
-                Addr::unchecked(USER),
-                Addr::unchecked(COLLECTION),
-                &msg,
-                &[],
-            )
-            .unwrap();
+        app.execute_contract(
+            Addr::unchecked(USER),
+            Addr::unchecked(COLLECTION),
+            &msg,
+            &[],
+        )
+        .unwrap();
 
-        let msg = BsAccountQueryMsg::Account {
+        let msg = bs721_accounts::QueryMsg::Account {
             address: user.to_string(),
         };
         let res: String = app.wrap().query_wasm_smart(COLLECTION, &msg).unwrap();
@@ -1475,7 +1477,7 @@ mod collection {
         let res: Option<Ask> = app.wrap().query_wasm_smart(MKT, &msg).unwrap();
         assert!(res.is_some());
 
-        let msg = BsAccountQueryMsg::Account {
+        let msg = bs721_accounts::QueryMsg::Account {
             address: user.to_string(),
         };
         let res: StdResult<String> = app.wrap().query_wasm_smart(COLLECTION, &msg);
@@ -1487,7 +1489,7 @@ mod collection {
         let mut app = instantiate_contracts(None, None, None);
         let params: Bs721SudoParams = app
             .wrap()
-            .query_wasm_smart(COLLECTION, &(Bs721ProfileQueryMsg::Params {}))
+            .query_wasm_smart(COLLECTION, &(Bs721AccountsQueryMsg::Params {}))
             .unwrap();
         let max_record_count = params.max_record_count;
 
@@ -1498,7 +1500,7 @@ mod collection {
         assert!(res.is_ok());
         let params: Bs721SudoParams = app
             .wrap()
-            .query_wasm_smart(COLLECTION, &(Bs721ProfileQueryMsg::Params {}))
+            .query_wasm_smart(COLLECTION, &(Bs721AccountsQueryMsg::Params {}))
             .unwrap();
         assert_eq!(params.max_record_count, max_record_count + 1);
     }

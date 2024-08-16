@@ -22,7 +22,7 @@ pub struct InstantiateMsg {
 /// to make this stand-alone. You will likely want to remove mint and
 /// use other control logic in any contract that inherits this.
 #[cw_serde]
-pub enum ExecuteMsg<T> {
+pub enum ExecuteMsg<T,> {
     /// Transfer is a base message to move a token to another account without triggering actions
     TransferNft { recipient: String, token_id: String },
     /// Send is a base message to transfer a token to a contract and trigger an action
@@ -66,26 +66,6 @@ pub enum ExecuteMsg<T> {
 
     /// Burn an NFT the sender has access to
     Burn { token_id: String },
-}
-
-#[cw_serde]
-pub struct MintMsg<T> {
-    /// Unique ID of the NFT
-    pub token_id: String,
-    /// The owner of the newly minted NFT
-    pub owner: String,
-    /// Universal resource identifier for this NFT
-    /// Should point to a JSON file that conforms to the ERC721
-    /// Metadata JSON Schema
-    pub token_uri: Option<String>,
-    /// Seller fee basis points, 0-10000
-    /// 0 means no fee, 100 means 1%, 10000 means 100%
-    /// This is the fee paid by the buyer to the original creator
-    pub seller_fee_bps: Option<u16>,
-    /// Payment address, is the address that will receive the payment
-    pub payment_addr: Option<String>,
-    /// Any custom extension used by this contract
-    pub extension: T,
 }
 
 #[cw_serde]

@@ -7,7 +7,7 @@ use bs721::{Bs721Execute, Bs721ReceiveMsg, ContractInfoResponse, Expiration};
 use cw_utils::maybe_addr;
 
 use crate::error::ContractError;
-use crate::msg::{ExecuteMsg, InstantiateMsg, MintMsg};
+use crate::msg::{ExecuteMsg, InstantiateMsg};
 use crate::state::{Approval, Bs721Contract, TokenInfo};
 use crate::{CONTRACT_NAME, CONTRACT_VERSION};
 
@@ -27,6 +27,7 @@ where
         _info: MessageInfo,
         msg: InstantiateMsg,
     ) -> StdResult<Response<C>> {
+        cw2::set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
         let info = ContractInfoResponse {
             name: msg.name,
             symbol: msg.symbol,
@@ -66,14 +67,12 @@ where
                 deps,
                 env,
                 info,
-                MintMsg {
-                    token_id,
-                    owner,
-                    token_uri,
-                    seller_fee_bps,
-                    payment_addr,
-                    extension,
-                },
+                token_id,
+                owner,
+                token_uri,
+                extension,
+                seller_fee_bps,
+                payment_addr,
             ),
             ExecuteMsg::Approve {
                 spender,
@@ -134,7 +133,12 @@ where
         deps: DepsMut,
         _env: Env,
         info: MessageInfo,
-        msg: MintMsg<T>,
+        token_id: String,
+        owner: String,
+        token_uri: Option<String>,
+        extension: T,
+        seller_fee_bps: Option<u16>,
+        payment_addr: Option<String>,
     ) -> Result<Response<C>, ContractError> {
         let minter = self.minter.load(deps.storage)?;
 
@@ -143,14 +147,14 @@ where
         }
 
         // seller fee and payment address are optional, if one is set, both must be set
-        if (msg.seller_fee_bps.is_some() && msg.payment_addr.is_none())
-            || (msg.seller_fee_bps.is_none() && msg.payment_addr.is_some())
+        if (seller_fee_bps.is_some() && payment_addr.is_none())
+            || (seller_fee_bps.is_none() && payment_addr.is_some())
         {
             return Err(ContractError::InvalidSellerFee {});
         }
 
         // seller fee must be between 0 and 100%
-        if let Some(fee) = msg.seller_fee_bps {
+        if let Some(fee) = seller_fee_bps {
             if fee > MAX_SELLER_FEE {
                 return Err(ContractError::MaxSellerFeeExceeded {});
             }
@@ -158,15 +162,15 @@ where
 
         // create the token
         let token = TokenInfo {
-            owner: deps.api.addr_validate(&msg.owner)?,
+            owner: deps.api.addr_validate(&owner)?,
             approvals: vec![],
-            token_uri: msg.token_uri,
-            extension: msg.extension,
-            seller_fee_bps: msg.seller_fee_bps,
-            payment_addr: maybe_addr(deps.api, msg.payment_addr)?,
+            token_uri: token_uri,
+            extension: extension,
+            seller_fee_bps: seller_fee_bps,
+            payment_addr: maybe_addr(deps.api, payment_addr)?,
         };
         self.tokens
-            .update(deps.storage, &msg.token_id, |old| match old {
+            .update(deps.storage, &token_id, |old| match old {
                 Some(_) => Err(ContractError::Claimed {}),
                 None => Ok(token),
             })?;
@@ -176,8 +180,8 @@ where
         Ok(Response::new()
             .add_attribute("action", "mint")
             .add_attribute("minter", info.sender)
-            .add_attribute("owner", msg.owner)
-            .add_attribute("token_id", msg.token_id))
+            .add_attribute("owner", owner)
+            .add_attribute("token_id", token_id))
     }
 }
 

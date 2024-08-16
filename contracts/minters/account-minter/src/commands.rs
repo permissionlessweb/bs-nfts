@@ -1,5 +1,4 @@
 use bs721_accounts::ExecuteMsg;
-use bs721_base::MintMsg;
 use bs_account::{
     common::charge_fees, market::ExecuteMsg as MarketplaceExecuteMsg, minter::Config, Metadata,
 };
@@ -47,14 +46,14 @@ pub fn execute_mint_and_list(
     let collection = ACCOUNT_COLLECTION.load(deps.storage)?;
 
     // mint token
-    let mint_msg = ExecuteMsg::Mint(MintMsg::<Metadata> {
+    let mint_msg = ExecuteMsg::Mint {
         token_id: account.to_string(),
         owner: sender.to_string(),
         token_uri: None,
         extension: Metadata::default(),
         seller_fee_bps: None,
         payment_addr: None,
-    });
+    };
     let mint_msg_exec = WasmMsg::Execute {
         contract_addr: collection.to_string(),
         msg: to_json_binary(&mint_msg)?,

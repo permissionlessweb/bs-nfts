@@ -1,6 +1,6 @@
+use bs_controllers::HookError;
 use cosmwasm_std::{Coin, Instantiate2AddressError, StdError, Uint128};
 use cw_utils::PaymentError;
-use bs_controllers::HookError;
 use thiserror::Error;
 
 #[derive(Error, Debug, PartialEq)]
@@ -67,9 +67,6 @@ pub enum ContractError {
 
     #[error("Invalid finders fee bps: {0}")]
     InvalidTradingFeeBps(u64),
-
-    #[error("InvalidContractVersion")]
-    InvalidContractVersion {},
 
     #[error("Contract got an unexpected Reply")]
     UnexpectedReply(),

@@ -1,28 +1,9 @@
-use cosmwasm_schema::QueryResponses;
+
 use cosmwasm_std::Addr;
 
 pub mod common;
 pub mod market;
 pub mod minter;
-
-#[cosmwasm_schema::cw_serde]
-#[derive(QueryResponses)]
-pub enum BsAccountQueryMsg {
-    /// `address` can be any Bech32 encoded address. It will be
-    /// converted to a bitsong address for internal mapping.
-    #[returns(String)]
-    Account { address: String },
-    #[returns(Addr)]
-    AccountMarketplace {},
-    #[returns(String)]
-    AssociatedAddress { name: String },
-    #[returns(Option<NFT>)]
-    ImageNFT { name: String },
-    #[returns(Vec<TextRecord>)]
-    TextRecords { name: String },
-    #[returns(bool)]
-    IsTwitterVerified { name: String },
-}
 
 pub type TokenId = String;
 
