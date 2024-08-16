@@ -1,6 +1,6 @@
 use std::cmp::max;
 
-use bs_account::{
+use btsg_account::{
     common::{charge_fees, SECONDS_PER_YEAR},
     market::{state::*, ExecuteMsg, QueryMsg},
 };

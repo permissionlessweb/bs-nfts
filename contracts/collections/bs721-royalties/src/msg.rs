@@ -73,6 +73,7 @@ impl InstantiateMsg {
 }
 
 #[cw_serde]
+
 pub enum ExecuteMsg {
     /// Update contributors withdrawable amount by computing each contributors percentage of the
     /// total distributable contract balance. This function will consider only coins of the stored denom.
@@ -82,7 +83,7 @@ pub enum ExecuteMsg {
 }
 
 #[cw_serde]
-#[derive(QueryResponses)]
+#[derive(QueryResponses, cw_orch::QueryFns)]
 pub enum QueryMsg {
     /// Retrieves the list of contributors.
     #[returns(ContributorListResponse)]

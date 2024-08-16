@@ -4,7 +4,8 @@ members = [
  "contracts/collections/*",
  "contracts/minters/*",
  "contracts/markets/*",
- "contracts/factories/*"
+ "contracts/factories/*",
+ "scripts"
  ]
 
 [workspace.package]
@@ -16,19 +17,21 @@ homepage      = "https://bitsong.io"
 documentation = "https://docs.bitsong.io"
 
 [workspace.dependencies]
-bs721           = { version = "0.1.0-alpha.1", path = "./packages/bs721" }
-bs721-base      = { version = "0.1.0-alpha.1", path = "./contracts/collections/bs721-base" }
-bs721-curve     = { version = "0.1.0-alpha.1", path = "./contracts/collections/bs721-curve" }
-bs721-royalties = { version = "0.1.0-alpha.1", path = "./contracts/collections/bs721-royalties" }
-bs721-factory   = { version = "0.1.0-alpha.1", path = "./contracts/factories/bs721-factory" }
-bs-account  = { version = "0.1.0-rc1", path = "./packages/bs-account" }
-bs-controllers  = { version = "0.1.0-rc1", path = "./packages/controllers" }
-bs-std  = { version = "0.1.0-rc1", path = "./packages/bs-std" }
-cosmwasm-schema = "1.1.5"
-cosmwasm-std    = "1.1.5"
-cw-controllers  = { version = "1.1.2" }
+bs721            = { version = "0.1.0-alpha.1", path = "./packages/bs721" }
+bs721-accounts       = { version = "0.1.0-alpha.1", path = "./contracts/collections/bs721-accounts" }
+bs721-base       = { version = "0.1.0-alpha.1", path = "./contracts/collections/bs721-base" }
+bs721-curve      = { version = "0.1.0-alpha.1", path = "./contracts/collections/bs721-curve" }
+bs721-royalties  = { version = "0.1.0-alpha.1", path = "./contracts/collections/bs721-royalties" }
+bs721-factory    = { version = "0.1.0-alpha.1", path = "./contracts/factories/bs721-factory" }
+btsg-account     = { version = "0.1.0-rc1", path = "./packages/btsg-account" }
+bs-controllers   = { version = "0.1.0-rc1", path = "./packages/controllers" }
+bs-std           = { version = "0.1.0-rc1", path = "./packages/bs-std" }
+btsg-cw-orch    = { version = "0.1.0-rc1", path = "./packages/cw-orch" }
+cosmwasm-schema  = "1.1.5"
+cosmwasm-std     = "1.1.5"
+cw-controllers   = { version = "1.1.2" }
 cw2              = "1.1"
-cw20            = "0.16.0"
+cw20             = "0.16.0"
 cw721            = "0.18.0"
 cw721-base       = "0.18.0"
 cw-multi-test    = "1.1.0"
@@ -36,12 +39,12 @@ cw-orch          = "0.24.1"
 cw-ownable       = "0.5.1"
 cw-storage-macro = "1.2.0"
 cw-storage-plus  = "1.2.0" 
-cw-utils        = "0.16.0"
-schemars        = "0.8.10"
-semver          = "1.0"
-serde           = { version = "1.0.140", default-features = false, features = ["derive"] }
-thiserror       = "1.0.31"
-url             = "2.2.2"
+cw-utils         = "0.16.0"
+schemars         = "0.8.10"
+semver           = "1.0"
+serde            = { version = "1.0.140", default-features = false, features = ["derive"] }
+thiserror        = "1.0.31"
+url              = "2.2.2"
 
 [profile.release.package.bs721-base]
 codegen-units = 1

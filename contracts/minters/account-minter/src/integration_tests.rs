@@ -9,7 +9,7 @@ use crate::{
 use account_marketplace::helpers::get_char_price;
 use anyhow::Result as AnyResult;
 use bs721_accounts::{msg::SudoParams as Bs721SudoParams, ExecuteMsg as Bs721AccountsExecuteMsg};
-use bs_account::{
+use btsg_account::{
     common::SECONDS_PER_YEAR,
     market::{
         state::{Bid, SudoParams as ProfileMarketplaceParams},
@@ -120,7 +120,7 @@ fn instantiate_contracts(
     // let wl_id = app.store_code(contract_whitelist());
 
     // 1. Instantiate Name Marketplace
-    let msg = bs_account::market::InstantiateMsg {
+    let msg = btsg_account::market::InstantiateMsg {
         trading_fee_bps: TRADING_FEE_BPS,
         min_price: Uint128::from(5u128),
         ask_interval: 60,
@@ -169,7 +169,7 @@ fn instantiate_contracts(
         .query_wasm_smart(minter.clone(), &BsAccountMinterQueryMsg::Collection {})
         .unwrap();
 
-    let msg = bs_account::market::ExecuteMsg::Setup {
+    let msg = btsg_account::market::ExecuteMsg::Setup {
         minter: minter.to_string(),
         collection: bs721_collection.to_string(),
     };
@@ -302,8 +302,8 @@ fn bid(app: &mut TestApp, name: &str, bidder: &str, amount: u128) {
 mod execute {
     use bs721::{NftInfoResponse, OperatorsResponse};
     use bs721_accounts::QueryMsg as Bs721ProfileQueryMsg;
-    use bs_account::market::state::{Ask, SudoParams};
-    use bs_account::Metadata;
+    use btsg_account::market::state::{Ask, SudoParams};
+    use btsg_account::Metadata;
     use bs_std::NATIVE_DENOM;
     use cosmwasm_std::{attr, StdError};
     // use whitelist_updatable_flatrate::msg::QueryMsg::IncludesAddress;
@@ -484,7 +484,7 @@ mod execute {
         // needs to use valid address for querying addresses
         let user = "bitsong1hsk6jryyqjfhp5dhc55tc9jtckygx0epmnl9d9";
 
-        let res = mint_and_list(&mut app, NAME, USER);
+        let res = mint_and_list(&mut app, NAME, user);
         assert!(res.is_ok());
 
         // when no associated address, query should throw error
@@ -498,11 +498,11 @@ mod execute {
 
         let msg = Bs721AccountsExecuteMsg::AssociateAddress {
             name: NAME.to_string(),
-            address: Some(USER.to_string()),
+            address: Some(user.to_string()),
         };
         let res = app
             .execute_contract(
-                Addr::unchecked(USER),
+                Addr::unchecked(user),
                 Addr::unchecked(COLLECTION),
                 &msg,
                 &[],
@@ -519,28 +519,27 @@ mod execute {
                 }),
             )
             .unwrap();
-        assert_eq!(res, USER.to_string());
+        assert_eq!(res, user.to_string());
 
         // added to get around rate limiting
         update_block_time(&mut app, 60);
 
         // associate another
         let name2 = "exam";
-        let res = mint_and_list(&mut app, name2, USER);
+        let res = mint_and_list(&mut app, name2, user);
         assert!(res.is_ok());
 
         let msg = Bs721AccountsExecuteMsg::AssociateAddress {
             name: name2.to_string(),
             address: Some(user.to_string()),
         };
-        let res = app
-            .execute_contract(
-                Addr::unchecked(USER),
-                Addr::unchecked(COLLECTION),
-                &msg,
-                &[],
-            )
-            .unwrap();
+        app.execute_contract(
+            Addr::unchecked(user),
+            Addr::unchecked(COLLECTION),
+            &msg,
+            &[],
+        )
+        .unwrap();
 
         let res: String = app
             .wrap()
@@ -789,7 +788,7 @@ mod admin {
 
 mod query {
     use bs721_base::msg::QueryMsg as Bs721QueryMsg;
-    use bs_account::market::{state::Ask, BidOffset};
+    use btsg_account::market::{state::Ask, BidOffset};
     use cosmwasm_std::StdResult;
 
     use super::*;
@@ -1007,7 +1006,7 @@ mod query {
 mod collection {
     use bs721::NftInfoResponse;
     use bs721_accounts::msg::Bs721AccountsQueryMsg;
-    use bs_account::{
+    use btsg_account::{
         market::state::Ask,
         {Metadata, TextRecord, NFT},
     };
@@ -1340,7 +1339,7 @@ mod collection {
 
         let user = "bitsong1hsk6jryyqjfhp5dhc55tc9jtckygx0epmnl9d9";
         let user2 = "bitsong1wh3wjjgprxeww4cgqyaw8k75uslzh3sdf903qg";
-        let res = mint_and_list(&mut app, NAME, USER);
+        let res = mint_and_list(&mut app, NAME, user);
         assert!(res.is_ok());
 
         let msg = Bs721AccountsExecuteMsg::AssociateAddress {
@@ -1349,7 +1348,7 @@ mod collection {
         };
         let res = app
             .execute_contract(
-                Addr::unchecked(USER),
+                Addr::unchecked(user),
                 Addr::unchecked(COLLECTION),
                 &msg,
                 &[],
@@ -1360,7 +1359,7 @@ mod collection {
             address: user.to_string(),
         };
         let res: String = app.wrap().query_wasm_smart(COLLECTION, &msg).unwrap();
-        assert_eq!(res, user.to_string());
+        assert_eq!(res, NAME.to_string());
 
         transfer(&mut app, user, user2);
 
@@ -1507,7 +1506,7 @@ mod collection {
 }
 
 mod public_start_time {
-    use bs_account::minter::Config;
+    use btsg_account::minter::Config;
 
     use crate::msg::QueryMsg;
 

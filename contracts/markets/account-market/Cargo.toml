@@ -42,7 +42,7 @@ schemars         = { workspace = true }
 semver           = { workspace = true }
 serde            = { workspace = true }
 bs-std           = { workspace = true }
-bs-account           = { workspace = true }
+btsg-account           = { workspace = true }
 bs-controllers           = { workspace = true }
 thiserror        = { workspace = true }
 

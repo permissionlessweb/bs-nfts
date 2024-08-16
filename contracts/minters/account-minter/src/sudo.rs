@@ -1,6 +1,6 @@
 #[cfg(not(feature = "library"))]
 
-use bs_account::minter::SudoParams;
+use btsg_account::minter::SudoParams;
 use cosmwasm_std::{Addr, DepsMut, Event, Response, Uint128};
 
 use crate::{

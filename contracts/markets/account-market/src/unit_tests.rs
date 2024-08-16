@@ -1,8 +1,8 @@
 use crate::commands::{query_asks_by_seller, query_bids_by_bidder};
 use crate::contract::{execute, instantiate};
 #[cfg(test)]
-use bs_account::market::state::*;
-use bs_account::market::{ExecuteMsg, InstantiateMsg};
+use btsg_account::market::state::*;
+use btsg_account::market::{ExecuteMsg, InstantiateMsg};
 use bs_std::NATIVE_DENOM;
 use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
 use cosmwasm_std::{coins, Addr, Decimal, DepsMut, Timestamp, Uint128};

@@ -1,7 +1,7 @@
 [package]
-name = "bs-account"
+name = "btsg-account"
 authors = ["Shane Vitarana <s@noreply.publicawesome.com>",]
-description = "Rust definition of name service metadata, used by Bitsong Names"
+description = "Rust definition of name service metadata, used by Bitsong Accounts."
 version     = { workspace = true }
 edition     = { workspace = true }
 homepage    = { workspace = true }

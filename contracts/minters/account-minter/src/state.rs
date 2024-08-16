@@ -2,7 +2,7 @@ use cosmwasm_std::Addr;
 use cw_controllers::Admin;
 use cw_storage_plus::Item;
 
-use bs_account::minter::{Config, SudoParams};
+use btsg_account::minter::{Config, SudoParams};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]

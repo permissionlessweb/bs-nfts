@@ -1,5 +1,5 @@
-use bs_account::market::{state::*, *};
-use bs_account::market::{ExecuteMsg, InstantiateMsg};
+use btsg_account::market::{state::*, *};
+use btsg_account::market::{ExecuteMsg, InstantiateMsg};
 use cosmwasm_std::{
     to_json_binary, Binary, Decimal, Deps, DepsMut, Env, MessageInfo, Reply, Response, StdError,
     StdResult, Uint128,

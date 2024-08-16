@@ -15,7 +15,7 @@ use bs721_base::{
     ContractError::{Claimed, Unauthorized},
     ExecuteMsg as Bs721ExecuteMsg,
 };
-use bs_account::{common::MAX_TEXT_LENGTH, Metadata, TextRecord, NFT};
+use btsg_account::{common::MAX_TEXT_LENGTH, Metadata, TextRecord, NFT};
 
 use subtle_encoding::bech32;
 
@@ -27,7 +27,7 @@ pub fn execute_associate_address(
 ) -> Result<Response, ContractError> {
     only_owner(deps.as_ref(), &info.sender, &name)?;
 
-    // 1. remove old token_uri from reverse map if it exists
+    println!("// 1. remove old token_uri from reverse map if it exists");
     Bs721AccountsContract::default()
         .tokens
         .load(deps.storage, &name)
@@ -37,7 +37,7 @@ pub fn execute_associate_address(
             }
         })?;
 
-    // 2. validate the new address
+    println!(" // 2. validate the new address");
     let token_uri = address
         .clone()
         .map(|address| {
@@ -47,12 +47,12 @@ pub fn execute_associate_address(
         })
         .transpose()?;
 
-    // 3. look up prev name if it exists for the new address
+    println!("// 3. look up prev name if it exists for the new address");
     let old_name = token_uri
         .clone()
         .and_then(|addr| REVERSE_MAP.may_load(deps.storage, &addr).unwrap_or(None));
 
-    // 4. remove old token_uri / address from previous name
+    println!("// 4. remove old token_uri / address from previous name");
     old_name.map(|token_id| {
         Bs721AccountsContract::default()
             .tokens
@@ -65,7 +65,7 @@ pub fn execute_associate_address(
             })
     });
 
-    // 5. associate new token_uri / address with new name / token_id
+    println!("// 5. associate new token_uri / address with new name / token_id");
     Bs721AccountsContract::default()
         .tokens
         .update(deps.storage, &name, |token| match token {
@@ -76,8 +76,9 @@ pub fn execute_associate_address(
             None => Err(ContractError::NameNotFound {}),
         })?;
 
-    // 6. update new manager in token metadata
-    // 7. save new reverse map entry
+    println!("// 6. update new manager in token metadata");
+    println!("// 7. save new reverse map entry");
+
     token_uri.map(|addr| REVERSE_MAP.save(deps.storage, &addr, &name));
 
     let mut event = Event::new("associate-address")
@@ -179,7 +180,7 @@ fn update_ask_on_marketplace(
     token_id: &str,
     recipient: Addr,
 ) -> Result<WasmMsg, ContractError> {
-    let msg = bs_account::market::ExecuteMsg::UpdateAsk {
+    let msg = btsg_account::market::ExecuteMsg::UpdateAsk {
         token_id: token_id.to_string(),
         seller: recipient.to_string(),
     };
@@ -593,14 +594,14 @@ pub fn transcode(address: &str) -> StdResult<String> {
 }
 
 fn validate_address(deps: Deps, sender: &Addr, addr: Addr) -> Result<Addr, ContractError> {
-    // we have an EOA registration
+    // no need to validate if sender is address
     if sender == &addr {
         return Ok(addr);
     }
 
     let contract_details = cw2::query_contract_info(&deps.querier, addr.to_string())?;
     if contract_details.contract.contains("bs721-base")
-    // || contract_details.contract.contains("sg721-updatable")
+        || contract_details.contract.contains("sg721-updatable")
     {
         let collection_info: MinterResponse = deps
             .querier
@@ -613,18 +614,16 @@ fn validate_address(deps: Deps, sender: &Addr, addr: Addr) -> Result<Addr, Contr
     let ContractInfoResponse { admin, creator, .. } =
         deps.querier.query_wasm_contract_info(&addr)?;
 
-    if &creator != sender {
-        if let Some(admin) = admin {
-            ensure!(
-                &admin == sender,
-                ContractError::UnauthorizedCreatorOrAdmin {}
-            );
-        } else {
-            // If there is no admin and the creator is not the sender, check creator's admin
-            let creator_info = deps.querier.query_wasm_contract_info(&creator)?;
-            if creator_info.admin.map_or(true, |a| &a != sender) {
-                return Err(ContractError::UnauthorizedCreatorOrAdmin {});
-            }
+    if let Some(admin) = admin {
+        ensure!(
+            &admin == sender,
+            ContractError::UnauthorizedCreatorOrAdmin {}
+        );
+    } else {
+        // If there is no admin and the creator is not the sender, check creator's admin
+        let creator_info = deps.querier.query_wasm_contract_info(&creator)?;
+        if creator_info.admin.map_or(true, |a| &a != sender) {
+            return Err(ContractError::UnauthorizedCreatorOrAdmin {});
         }
     }
 

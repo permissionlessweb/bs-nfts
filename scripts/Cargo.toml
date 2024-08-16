@@ -1,0 +1,16 @@
+[package]
+name = "scripts"
+edition = "2021"
+license = "BSD-3-Clause"
+repository = "https://github.com/DA0-DA0/dao-contracts"
+version.workspace = true
+
+[dependencies]
+cw-orch = { version = "0.24.1", features = ["daemon"] }
+btsg-cw-orch = { path = "../packages/cw-orch", version = "0.1.0-rc1" }
+btsg-account = { path = "../packages/btsg-account", version = "0.1.0-rc1" }
+# scripts specific
+dotenv = { version = "0.15.0" }
+pretty_env_logger = { version = "0.5.0" }
+
+[dev-dependencies]

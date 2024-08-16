@@ -1,4 +1,4 @@
-use bs_account::minter::{Config, SudoParams};
+use btsg_account::minter::{Config, SudoParams};
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Addr, Uint128};
 

@@ -1,4 +1,4 @@
-use bs_account::minter::{Config, SudoParams};
+use btsg_account::minter::{Config, SudoParams};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{to_json_binary, Addr, Binary, Deps, Env, StdResult};

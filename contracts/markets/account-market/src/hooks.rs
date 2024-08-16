@@ -1,4 +1,4 @@
-use bs_account::market::{state::*, *};
+use btsg_account::market::{state::*, *};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{Addr, Deps, DepsMut, Env, Reply, Response, StdResult, SubMsg, WasmMsg};

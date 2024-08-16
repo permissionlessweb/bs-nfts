@@ -1,7 +1,7 @@
 use std::vec;
 
-use bs_account::market::ExecuteMsg as MarketplaceExecuteMsg;
-use bs_account::Metadata;
+use btsg_account::market::ExecuteMsg as MarketplaceExecuteMsg;
+use btsg_account::Metadata;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
@@ -16,8 +16,8 @@ use semver::Version;
 use bs721_accounts::msg::{
     ExecuteMsg as BsAccountExecuteMsg, InstantiateMsg as BsAccountCollectionInstantiateMsg,
 };
-use bs_account::common::{charge_fees, SECONDS_PER_YEAR};
-use bs_account::minter::{Config, SudoParams, PUBLIC_MINT_START_TIME_IN_SECONDS};
+use btsg_account::common::{charge_fees, SECONDS_PER_YEAR};
+use btsg_account::minter::{Config, SudoParams, PUBLIC_MINT_START_TIME_IN_SECONDS};
 
 use crate::commands::{execute_mint_and_list, execute_pause, execute_update_config};
 use crate::error::ContractError;

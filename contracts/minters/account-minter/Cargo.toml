@@ -42,7 +42,7 @@ account-marketplace = { path = "../../markets/account-market", features = ["libr
 schemars = { workspace = true }
 serde = { workspace = true }
 semver = { workspace = true }
-bs-account = { workspace = true }
+btsg-account = { workspace = true }
 bs-std = { workspace = true }
 bs721 = { workspace = true }
 bs721-base = { workspace = true, features = ["library"] }

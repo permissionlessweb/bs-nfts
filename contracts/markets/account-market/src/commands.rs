@@ -3,11 +3,11 @@ use crate::{
     error::ContractError,
     hooks::{prepare_ask_hook, prepare_bid_hook, prepare_sale_hook},
 };
-use bs_account::{
+use btsg_account::{
     common::{charge_fees, SECONDS_PER_YEAR},
     minter::SudoParams as BsProfileMinterSudoParams,
 };
-use bs_account::{
+use btsg_account::{
     market::{state::*, *},
     minter::BsAccountMinterQueryMsg,
 };
@@ -583,7 +583,7 @@ pub fn query_renewal_queue(deps: Deps, time: Timestamp) -> StdResult<Vec<Ask>> {
 
 pub fn query_asks(
     deps: Deps,
-    start_after: Option<bs_account::market::state::Id>,
+    start_after: Option<btsg_account::market::state::Id>,
     limit: Option<u32>,
 ) -> StdResult<Vec<Ask>> {
     let limit = limit.unwrap_or(DEFAULT_QUERY_LIMIT).min(MAX_QUERY_LIMIT) as usize;

@@ -1,7 +1,7 @@
 use bs721::{Expiration, NftInfoResponse};
 use bs721_base::msg::ExecuteMsg as Bs721ExecuteMsg;
 use bs721_base::InstantiateMsg as Bs721InstantiateMsg;
-use bs_account::{Metadata, TextRecord, NFT};
+use btsg_account::{Metadata, TextRecord, NFT};
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Addr, Binary, CustomMsg, Empty};
 
@@ -21,6 +21,7 @@ pub struct InstantiateMsg {
 // Add execute msgs related to metadata, image, text records
 // The rest are inherited from sg721 and impl to properly convert the msgs.
 #[cw_serde]
+#[derive(cw_orch::ExecuteFns)]
 pub enum ExecuteMsg<T> {
     /// Set name marketplace contract address
     SetMarketplace { address: String },
@@ -159,7 +160,7 @@ pub enum SudoMsg {
 }
 
 #[cw_serde]
-#[derive(QueryResponses)]
+#[derive(QueryResponses, cw_orch::QueryFns)]
 pub enum Bs721AccountsQueryMsg {
     /// Returns sudo params
     #[returns(SudoParams)]

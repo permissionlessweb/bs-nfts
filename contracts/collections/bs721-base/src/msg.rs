@@ -22,7 +22,8 @@ pub struct InstantiateMsg {
 /// to make this stand-alone. You will likely want to remove mint and
 /// use other control logic in any contract that inherits this.
 #[cw_serde]
-pub enum ExecuteMsg<T,> {
+#[derive(cw_orch::ExecuteFns)]
+pub enum ExecuteMsg<T> {
     /// Transfer is a base message to move a token to another account without triggering actions
     TransferNft { recipient: String, token_id: String },
     /// Send is a base message to transfer a token to a contract and trigger an action
@@ -69,7 +70,7 @@ pub enum ExecuteMsg<T,> {
 }
 
 #[cw_serde]
-#[derive(QueryResponses)]
+#[derive(QueryResponses, cw_orch::QueryFns)]
 pub enum QueryMsg<Q: JsonSchema> {
     /// Return the owner of the given token, error if token does not exist
     #[returns(bs721::OwnerOfResponse)]

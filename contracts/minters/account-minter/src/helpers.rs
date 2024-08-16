@@ -2,7 +2,7 @@ use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
     to_json_binary, Addr, CosmosMsg, QuerierWrapper, QueryRequest, StdResult, WasmMsg, WasmQuery
 };
-use bs_account::minter::SudoParams;
+use btsg_account::minter::SudoParams;
 
 use crate::msg::{ExecuteMsg, QueryMsg};
 

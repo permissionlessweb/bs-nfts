@@ -4,6 +4,9 @@ pub mod msg;
 pub mod state;
 pub mod sudo;
 
+#[cfg(test)]
+pub mod testing;
+
 use std::marker::PhantomData;
 
 pub use error::ContractError;
@@ -14,7 +17,7 @@ use crate::{
     state::{ACCOUNT_MARKETPLACE, SUDO_PARAMS, VERIFIER},
 };
 use bs721_base::ContractError as Bs721ContractError;
-use bs_account::Metadata;
+use btsg_account::Metadata;
 use cosmwasm_std::{
     to_json_binary, Binary, Deps, DepsMut, Empty, Env, MessageInfo, Response, StdResult,
 };
