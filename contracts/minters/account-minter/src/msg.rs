@@ -16,6 +16,7 @@ pub struct InstantiateMsg {
 }
 
 #[cw_serde]
+#[derive(cw_orch::ExecuteFns)]
 pub enum ExecuteMsg {
     /// Mint a account and list on Stargaze Account Marketplace
     MintAndList { account: String },
@@ -44,7 +45,7 @@ pub enum SudoMsg {
 }
 
 #[cw_serde]
-#[derive(QueryResponses)]
+#[derive(QueryResponses, cw_orch::QueryFns)]
 pub enum QueryMsg {
     #[returns(cw_controllers::AdminResponse)]
     Admin {},

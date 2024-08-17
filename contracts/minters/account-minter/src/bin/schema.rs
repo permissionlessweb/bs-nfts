@@ -1,6 +1,6 @@
 use cosmwasm_schema::write_api;
 
-use account_minter::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
+use bs721_account_minter::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 
 fn main() {
     write_api! {

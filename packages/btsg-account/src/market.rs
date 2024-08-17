@@ -209,6 +209,7 @@ pub struct InstantiateMsg {
 }
 
 #[cosmwasm_schema::cw_serde]
+#[derive(cw_orch::ExecuteFns)]
 pub enum ExecuteMsg {
     /// List name NFT on the marketplace by creating a new ask.
     /// Only the account factory can call this.
@@ -301,7 +302,7 @@ impl BidOffset {
 }
 
 #[cosmwasm_schema::cw_serde]
-#[derive(QueryResponses)]
+#[derive(QueryResponses, cw_orch::QueryFns)]
 pub enum QueryMsg {
     /// Get the current ask for specific name
     #[returns(Option<Ask>)]

@@ -13,7 +13,7 @@ use crate::{
 };
 
 pub const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
-pub const ACCOUNT_MARKETPLACE: &str = "bs721-accounts-marketplace";
+pub const ACCOUNT_MARKETPLACE: &str = "bs721_account_marketplace";
 
 #[cfg_attr(not(feature = "library"), cosmwasm_std::entry_point)]
 pub fn instantiate(

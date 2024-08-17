@@ -25,7 +25,7 @@ use cw2::set_contract_version;
 use cw_utils::maybe_addr;
 
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
-const CONTRACT_NAME: &str = "crates.io:bs721-accounts";
+const CONTRACT_NAME: &str = "crates.io:bs721-account";
 
 pub type Bs721AccountsContract<'a> =
     bs721_base::Bs721Contract<'a, Metadata, Empty, Empty, Bs721AccountsQueryMsg>;

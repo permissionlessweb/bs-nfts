@@ -28,56 +28,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "account-marketplace"
-version = "0.1.0-rc1"
-dependencies = [
- "bs-controllers",
- "bs-std",
- "btsg-account",
- "cosmwasm-schema",
- "cosmwasm-std",
- "cw-multi-test 1.2.0",
- "cw-ownable",
- "cw-storage-macro",
- "cw-storage-plus 1.2.0",
- "cw-utils 0.16.0",
- "cw2 1.1.2",
- "cw721 0.18.0",
- "cw721-base 0.18.0",
- "schemars",
- "semver",
- "serde",
- "thiserror",
-]
-
-[[package]]
-name = "account-minter"
-version = "0.1.0-rc1"
-dependencies = [
- "account-marketplace",
- "anyhow",
- "bs-std",
- "bs721",
- "bs721-accounts",
- "bs721-base",
- "btsg-account",
- "cosmwasm-schema",
- "cosmwasm-std",
- "cw-controllers",
- "cw-multi-test 1.2.0",
- "cw-storage-macro",
- "cw-storage-plus 1.2.0",
- "cw-utils 0.16.0",
- "cw2 1.1.2",
- "cw721 0.18.0",
- "cw721-base 0.18.0",
- "schemars",
- "semver",
- "serde",
- "thiserror",
-]
-
-[[package]]
 name = "addr2line"
 version = "0.22.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -418,7 +368,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "bs721-accounts"
+name = "bs721-account"
 version = "0.1.0-rc1"
 dependencies = [
  "bs721",
@@ -441,6 +391,57 @@ dependencies = [
  "subtle-encoding",
  "thiserror",
  "url",
+]
+
+[[package]]
+name = "bs721-account-marketplace"
+version = "0.1.0-rc1"
+dependencies = [
+ "bs-controllers",
+ "bs-std",
+ "btsg-account",
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cw-multi-test 1.2.0",
+ "cw-ownable",
+ "cw-storage-macro",
+ "cw-storage-plus 1.2.0",
+ "cw-utils 0.16.0",
+ "cw2 1.1.2",
+ "cw721 0.18.0",
+ "cw721-base 0.18.0",
+ "schemars",
+ "semver",
+ "serde",
+ "thiserror",
+]
+
+[[package]]
+name = "bs721-account-minter"
+version = "0.1.0-rc1"
+dependencies = [
+ "anyhow",
+ "bs-std",
+ "bs721",
+ "bs721-account",
+ "bs721-account-marketplace",
+ "bs721-base",
+ "btsg-account",
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cw-controllers",
+ "cw-multi-test 1.2.0",
+ "cw-orch",
+ "cw-storage-macro",
+ "cw-storage-plus 1.2.0",
+ "cw-utils 0.16.0",
+ "cw2 1.1.2",
+ "cw721 0.18.0",
+ "cw721-base 0.18.0",
+ "schemars",
+ "semver",
+ "serde",
+ "thiserror",
 ]
 
 [[package]]
@@ -558,6 +559,7 @@ dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
  "cw-controllers",
+ "cw-orch",
  "cw-storage-macro",
  "cw-storage-plus 1.2.0",
  "schemars",
@@ -568,7 +570,9 @@ dependencies = [
 name = "btsg-cw-orch"
 version = "0.1.0-rc1"
 dependencies = [
- "bs721-accounts",
+ "bs721-account",
+ "bs721-account-marketplace",
+ "bs721-account-minter",
  "btsg-account",
  "cosmwasm-std",
  "cw-orch",
@@ -2886,8 +2890,14 @@ checksum = "94143f37725109f92c262ed2cf5e59bce7498c01bcc1502d7b9afe439a4e9f49"
 name = "scripts"
 version = "0.1.0-rc1"
 dependencies = [
+ "bs721",
+ "bs721-account",
+ "bs721-account-marketplace",
+ "bs721-account-minter",
+ "bs721-base",
  "btsg-account",
  "btsg-cw-orch",
+ "cosmwasm-std",
  "cw-orch",
  "dotenv",
  "pretty_env_logger",

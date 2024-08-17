@@ -1,12 +1,13 @@
-use bs721_accounts::ExecuteMsg;
+use bs721_account::ExecuteMsg;
+use bs_std::NATIVE_DENOM;
+use btsg_account::minter::SudoParams;
 use btsg_account::{
     common::charge_fees, market::ExecuteMsg as MarketplaceExecuteMsg, minter::Config, Metadata,
 };
-use bs_std::NATIVE_DENOM;
-use cosmwasm_std::to_json_binary;
 use cosmwasm_std::{
     coin, Coin, Decimal, DepsMut, Env, Event, MessageInfo, Response, Uint128, WasmMsg,
 };
+use cosmwasm_std::{to_json_binary, Addr, Deps, StdResult};
 use cw_utils::must_pay;
 
 use crate::state::ACCOUNT_MARKETPLACE;
@@ -187,4 +188,16 @@ pub fn validate_payment(
 pub fn invalid_char(c: char) -> bool {
     let is_valid = c.is_ascii_digit() || c.is_ascii_lowercase() || c == '-';
     !is_valid
+}
+
+pub fn query_collection(deps: Deps) -> StdResult<Addr> {
+    ACCOUNT_COLLECTION.load(deps.storage)
+}
+
+pub fn query_params(deps: Deps) -> StdResult<SudoParams> {
+    SUDO_PARAMS.load(deps.storage)
+}
+
+pub fn query_config(deps: Deps) -> StdResult<Config> {
+    CONFIG.load(deps.storage)
 }

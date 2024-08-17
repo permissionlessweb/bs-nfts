@@ -5,23 +5,26 @@ use btsg_account::Metadata;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    coin, to_json_binary, Addr, Coin, Decimal, DepsMut, Empty, Env, Event, MessageInfo, Reply,
-    Response, StdError, SubMsg, Uint128, WasmMsg,
+    coin, to_json_binary, Addr, Binary, Coin, Decimal, Deps, DepsMut, Empty, Env, Event,
+    MessageInfo, Reply, Response, StdError, StdResult, SubMsg, Uint128, WasmMsg,
 };
 use cw2::set_contract_version;
 use cw_utils::{maybe_addr, must_pay, parse_reply_instantiate_data};
 
 use semver::Version;
 
-use bs721_accounts::msg::{
+use bs721_account::msg::{
     ExecuteMsg as BsAccountExecuteMsg, InstantiateMsg as BsAccountCollectionInstantiateMsg,
 };
 use btsg_account::common::{charge_fees, SECONDS_PER_YEAR};
 use btsg_account::minter::{Config, SudoParams, PUBLIC_MINT_START_TIME_IN_SECONDS};
 
-use crate::commands::{execute_mint_and_list, execute_pause, execute_update_config};
+use crate::commands::{
+    execute_mint_and_list, execute_pause, execute_update_config, query_collection, query_config,
+    query_params,
+};
 use crate::error::ContractError;
-use crate::msg::{ExecuteMsg, InstantiateMsg, SudoMsg};
+use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg, SudoMsg};
 use crate::state::{
     WhitelistContract, WhitelistContractType, ACCOUNT_COLLECTION, ACCOUNT_MARKETPLACE, ADMIN,
     CONFIG, PAUSED, SUDO_PARAMS,
@@ -109,6 +112,16 @@ pub fn execute(
         }
         ExecuteMsg::Pause { pause } => execute_pause(deps, info, pause),
         ExecuteMsg::UpdateConfig { config } => execute_update_config(deps, info, env, config),
+    }
+}
+
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
+    match msg {
+        QueryMsg::Admin {} => to_json_binary(&ADMIN.query_admin(deps)?),
+        QueryMsg::Collection {} => to_json_binary(&query_collection(deps)?),
+        QueryMsg::Params {} => to_json_binary(&query_params(deps)?),
+        QueryMsg::Config {} => to_json_binary(&query_config(deps)?),
     }
 }
 

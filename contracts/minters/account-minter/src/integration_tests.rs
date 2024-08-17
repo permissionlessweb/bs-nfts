@@ -1,14 +1,17 @@
 use std::str::FromStr;
 
 use crate::{
-    contract::{execute, instantiate, reply},
+    contract::{execute, instantiate, query, reply},
     msg::{ExecuteMsg, InstantiateMsg, QueryMsg},
-    query::query,
 };
 
-use account_marketplace::helpers::get_char_price;
 use anyhow::Result as AnyResult;
-use bs721_accounts::{msg::SudoParams as Bs721SudoParams, ExecuteMsg as Bs721AccountsExecuteMsg};
+use bs721_account::{
+    msg::SudoParams as Bs721SudoParams, ExecuteMsg as Bs721AccountExecuteMsg,
+    QueryMsg as Bs721AccountQueryMsg,
+};
+use bs721_account_marketplace::helpers::get_char_price;
+use bs_std::NATIVE_DENOM;
 use btsg_account::{
     common::SECONDS_PER_YEAR,
     market::{
@@ -21,7 +24,6 @@ use btsg_account::{
     },
     Metadata,
 };
-use bs_std::NATIVE_DENOM;
 use cosmwasm_std::{coins, Addr, Decimal, Empty, Timestamp, Uint128};
 use cw721::{NumTokensResponse, OwnerOfResponse};
 use cw_multi_test::{
@@ -36,21 +38,21 @@ pub fn contract_minter() -> Box<dyn Contract<Empty, Empty>> {
 
 pub fn contract_marketplace() -> Box<dyn Contract<Empty, Empty>> {
     let contract = ContractWrapper::new(
-        account_marketplace::contract::execute,
-        account_marketplace::contract::instantiate,
-        account_marketplace::contract::query,
+        bs721_account_marketplace::contract::execute,
+        bs721_account_marketplace::contract::instantiate,
+        bs721_account_marketplace::contract::query,
     )
-    .with_sudo(account_marketplace::contract::sudo);
+    .with_sudo(bs721_account_marketplace::contract::sudo);
     Box::new(contract)
 }
 
 pub fn contract_collection() -> Box<dyn Contract<Empty, Empty>> {
     let contract = ContractWrapper::new(
-        bs721_accounts::execute,
-        bs721_accounts::instantiate,
-        bs721_accounts::query,
+        bs721_account::execute,
+        bs721_account::instantiate,
+        bs721_account::query,
     )
-    .with_sudo(bs721_accounts::sudo::sudo);
+    .with_sudo(bs721_account::sudo::sudo);
     Box::new(contract)
 }
 
@@ -183,10 +185,7 @@ fn instantiate_contracts(
 
     let res: Addr = app
         .wrap()
-        .query_wasm_smart(
-            COLLECTION,
-            &(bs721_accounts::QueryMsg::AccountMarketplace {}),
-        )
+        .query_wasm_smart(COLLECTION, &(Bs721AccountQueryMsg::AccountMarketplace {}))
         .unwrap();
     assert_eq!(res, marketplace.to_string());
 
@@ -217,7 +216,7 @@ fn update_block_time(app: &mut TestApp, add_secs: u64) {
 fn mint_and_list(app: &mut TestApp, name: &str, user: &str) -> AnyResult<AppResponse> {
     // set approval for user, for all tokens
     // approve_all is needed because we don't know the token_id before-hand
-    let approve_all_msg: Bs721AccountsExecuteMsg = Bs721AccountsExecuteMsg::ApproveAll {
+    let approve_all_msg: Bs721AccountExecuteMsg = Bs721AccountExecuteMsg::ApproveAll {
         operator: MKT.to_string(),
         expires: None,
     };
@@ -301,10 +300,10 @@ fn bid(app: &mut TestApp, name: &str, bidder: &str, amount: u128) {
 
 mod execute {
     use bs721::{NftInfoResponse, OperatorsResponse};
-    use bs721_accounts::QueryMsg as Bs721ProfileQueryMsg;
+    use bs721_account::QueryMsg as Bs721ProfileQueryMsg;
+    use bs_std::NATIVE_DENOM;
     use btsg_account::market::state::{Ask, SudoParams};
     use btsg_account::Metadata;
-    use bs_std::NATIVE_DENOM;
     use cosmwasm_std::{attr, StdError};
     // use whitelist_updatable_flatrate::msg::QueryMsg::IncludesAddress;
 
@@ -457,7 +456,7 @@ mod execute {
         bid(&mut app, NAME, BIDDER2, BID_AMOUNT);
 
         // have to approve marketplace spend for bid acceptor (bidder)
-        let msg: Bs721AccountsExecuteMsg = Bs721AccountsExecuteMsg::Approve {
+        let msg: Bs721AccountExecuteMsg = Bs721AccountExecuteMsg::Approve {
             spender: MKT.to_string(),
             token_id: NAME.to_string(),
             expires: None,
@@ -490,13 +489,13 @@ mod execute {
         // when no associated address, query should throw error
         let res: Result<String, cosmwasm_std::StdError> = app.wrap().query_wasm_smart(
             COLLECTION,
-            &(bs721_accounts::QueryMsg::AssociatedAddress {
+            &(Bs721AccountQueryMsg::AssociatedAddress {
                 name: NAME.to_string(),
             }),
         );
         assert!(res.is_err());
 
-        let msg = Bs721AccountsExecuteMsg::AssociateAddress {
+        let msg = Bs721AccountExecuteMsg::AssociateAddress {
             name: NAME.to_string(),
             address: Some(user.to_string()),
         };
@@ -514,7 +513,7 @@ mod execute {
             .wrap()
             .query_wasm_smart(
                 COLLECTION,
-                &(bs721_accounts::QueryMsg::AssociatedAddress {
+                &(Bs721AccountQueryMsg::AssociatedAddress {
                     name: NAME.to_string(),
                 }),
             )
@@ -529,7 +528,7 @@ mod execute {
         let res = mint_and_list(&mut app, name2, user);
         assert!(res.is_ok());
 
-        let msg = Bs721AccountsExecuteMsg::AssociateAddress {
+        let msg = Bs721AccountExecuteMsg::AssociateAddress {
             name: name2.to_string(),
             address: Some(user.to_string()),
         };
@@ -545,7 +544,7 @@ mod execute {
             .wrap()
             .query_wasm_smart(
                 Addr::unchecked(COLLECTION),
-                &(bs721_accounts::QueryMsg::Account {
+                &(Bs721AccountQueryMsg::Account {
                     address: user.to_string(),
                 }),
             )
@@ -577,7 +576,7 @@ mod execute {
         assert_eq!(res.token_uri, Some(user.to_string()));
 
         // remove address
-        let msg = Bs721AccountsExecuteMsg::AssociateAddress {
+        let msg = Bs721AccountExecuteMsg::AssociateAddress {
             name: NAME.to_string(),
             address: None,
         };
@@ -602,7 +601,7 @@ mod execute {
         assert_eq!(res.token_uri, None);
 
         // remove address
-        let msg = Bs721AccountsExecuteMsg::AssociateAddress {
+        let msg = Bs721AccountExecuteMsg::AssociateAddress {
             name: name2.to_string(),
             address: None,
         };
@@ -617,7 +616,7 @@ mod execute {
         // confirm removed from reverse names map
         let res: Result<String, StdError> = app.wrap().query_wasm_smart(
             Addr::unchecked(COLLECTION),
-            &(bs721_accounts::QueryMsg::Account {
+            &(Bs721AccountQueryMsg::Account {
                 address: user.to_string(),
             }),
         );
@@ -631,7 +630,7 @@ mod execute {
         let res = mint_and_list(&mut app, NAME, ADMIN2);
         assert!(res.is_ok());
 
-        let msg = Bs721AccountsExecuteMsg::AssociateAddress {
+        let msg = Bs721AccountExecuteMsg::AssociateAddress {
             name: NAME.to_string(),
             address: Some(MINTER.to_string()),
         };
@@ -659,7 +658,7 @@ mod execute {
         let res = mint_and_list(&mut app, NAME, ADMIN2);
         assert!(res.is_ok());
 
-        let msg = Bs721AccountsExecuteMsg::AssociateAddress {
+        let msg = Bs721AccountExecuteMsg::AssociateAddress {
             name: NAME.to_string(),
             address: Some(MINTER.to_string()),
         };
@@ -679,7 +678,7 @@ mod execute {
         let res = mint_and_list(&mut app, NAME, USER);
         assert!(res.is_ok());
 
-        let msg = Bs721AccountsExecuteMsg::AssociateAddress {
+        let msg = Bs721AccountExecuteMsg::AssociateAddress {
             name: NAME.to_string(),
             address: Some(USER2.to_string()),
         };
@@ -951,7 +950,7 @@ mod query {
         // fails with "user" string, has to be a bech32 address
         let res: StdResult<String> = app.wrap().query_wasm_smart(
             COLLECTION,
-            &(bs721_accounts::QueryMsg::Account {
+            &(Bs721AccountQueryMsg::Account {
                 address: USER2.to_string(),
             }),
         );
@@ -961,7 +960,7 @@ mod query {
 
         mint_and_list(&mut app, "yoyo", USER).unwrap();
 
-        let msg = Bs721AccountsExecuteMsg::AssociateAddress {
+        let msg = Bs721AccountExecuteMsg::AssociateAddress {
             name: "yoyo".to_string(),
             address: Some(user.to_string()),
         };
@@ -978,7 +977,7 @@ mod query {
             .wrap()
             .query_wasm_smart(
                 COLLECTION,
-                &(bs721_accounts::QueryMsg::Account {
+                &(Bs721AccountQueryMsg::Account {
                     address: user.to_string(),
                 }),
             )
@@ -1005,7 +1004,7 @@ mod query {
 
 mod collection {
     use bs721::NftInfoResponse;
-    use bs721_accounts::msg::Bs721AccountsQueryMsg;
+    use bs721_account::msg::Bs721AccountsQueryMsg;
     use btsg_account::{
         market::state::Ask,
         {Metadata, TextRecord, NFT},
@@ -1016,7 +1015,7 @@ mod collection {
     use super::*;
 
     pub(crate) fn transfer(app: &mut TestApp, from: &str, to: &str) {
-        let msg = Bs721AccountsExecuteMsg::TransferNft {
+        let msg = Bs721AccountExecuteMsg::TransferNft {
             recipient: to.to_string(),
             token_id: NAME.to_string(),
         };
@@ -1038,7 +1037,7 @@ mod collection {
     fn send(app: &mut TestApp, from: &str, to: &str) {
         let msg = to_json_binary("You now have the melting power").unwrap();
         let target = to.to_string();
-        let send_msg = Bs721AccountsExecuteMsg::SendNft {
+        let send_msg = Bs721AccountExecuteMsg::SendNft {
             contract: target,
             token_id: NAME.to_string(),
             msg,
@@ -1068,7 +1067,7 @@ mod collection {
         let name = "twitter";
         let value = "shan3v";
 
-        let msg = Bs721AccountsExecuteMsg::AddTextRecord {
+        let msg = Bs721AccountExecuteMsg::AddTextRecord {
             name: NAME.to_string(),
             record: TextRecord::new(name, value),
         };
@@ -1093,7 +1092,7 @@ mod collection {
         assert_eq!(res.extension.records[0].name, name.to_string());
         assert_eq!(res.extension.records[0].verified, None);
 
-        let msg = Bs721AccountsExecuteMsg::VerifyTextRecord {
+        let msg = Bs721AccountExecuteMsg::VerifyTextRecord {
             name: NAME.to_string(),
             record_name: name.to_string(),
             result: true,
@@ -1143,7 +1142,7 @@ mod collection {
         let name = "twitter";
         let value = "shan3v";
 
-        let msg = Bs721AccountsExecuteMsg::AddTextRecord {
+        let msg = Bs721AccountExecuteMsg::AddTextRecord {
             name: NAME.to_string(),
             record: TextRecord::new(name, value),
         };
@@ -1156,7 +1155,7 @@ mod collection {
         assert!(res.is_ok());
 
         // verify something as false
-        let msg = Bs721AccountsExecuteMsg::VerifyTextRecord {
+        let msg = Bs721AccountExecuteMsg::VerifyTextRecord {
             name: NAME.to_string(),
             record_name: name.to_string(),
             result: false,
@@ -1193,7 +1192,7 @@ mod collection {
         let name = "twitter";
         let value = "shan3v";
 
-        let msg = Bs721AccountsExecuteMsg::AddTextRecord {
+        let msg = Bs721AccountExecuteMsg::AddTextRecord {
             name: NAME.to_string(),
             record: TextRecord {
                 name: name.to_string(),
@@ -1224,7 +1223,7 @@ mod collection {
         assert_eq!(res.extension.records[0].verified, None);
 
         // attempt update text record w verified value
-        let msg = Bs721AccountsExecuteMsg::UpdateTextRecord {
+        let msg = Bs721AccountExecuteMsg::UpdateTextRecord {
             name: NAME.to_string(),
             record: TextRecord {
                 name: name.to_string(),
@@ -1311,7 +1310,7 @@ mod collection {
         bid(&mut app, NAME, BIDDER, BID_AMOUNT);
 
         // user2 must approve the marketplace to transfer their name
-        let msg = Bs721AccountsExecuteMsg::Approve {
+        let msg = Bs721AccountExecuteMsg::Approve {
             spender: MKT.to_string(),
             token_id: NAME.to_string(),
             expires: None,
@@ -1342,7 +1341,7 @@ mod collection {
         let res = mint_and_list(&mut app, NAME, user);
         assert!(res.is_ok());
 
-        let msg = Bs721AccountsExecuteMsg::AssociateAddress {
+        let msg = Bs721AccountExecuteMsg::AssociateAddress {
             name: NAME.to_string(),
             address: Some(user.to_string()),
         };
@@ -1355,7 +1354,7 @@ mod collection {
             )
             .unwrap();
 
-        let msg = bs721_accounts::QueryMsg::Account {
+        let msg = Bs721AccountQueryMsg::Account {
             address: user.to_string(),
         };
         let res: String = app.wrap().query_wasm_smart(COLLECTION, &msg).unwrap();
@@ -1363,13 +1362,13 @@ mod collection {
 
         transfer(&mut app, user, user2);
 
-        let msg = bs721_accounts::QueryMsg::Account {
+        let msg = Bs721AccountQueryMsg::Account {
             address: user.to_string(),
         };
         let err: StdResult<String> = app.wrap().query_wasm_smart(COLLECTION, &msg);
         assert!(err.is_err());
 
-        let msg = bs721_accounts::QueryMsg::Account {
+        let msg = Bs721AccountQueryMsg::Account {
             address: user2.to_string(),
         };
         let err: StdResult<String> = app.wrap().query_wasm_smart(COLLECTION, &msg);
@@ -1384,7 +1383,7 @@ mod collection {
         let res = mint_and_list(&mut app, NAME, USER);
         assert!(res.is_ok());
 
-        let msg = Bs721AccountsExecuteMsg::Burn {
+        let msg = Bs721AccountExecuteMsg::Burn {
             token_id: NAME.to_string(),
         };
         let res = app.execute_contract(
@@ -1412,7 +1411,7 @@ mod collection {
 
         bid(&mut app, NAME, BIDDER, BID_AMOUNT);
 
-        let msg = Bs721AccountsExecuteMsg::Burn {
+        let msg = Bs721AccountExecuteMsg::Burn {
             token_id: NAME.to_string(),
         };
         let res = app.execute_contract(
@@ -1441,7 +1440,7 @@ mod collection {
         let res = mint_and_list(&mut app, NAME, USER);
         assert!(res.is_ok());
 
-        let msg = Bs721AccountsExecuteMsg::AssociateAddress {
+        let msg = Bs721AccountExecuteMsg::AssociateAddress {
             name: NAME.to_string(),
             address: Some(user.to_string()),
         };
@@ -1453,13 +1452,13 @@ mod collection {
         )
         .unwrap();
 
-        let msg = bs721_accounts::QueryMsg::Account {
+        let msg = Bs721AccountQueryMsg::Account {
             address: user.to_string(),
         };
         let res: String = app.wrap().query_wasm_smart(COLLECTION, &msg).unwrap();
         assert_eq!(res, NAME.to_string());
 
-        let msg = Bs721AccountsExecuteMsg::Burn {
+        let msg = Bs721AccountExecuteMsg::Burn {
             token_id: NAME.to_string(),
         };
         let res = app.execute_contract(
@@ -1476,7 +1475,7 @@ mod collection {
         let res: Option<Ask> = app.wrap().query_wasm_smart(MKT, &msg).unwrap();
         assert!(res.is_some());
 
-        let msg = bs721_accounts::QueryMsg::Account {
+        let msg = Bs721AccountQueryMsg::Account {
             address: user.to_string(),
         };
         let res: StdResult<String> = app.wrap().query_wasm_smart(COLLECTION, &msg);
@@ -1492,7 +1491,7 @@ mod collection {
             .unwrap();
         let max_record_count = params.max_record_count;
 
-        let msg = bs721_accounts::msg::SudoMsg::UpdateParams {
+        let msg = bs721_account::msg::SudoMsg::UpdateParams {
             max_record_count: max_record_count + 1,
         };
         let res = app.wasm_sudo(Addr::unchecked(COLLECTION), &msg);
@@ -1618,7 +1617,7 @@ mod associate_address {
         assert_eq!(owner, nft_addr.to_string());
 
         // associate contract
-        let msg = Bs721AccountsExecuteMsg::AssociateAddress {
+        let msg = Bs721AccountExecuteMsg::AssociateAddress {
             name: NAME.to_string(),
             address: Some(nft_addr.to_string()),
         };
@@ -1688,7 +1687,7 @@ mod associate_address {
         mint_and_list(&mut app, NAME, USER).unwrap();
 
         // USER associates the name with the collection contract that doesn't have an admin
-        let msg = Bs721AccountsExecuteMsg::AssociateAddress {
+        let msg = Bs721AccountExecuteMsg::AssociateAddress {
             name: NAME.to_string(),
             address: Some(collection_with_no_admin_addr.to_string()),
         };
@@ -1752,7 +1751,7 @@ mod associate_address {
         mint_and_list(&mut app, NAME, USER4).unwrap();
 
         // USER4 tries to associate the name with the collection contract that doesn't have an admin
-        let msg = Bs721AccountsExecuteMsg::AssociateAddress {
+        let msg = Bs721AccountExecuteMsg::AssociateAddress {
             name: NAME.to_string(),
             address: Some(collection_with_no_admin_addr.to_string()),
         };
@@ -1763,11 +1762,11 @@ mod associate_address {
                 &msg,
                 &[],
             )
-            .map_err(|e| e.downcast::<bs721_accounts::ContractError>().unwrap())
+            .map_err(|e| e.downcast::<bs721_account::ContractError>().unwrap())
             .unwrap_err();
         assert!(matches!(
             res,
-            bs721_accounts::ContractError::UnauthorizedCreatorOrAdmin {}
+            bs721_account::ContractError::UnauthorizedCreatorOrAdmin {}
         ))
     }
 
@@ -1809,7 +1808,7 @@ mod associate_address {
         mint_and_list(&mut app, NAME, USER4).unwrap();
 
         // USER4 tries to associate the name with the collection contract that has an admin (USER)
-        let msg = Bs721AccountsExecuteMsg::AssociateAddress {
+        let msg = Bs721AccountExecuteMsg::AssociateAddress {
             name: NAME.to_string(),
             address: Some(contract_with_an_admin.to_string()),
         };
@@ -1820,11 +1819,11 @@ mod associate_address {
                 &msg,
                 &[],
             )
-            .map_err(|e| e.downcast::<bs721_accounts::ContractError>().unwrap())
+            .map_err(|e| e.downcast::<bs721_account::ContractError>().unwrap())
             .unwrap_err();
         assert!(matches!(
             res,
-            bs721_accounts::ContractError::UnauthorizedCreatorOrAdmin {}
+            bs721_account::ContractError::UnauthorizedCreatorOrAdmin {}
         ))
     }
 }

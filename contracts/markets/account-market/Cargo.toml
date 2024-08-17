@@ -1,5 +1,5 @@
 [package]
-name        = "account-marketplace"
+name        = "bs721-account-marketplace"
 authors     = ["Shane Vitarana <s@noreply.publicawesome.com>"]
 description = "Bitsong Profile Marketplace Smart Contract"
 license     = "BUSL-1.1"

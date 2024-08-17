@@ -1,7 +1,6 @@
-mod collections;
+mod btsg_account;
 mod deploy;
 mod test;
 
-pub use collections::*;
+pub use btsg_account::*;
 pub use deploy::*;
-pub use test::*;

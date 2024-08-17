@@ -6,11 +6,17 @@ repository = "https://github.com/DA0-DA0/dao-contracts"
 version.workspace = true
 
 [dependencies]
-cw-orch = { version = "0.24.1", features = ["daemon"] }
-btsg-cw-orch = { path = "../packages/cw-orch", version = "0.1.0-rc1" }
-btsg-account = { path = "../packages/btsg-account", version = "0.1.0-rc1" }
+cosmwasm-std.workspace     = true
+bs721                      = { path = "../packages/bs721", version = "0.1.0-rc1" }
+bs721-account              = { path = "../contracts/collections/bs721-account", version = "0.1.0-rc1" }
+bs721-base                 = { path = "../contracts/collections/bs721-base", version = "0.1.0-rc1" }
+bs721-account-minter       = { path = "../contracts/minters/account-minter", version = "0.1.0-rc1" }
+bs721-account-marketplace  = { path = "../contracts/markets/account-market", version = "0.1.0-rc1" }
+btsg-account               = { path = "../packages/btsg-account", version = "0.1.0-rc1" }
+btsg-cw-orch               = { path = "../packages/cw-orch", version = "0.1.0-rc1" }
+cw-orch                    = { version = "0.24.1", features = ["daemon"] }
 # scripts specific
-dotenv = { version = "0.15.0" }
-pretty_env_logger = { version = "0.5.0" }
+dotenv                     = { version = "0.15.0" }
+pretty_env_logger          = { version = "0.5.0" }
 
 [dev-dependencies]
