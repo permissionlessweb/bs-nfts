@@ -1,1 +1,3 @@
-pub mod collections;
+mod collections;
+mod minters;
+mod markets;

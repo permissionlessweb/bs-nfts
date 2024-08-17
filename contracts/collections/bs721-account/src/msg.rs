@@ -3,7 +3,7 @@ use bs721_base::msg::ExecuteMsg as Bs721ExecuteMsg;
 use bs721_base::InstantiateMsg as Bs721InstantiateMsg;
 use btsg_account::{Metadata, TextRecord, NFT};
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Addr, Binary, CustomMsg, Empty};
+use cosmwasm_std::{Addr, Binary, CustomMsg};
 
 use bs721::{
     AllNftInfoResponse, ApprovalResponse, ApprovalsResponse, ContractInfoResponse,

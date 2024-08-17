@@ -15,13 +15,13 @@ pub struct InstantiateMsg {
     /// Code id used to instantiate bs721 royalties contract. The address of this contract will be used
     /// as the payment address for the NFT mint.
     pub bs721_royalties_code_id: u64,
-
+    /// Code id of bs721-launchparty contract
     pub bs721_launchparty_code_id: u64,
-
+    /// Code id of bs721-curve
     pub bs721_curve_code_id: u64,
     /// Protocol fee as basis points
     pub protocol_fee_bps: u32,
-
+    /// Required asset to create a instance using this factory.
     pub create_nft_sale_fee: Coin,
 }
 
@@ -49,7 +49,7 @@ pub struct MsgCreateLaunchparty {
     pub start_time: Timestamp,
     /// End condition of the collection launchparty.
     pub party_type: PartyType,
-
+    /// Address to recieve payments from launchparty.
     pub payment_address: String,
 }
 

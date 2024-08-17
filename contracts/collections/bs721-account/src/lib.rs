@@ -4,24 +4,20 @@ pub mod msg;
 pub mod state;
 pub mod sudo;
 
-#[cfg(test)]
-pub mod testing;
-
-use std::marker::PhantomData;
-
 pub use error::ContractError;
 
-use crate::commands::*;
 use crate::{
-    msg::{Bs721AccountsQueryMsg, InstantiateMsg, SudoParams},
-    state::{ACCOUNT_MARKETPLACE, SUDO_PARAMS, VERIFIER},
+    commands::*,
+    {
+        msg::{Bs721AccountsQueryMsg, InstantiateMsg, SudoParams},
+        state::{ACCOUNT_MARKETPLACE, SUDO_PARAMS, VERIFIER},
+    },
 };
 use bs721_base::ContractError as Bs721ContractError;
 use btsg_account::Metadata;
 use cosmwasm_std::{
     to_json_binary, Binary, Deps, DepsMut, Empty, Env, MessageInfo, Response, StdResult,
 };
-use cw2::set_contract_version;
 use cw_utils::maybe_addr;
 
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -39,7 +35,7 @@ pub fn instantiate(
     info: MessageInfo,
     msg: InstantiateMsg,
 ) -> Result<Response, Bs721ContractError> {
-    set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+    cw2::set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
     // Initialize max record count to 10, can be changed by sudo params
     SUDO_PARAMS.save(
         deps.storage,
