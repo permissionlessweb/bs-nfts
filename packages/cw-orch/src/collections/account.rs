@@ -1,7 +1,7 @@
 use cw_orch::{interface, prelude::*};
 
 use bs721_account::msg::{Bs721AccountsQueryMsg as QueryMsg, ExecuteMsg, InstantiateMsg};
-use bs721_account::{execute, instantiate, query};
+use bs721_account::{execute, instantiate, query, sudo};
 use btsg_account::Metadata;
 
 #[interface(InstantiateMsg, ExecuteMsg::<Metadata>, QueryMsg, Empty)]
@@ -16,6 +16,6 @@ impl<Chain> Uploadable for BitsongAccountCollection<Chain, Metadata> {
     }
     /// Returns a CosmWasm contract wrapper
     fn wrapper() -> Box<dyn MockContract<Empty>> {
-        Box::new(ContractWrapper::new_with_empty(execute, instantiate, query))
+        Box::new(ContractWrapper::new_with_empty(execute, instantiate, query).with_sudo(sudo))
     }
 }

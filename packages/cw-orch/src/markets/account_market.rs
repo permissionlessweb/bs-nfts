@@ -1,6 +1,6 @@
 use cw_orch::{interface, prelude::*};
 
-use bs721_account_marketplace::contract::{execute, instantiate, query};
+use bs721_account_marketplace::contract::{execute, instantiate, query, sudo};
 use btsg_account::market::{ExecuteMsg, InstantiateMsg, QueryMsg};
 
 #[interface(InstantiateMsg, ExecuteMsg, QueryMsg, Empty)]
@@ -15,6 +15,6 @@ impl<Chain> Uploadable for BitsongAccountMarketplace<Chain> {
     }
     /// Returns a CosmWasm contract wrapper
     fn wrapper() -> Box<dyn MockContract<Empty>> {
-        Box::new(ContractWrapper::new_with_empty(execute, instantiate, query))
+        Box::new(ContractWrapper::new_with_empty(execute, instantiate, query).with_sudo(sudo))
     }
 }

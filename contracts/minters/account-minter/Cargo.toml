@@ -53,6 +53,3 @@ thiserror = { workspace = true }
 
 
 [dev-dependencies]
-cw-multi-test    = { workspace = true }
-bs721-base       = { workspace = true }
-anyhow           = "1"

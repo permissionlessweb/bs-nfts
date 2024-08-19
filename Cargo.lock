@@ -420,7 +420,6 @@ dependencies = [
 name = "bs721-account-minter"
 version = "0.1.0-rc1"
 dependencies = [
- "anyhow",
  "bs-std",
  "bs721",
  "bs721-account",
@@ -430,7 +429,6 @@ dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
  "cw-controllers",
- "cw-multi-test 1.2.0",
  "cw-orch",
  "cw-storage-macro",
  "cw-storage-plus 1.2.0",

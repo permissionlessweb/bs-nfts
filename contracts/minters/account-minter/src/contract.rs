@@ -5,8 +5,8 @@ use btsg_account::Metadata;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    coin, to_json_binary, Addr, Binary, Coin, Decimal, Deps, DepsMut, Empty, Env, Event,
-    MessageInfo, Reply, Response, StdError, StdResult, SubMsg, Uint128, WasmMsg,
+    coin, to_json_binary, Addr, Binary, Deps, DepsMut, Empty, Env, Event, MessageInfo, Reply,
+    Response, StdError, StdResult, SubMsg, Uint128, WasmMsg,
 };
 use cw2::set_contract_version;
 use cw_utils::{maybe_addr, must_pay, parse_reply_instantiate_data};
@@ -17,7 +17,7 @@ use bs721_account::msg::{
     ExecuteMsg as BsAccountExecuteMsg, InstantiateMsg as BsAccountCollectionInstantiateMsg,
 };
 use btsg_account::common::{charge_fees, SECONDS_PER_YEAR};
-use btsg_account::minter::{Config, SudoParams, PUBLIC_MINT_START_TIME_IN_SECONDS};
+use btsg_account::minter::{Config, SudoParams};
 
 use crate::commands::{
     execute_mint_and_list, execute_pause, execute_update_config, query_collection, query_config,
@@ -59,12 +59,11 @@ pub fn instantiate(
         min_name_length: msg.min_name_length,
         max_name_length: msg.max_name_length,
         base_price: msg.base_price,
-        // fair_burn_percent: Decimal::percent(msg.fair_burn_bps) / Uint128::from(100u128),
     };
     SUDO_PARAMS.save(deps.storage, &params)?;
 
     let config = Config {
-        public_mint_start_time: PUBLIC_MINT_START_TIME_IN_SECONDS,
+        public_mint_start_time: env.block.time.plus_seconds(1),
     };
     CONFIG.save(deps.storage, &config)?;
 

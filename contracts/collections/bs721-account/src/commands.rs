@@ -37,7 +37,7 @@ pub fn execute_associate_address(
             }
         })?;
 
-    println!(" // 2. validate the new address");
+    println!("// 2. validate the new address");
     let token_uri = address
         .clone()
         .map(|address| {
@@ -533,7 +533,7 @@ pub fn query_profile_marketplace(deps: Deps) -> StdResult<Addr> {
     ACCOUNT_MARKETPLACE.load(deps.storage)
 }
 
-pub fn query_name(deps: Deps, mut address: String) -> StdResult<String> {
+pub fn query_account(deps: Deps, mut address: String) -> StdResult<String> {
     if !address.starts_with("bitsong") {
         address = transcode(&address)?;
     }
@@ -629,4 +629,12 @@ fn validate_address(deps: Deps, sender: &Addr, addr: Addr) -> Result<Addr, Contr
 
     // we have a contract registration
     Ok(addr)
+}
+
+pub fn sudo_update_params(deps: DepsMut, max_record_count: u32) -> Result<Response, ContractError> {
+    SUDO_PARAMS.save(deps.storage, &SudoParams { max_record_count })?;
+
+    let event =
+        Event::new("update-params").add_attribute("max_record_count", max_record_count.to_string());
+    Ok(Response::new().add_event(event))
 }

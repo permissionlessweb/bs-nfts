@@ -1,7 +1,6 @@
 use cosmwasm_schema::QueryResponses;
 use cosmwasm_std::{Addr, Timestamp, Uint128};
 
-pub const PUBLIC_MINT_START_TIME_IN_SECONDS: Timestamp = Timestamp::from_seconds(1669406400);
 #[cosmwasm_schema::cw_serde]
 pub struct SudoParams {
     /// 3 (same as DNS)

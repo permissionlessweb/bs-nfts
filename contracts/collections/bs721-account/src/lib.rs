@@ -2,9 +2,10 @@ pub mod commands;
 pub mod error;
 pub mod msg;
 pub mod state;
-pub mod sudo;
+
 
 pub use error::ContractError;
+use msg::SudoMsg;
 
 use crate::{
     commands::*,
@@ -134,7 +135,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::Params {} => to_json_binary(&query_params(deps)?),
         QueryMsg::AccountMarketplace {} => to_json_binary(&query_profile_marketplace(deps)?),
-        QueryMsg::Account { address } => to_json_binary(&query_name(deps, address)?),
+        QueryMsg::Account { address } => to_json_binary(&query_account(deps, address)?),
         QueryMsg::Verifier {} => to_json_binary(&VERIFIER.query_admin(deps)?),
         QueryMsg::AssociatedAddress { name } => {
             to_json_binary(&query_associated_address(deps, &name)?)
@@ -145,5 +146,12 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
             to_json_binary(&query_is_twitter_verified(deps, &name)?)
         }
         _ => Bs721AccountsContract::default().query(deps, env, msg.into()),
+    }
+}
+
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn sudo(deps: DepsMut, _env: Env, msg: SudoMsg) -> Result<Response, ContractError> {
+    match msg {
+        SudoMsg::UpdateParams { max_record_count } => sudo_update_params(deps, max_record_count),
     }
 }

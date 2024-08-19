@@ -190,10 +190,6 @@ pub struct InstantiateMsg {
     pub min_price: Uint128,
     /// Interval to rate limit setting asks (in seconds)
     pub ask_interval: u64,
-    /// Account Factory contract address
-    // pub factory: Addr,
-    /// Account Profile contract address
-    // pub collection: Addr,
     /// The maximum number of renewals that can be processed in each block
     pub max_renewals_per_block: u32,
     /// The number of bids to query to when searching for the highest bid

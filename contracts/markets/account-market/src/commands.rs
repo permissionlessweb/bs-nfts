@@ -3,6 +3,7 @@ use crate::{
     error::ContractError,
     hooks::{prepare_ask_hook, prepare_bid_hook, prepare_sale_hook},
 };
+use bs_std::NATIVE_DENOM;
 use btsg_account::{
     common::{charge_fees, SECONDS_PER_YEAR},
     minter::SudoParams as BsProfileMinterSudoParams,
@@ -11,7 +12,6 @@ use btsg_account::{
     market::{state::*, *},
     minter::BsAccountMinterQueryMsg,
 };
-use bs_std::NATIVE_DENOM;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
@@ -68,7 +68,7 @@ pub fn execute_set_ask(
 
     let collection = ACCOUNT_COLLECTION.load(deps.storage)?;
 
-    // check if collection is approved to transfer on behalf of the seller (needs is_minter_admin == true)
+    // check if collection is approved to transfer on behalf of the seller
     let ops = Cw721Contract::<Empty, Empty>(collection, PhantomData, PhantomData).all_operators(
         &deps.querier,
         seller.to_string(),
@@ -76,6 +76,8 @@ pub fn execute_set_ask(
         None,
         None,
     )?;
+
+    println!("{:#?}", ops);
     if ops.is_empty() {
         return Err(ContractError::NotApproved {});
     }

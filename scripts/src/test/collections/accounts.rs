@@ -23,7 +23,7 @@ fn init() -> anyhow::Result<()> {
 fn mint_and_update() -> anyhow::Result<()> {
     let mock = MockBech32::new("mock");
     let mut suite = BtsgAccountTestSuite::new(mock.clone());
-    suite.default_setup(mock.clone())?;
+    suite.default_setup(mock.clone(), None, None)?;
 
     let not_minter = mock.addr_make("not-minter");
     let minter = suite.minter.address()?;
@@ -171,7 +171,7 @@ fn mint_and_update() -> anyhow::Result<()> {
 fn test_query_names() -> anyhow::Result<()> {
     let mock = MockBech32::new("bitsong");
     let mut suite = BtsgAccountTestSuite::new(mock.clone());
-    suite.default_setup(mock.clone())?;
+    suite.default_setup(mock.clone(), None, None)?;
 
     let addr = mock.addr_make("babber");
 
