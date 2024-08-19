@@ -298,6 +298,7 @@
           ]
         },
         "payment_address": {
+          "description": "Address to recieve payments from launchparty.",
           "type": "string"
         },
         "price": {

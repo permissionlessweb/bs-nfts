@@ -23,11 +23,13 @@
         "minimum": 0.0
       },
       "bs721_curve_code_id": {
+        "description": "Code id of bs721-curve",
         "type": "integer",
         "format": "uint64",
         "minimum": 0.0
       },
       "bs721_launchparty_code_id": {
+        "description": "Code id of bs721-launchparty contract",
         "type": "integer",
         "format": "uint64",
         "minimum": 0.0
@@ -39,7 +41,12 @@
         "minimum": 0.0
       },
       "create_nft_sale_fee": {
-        "$ref": "#/definitions/Coin"
+        "description": "Required asset to create a instance using this factory.",
+        "allOf": [
+          {
+            "$ref": "#/definitions/Coin"
+          }
+        ]
       },
       "owner": {
         "description": "Address allowed to update contract parameters",
@@ -375,6 +382,7 @@
             ]
           },
           "payment_address": {
+            "description": "Address to recieve payments from launchparty.",
             "type": "string"
           },
           "price": {
