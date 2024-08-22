@@ -348,7 +348,7 @@ pub fn compute_referral_and_royalties_amounts(
         .map_err(StdError::divide_by_zero)?;
 
     let royalties_amount = total_amount - referral_amount - protocol_amount;
-    if royalties_amount.u128() <= 0u128 {
+    if royalties_amount <= Uint128::zero() {
         return Err(StdError::generic_err(
             "royalties amount is zero or negative",
         ));

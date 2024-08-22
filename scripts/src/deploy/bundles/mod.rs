@@ -1,4 +1,4 @@
-use crate::BtsgAccountTestSuite;
+use crate::bundles::account::BtsgAccountSuite;
 use bs721_account::msg::{Bs721AccountsQueryMsgFns, ExecuteMsgFns};
 use bs721_account_minter::msg::InstantiateMsg as AccountMinterInitMsg;
 use btsg_account::market::{
@@ -12,7 +12,7 @@ pub mod account;
 
 const BASE_PRICE: u128 = 100_000_000;
 
-impl BtsgAccountTestSuite<MockBech32> {
+impl BtsgAccountSuite<MockBech32> {
     /// Creates intitial suite for testing
     pub fn default_setup(
         &mut self,
@@ -46,7 +46,7 @@ impl BtsgAccountTestSuite<MockBech32> {
             .call_as(&creator.clone().unwrap_or_else(|| admin2.clone()))
             .instantiate(
                 &AccountMinterInitMsg {
-                    admin: admin.clone().map_or(None, |a| Some(a.to_string())),
+                    admin: admin.clone().map(|a| a.to_string()),
                     verifier: Some(mock.addr_make("verifier").to_string()),
                     collection_code_id: self.account.code_id()?,
                     marketplace_addr: self.market.addr_str()?,
@@ -101,7 +101,7 @@ impl BtsgAccountTestSuite<MockBech32> {
             mock.add_balance(&user.clone(), name_fee.clone())?;
         };
         // call as user to mint and list the account name, with account fees
-        self.minter.call_as(&user).execute(
+        self.minter.call_as(user).execute(
             &bs721_account_minter::msg::ExecuteMsg::MintAndList {
                 account: account.to_string(),
             },

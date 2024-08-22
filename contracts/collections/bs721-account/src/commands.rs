@@ -606,7 +606,7 @@ fn validate_address(deps: Deps, sender: &Addr, addr: Addr) -> Result<Addr, Contr
         let collection_info: MinterResponse = deps
             .querier
             .query_wasm_smart(&addr, &bs721_base::msg::QueryMsg::<Empty>::Minter {})?;
-        if collection_info.minter == sender.to_string() {
+        if collection_info.minter == *sender.to_string() {
             return Ok(addr);
         }
     }

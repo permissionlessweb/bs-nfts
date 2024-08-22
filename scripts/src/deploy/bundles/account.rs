@@ -1,17 +1,43 @@
-use crate::BtsgAccountTestSuite;
 use bs721_account_minter::msg::InstantiateMsg as AccountMinterInitMsg;
 use btsg_account::market::{ExecuteMsgFns as _, InstantiateMsg as AccountMarketInitMsg};
 use cosmwasm_std::Decimal;
 use cw_orch::prelude::*;
 
+use btsg_account::Metadata;
+use btsg_cw_orch::*;
+
+// Bitsong Accounts Collection Framework Suite.
+pub struct BtsgAccountSuite<Chain> {
+    pub account: BitsongAccountCollection<Chain, Metadata>,
+    pub market: BitsongAccountMarketplace<Chain>,
+    pub minter: BitsongAccountMinter<Chain>,
+}
+
+impl<Chain: CwEnv> BtsgAccountSuite<Chain> {
+    pub fn new(chain: Chain) -> BtsgAccountSuite<Chain> {
+        BtsgAccountSuite::<Chain> {
+            account: BitsongAccountCollection::new("bs721_account", chain.clone()),
+            market: BitsongAccountMarketplace::new("bs721_account_market", chain.clone()),
+            minter: BitsongAccountMinter::new("bs721_account_minter", chain.clone()),
+        }
+    }
+
+    pub fn upload(&self) -> Result<(), CwOrchError> {
+        self.account.upload()?;
+        self.market.upload()?;
+        self.minter.upload()?;
+        Ok(())
+    }
+}
+
 // Bitsong Accounts `Deploy` Suite
-impl<Chain: CwEnv> cw_orch::contract::Deploy<Chain> for BtsgAccountTestSuite<Chain> {
+impl<Chain: CwEnv> cw_orch::contract::Deploy<Chain> for BtsgAccountSuite<Chain> {
     // We don't have a custom error type
     type Error = CwOrchError;
     type DeployData = Addr;
 
     fn store_on(chain: Chain) -> Result<Self, Self::Error> {
-        let suite = BtsgAccountTestSuite::new(chain.clone());
+        let suite = BtsgAccountSuite::new(chain.clone());
         suite.upload()?;
         Ok(suite)
     }
@@ -31,7 +57,7 @@ impl<Chain: CwEnv> cw_orch::contract::Deploy<Chain> for BtsgAccountTestSuite<Cha
 
     fn deploy_on(chain: Chain, _data: Self::DeployData) -> Result<Self, Self::Error> {
         // ########### Upload ##############
-        let mut suite: BtsgAccountTestSuite<Chain> = BtsgAccountTestSuite::store_on(chain.clone())?;
+        let mut suite: BtsgAccountSuite<Chain> = BtsgAccountSuite::store_on(chain.clone())?;
 
         // ########## Instantiate #############
         // account marketplace
