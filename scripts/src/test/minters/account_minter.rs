@@ -2,8 +2,6 @@ use btsg_account::common::SECONDS_PER_YEAR;
 use cw_orch::{anyhow, mock::MockBech32, prelude::*};
 
 use crate::bundles::account::BtsgAccountSuite;
-use bs721_account::msg::InstantiateMsg;
-use bs721_account::msg::{Bs721AccountsQueryMsgFns, ExecuteMsgFns as _};
 use btsg_account::market::{ExecuteMsgFns as _, QueryMsgFns, SudoMsg as MarketplaceSudoMsg};
 use cosmwasm_std::{attr, coins, to_json_binary, Decimal};
 use cw_orch::mock::cw_multi_test::{SudoMsg, WasmSudo};
@@ -47,6 +45,8 @@ pub fn init() -> anyhow::Result<()> {
 }
 
 mod execute {
+
+    use btsg_account::account::{Bs721AccountsQueryMsgFns, ExecuteMsgFns};
 
     use super::*;
 
@@ -344,7 +344,10 @@ mod admin {
     }
 }
 mod query {
-    use btsg_account::market::BidOffset;
+    use btsg_account::{
+        account::{Bs721AccountsQueryMsgFns, ExecuteMsgFns},
+        market::BidOffset,
+    };
 
     use super::*;
 
@@ -586,7 +589,10 @@ mod query {
     // }
 }
 mod collection {
-    use btsg_account::TextRecord;
+    use btsg_account::{
+        account::{Bs721AccountsQueryMsgFns, ExecuteMsgFns},
+        TextRecord,
+    };
 
     use super::*;
     #[test]
@@ -833,7 +839,7 @@ mod collection {
         // run sudo msg
         mock.app.borrow_mut().sudo(SudoMsg::Wasm(WasmSudo {
             contract_addr: suite.account.address()?,
-            message: to_json_binary(&bs721_account::msg::SudoMsg::UpdateParams {
+            message: to_json_binary(&btsg_account::account::SudoMsg::UpdateParams {
                 max_record_count: max_record_count + 1,
             })?,
         }))?;
@@ -895,6 +901,8 @@ mod public_start_time {
 }
 
 mod associate_address {
+
+    use btsg_account::account::{Bs721AccountsQueryMsgFns, ExecuteMsgFns, InstantiateMsg};
 
     use super::*;
 

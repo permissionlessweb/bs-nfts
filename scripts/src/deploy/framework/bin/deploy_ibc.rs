@@ -24,19 +24,13 @@ fn main() -> cw_orch::anyhow::Result<()> {
     let runtime = Runtime::new()?;
     let first_daemon = get_daemon(NETWORK, runtime.handle(), None, None)?;
     let daemons = vec![
-        // get_daemon(JUNO_1, runtime.handle(), None, Some(first_daemon.state()))?,
-        // get_daemon(
-        //     PHOENIX_1,
-        //     runtime.handle(),
-        //     None,
-        //     Some(first_daemon.state()),
-        // )?,
-        // get_daemon(
-        //     ARCHWAY_1,
-        //     runtime.handle(),
-        //     None,
-        //     Some(first_daemon.state()),
-        // )?,
+        get_daemon(JUNO_1, runtime.handle(), None, Some(first_daemon.state()))?,
+        get_daemon(
+            BITSONG_MAINNET,
+            runtime.handle(),
+            None,
+            Some(first_daemon.state()),
+        )?,
         // get_daemon(
         //     OSMOSIS_1,
         //     runtime.handle(),

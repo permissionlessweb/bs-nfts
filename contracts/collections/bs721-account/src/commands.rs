@@ -1,5 +1,5 @@
 use crate::error::ContractError;
-use crate::msg::SudoParams;
+use btsg_account::account::SudoParams;
 use crate::state::{ACCOUNT_MARKETPLACE, REVERSE_MAP, SUDO_PARAMS, VERIFIER};
 use crate::Bs721AccountsContract;
 use cosmwasm_std::{

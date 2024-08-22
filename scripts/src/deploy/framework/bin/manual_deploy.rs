@@ -1,7 +1,7 @@
 use std::net::TcpStream;
 
 use abstract_interface::Abstract;
-use super::super::assert_wallet_balance;
+
 use abstract_std::objects::gov_type::GovernanceDetails;
 use clap::Parser;
 use cw_orch::{environment::NetworkInfoOwned, prelude::*};
@@ -11,10 +11,11 @@ use tokio::runtime::Runtime;
 use cw_orch::environment::ChainKind;
 use cw_orch_polytone::Polytone;
 
+use crate::framework::assert_wallet_balance;
+
 pub const ABSTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// Script to deploy Abstract & polytone to a new network provided by commmand line arguments
-/// Run "cargo run --example download_wasms" in the `abstract-interfaces` package before deploying!
 fn manual_deploy(network: ChainInfoOwned) -> anyhow::Result<()> {
     let rt = Runtime::new()?;
 

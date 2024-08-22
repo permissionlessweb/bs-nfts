@@ -15,3 +15,14 @@ This library contains both Rust & Bash scripts for the BS-NFT repository.
 | Suite Name | Description |
 |----------|----------|
 | [`BtsgAccountSuite`](./src/deploy/bundles/account.rs#12)| Account Collection, Marketplace, and Minter. |
+
+
+
+## Commands 
+| Command | Description |
+|----------|----------|
+| `cargo test` | Run all test in codebase |
+| `sh build_shema.sh` | Build cosmwasm schemas for each contract in codebase |
+| `cargo run --bin manual-deploy -- --network-ids <network-id-1> <network-id-2> ... ` | Manual deployment of account framework |
+| `cargo run --bin ibc-test` | Test ibc connection of bitsong accounts between 2 chains |
+<!-- | `sh simulate.sh` | Simulate bs721-bonding-curve iterations | -->

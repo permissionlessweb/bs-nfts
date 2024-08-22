@@ -1,6 +1,7 @@
 use crate::bundles::account::BtsgAccountSuite;
-use bs721_account::msg::{Bs721AccountsQueryMsgFns, ExecuteMsgFns};
 use bs721_account_minter::msg::InstantiateMsg as AccountMinterInitMsg;
+use btsg_account::account::Bs721AccountsQueryMsgFns;
+use btsg_account::account::ExecuteMsgFns;
 use btsg_account::market::{
     ExecuteMsgFns as _, InstantiateMsg as AccountMarketInitMsg, QueryMsgFns,
 };

@@ -8,7 +8,10 @@ use cw_orch::prelude::*;
 use cw_orch::tokio::runtime::Handle;
 
 use cw_orch_interchain::prelude::*;
+use networks::JUNO_1;
 use tokio::runtime::Runtime;
+
+use crate::framework::networks::BITSONG_MAINNET;
 
 /// Connect IBC between two chains.
 /// @TODO update this to take in the networks as arguments.
@@ -17,8 +20,8 @@ fn main() -> cw_orch::anyhow::Result<()> {
     env_logger::init();
 
     let chains = vec![
-        (PION_1, None),
-        (XION_TESTNET_1, None),
+        (BITSONG_MAINNET, None),
+        (JUNO_1, None),
         // (OSMOSIS_1, Some(std::env::var("OSMOSIS_MNEMONIC")?)),
     ];
     let runtime = Runtime::new()?;

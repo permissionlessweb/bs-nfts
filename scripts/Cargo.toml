@@ -39,3 +39,8 @@ tokio = "1.39.3"
 cw-orch-interchain-core = "0.5.0"
 
 [dev-dependencies]
+
+
+[[bin]]
+name = "manual-deploy"
+path = "src/deploy/abstract/bin/manual_deploy.rs"

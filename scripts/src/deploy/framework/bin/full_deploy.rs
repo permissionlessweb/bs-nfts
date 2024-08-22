@@ -6,6 +6,8 @@ use std::{
     net::TcpStream,
 };
 
+use crate::framework::networks::bitsong_parse_networks;
+
 use super::super::{assert_wallet_balance, DeploymentStatus, SUPPORTED_CHAINS};
 use clap::Parser;
 use cw_orch::{daemon::networks::parse_network, prelude::*};
@@ -134,12 +136,12 @@ fn main() {
 
     let args = Arguments::parse();
 
-    // let networks = vec![abstract_scripts::ROLLKIT_TESTNET];
+    // let networks = vec![crate::framework::networks::BITSONG_MAINNET];
 
     let networks = args
         .network_ids
         .iter()
-        .map(|n| parse_network(n).unwrap().into())
+        .map(|n| bitsong_parse_networks(n).unwrap().into())
         .collect::<Vec<_>>();
 
     if let Err(ref err) = full_deploy(networks) {

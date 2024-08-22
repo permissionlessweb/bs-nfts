@@ -1,5 +1,5 @@
 use bs721_account::ExecuteMsg;
-use bs_std::NATIVE_DENOM;
+use btsg_account::common::NATIVE_DENOM;
 use btsg_account::minter::SudoParams;
 use btsg_account::{
     common::charge_fees, market::ExecuteMsg as MarketplaceExecuteMsg, minter::Config, Metadata,

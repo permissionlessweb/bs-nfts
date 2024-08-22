@@ -41,7 +41,6 @@ cw721-base       = { workspace = true, features = ["library"] }
 schemars         = { workspace = true }
 semver           = { workspace = true }
 serde            = { workspace = true }
-bs-std           = { workspace = true }
 btsg-account           = { workspace = true }
 bs-controllers           = { workspace = true }
 thiserror        = { workspace = true }
