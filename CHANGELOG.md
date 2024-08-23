@@ -1,19 +1,18 @@
 **Changelog for Bitsong NFTS**
 =====================================================
 
-**`0.2.0-rc` - `TBD`**
+**`0.2.0-rc` - Cw Orchestrator & Bitsong Accounts**
 --------------------------------------
 
 ### Added
 
-* **Cw-Orchestrator**
-* **BS721-Account**
-* **BS721-Minter**
-* **BS721-Marketplace**
-* **Bitsong-Controller Library**
-* **Bitsong Account Package Library**
-* **Scripts Library**
-* **Second Royalty Layer Into Contracts**
+* **Cw-Orchestrator**- advanced testing and deployment tool for CosmWasm smart-contracts https://orchestrator.abstract.money/intro.html
+* **BS721-Account** - Bitsong native NFT collection for Bitsong Smart Contract Accounts.
+* **BS721-Minter** BS721-Account Minter Contract. 
+* **BS721-Marketplace** BS721-Account Marketplace
+* **Bitsong-Controller Library** - Library for managing hooks & other contract controlling actions.
+* **Bitsong Account Package Library** - Library for entry points to all bitsong account related contracts
+* **Scripts Library** - Library for interacting with simulation and production environments.
 
 ### Changed
 * `MintMsg` enum removed from BS71-Base
@@ -26,15 +25,9 @@
 * [List of features or functionalities removed in this version]
 * [Brief description of each removal]
 
-### Security
-
-### Known Issues
-* Migration Logic
-
 ### Upgrade Notes
+* Migration Logic - No test have been made on migrating v0.1.0-rc to v0.2.0-rc.
 
-* [List of important notes or instructions for upgrading to this version]
-* [Brief description of each note or instruction]
 
 ### Credits
 

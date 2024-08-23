@@ -40,7 +40,28 @@ cw-orch-interchain-core = "0.5.0"
 
 [dev-dependencies]
 
-
+# Cargo CLI commands
+[[bin]]
+name = "connect-ibc"
+path = "src/bin/connect_ibc.rs"
+[[bin]]
+name = "create-remote-account"
+path = "src/bin/create_remote_account.rs"
+[[bin]]
+name = "deploy-ibc"
+path = "src/bin/deploy_ibc.rs"
+[[bin]]
+name = "deploy-modules"
+path = "src/bin/deploy_modules.rs"
+[[bin]]
+name = "full-deploy"
+path = "src/bin/full_deploy.rs"
+[[bin]]
+name = "ibc-test"
+path = "src/bin/ibc_test.rs"
 [[bin]]
 name = "manual-deploy"
-path = "src/deploy/abstract/bin/manual_deploy.rs"
+path = "src/bin/manual_deploy.rs"
+[[bin]]
+name = "migrate"
+path = "src/bin/migrate.rs"

@@ -8,10 +8,15 @@ pub struct InstantiateMsg {
     pub admin: Option<String>,
     /// Oracle for verifying text records
     pub verifier: Option<String>,
+    /// Code-id for BS721-Account. On Instantiate, minter will instantiate a new account collection.
     pub collection_code_id: u64,
+    /// Contract Address to Marketplace contract.
     pub marketplace_addr: String,
+    /// Minimum length an account id can be
     pub min_name_length: u32,
+    /// Maximum length an account id can be
     pub max_name_length: u32,
+    /// Base price for a name. Used to calculate premium for small account names
     pub base_price: Uint128,
 }
 
