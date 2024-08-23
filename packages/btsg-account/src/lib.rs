@@ -1,6 +1,5 @@
-
-use cosmwasm_std::Addr;
-
+use cosmwasm_std::{Addr, StdError};
+pub mod account;
 pub mod common;
 pub mod market;
 pub mod minter;
@@ -49,13 +48,9 @@ pub struct Metadata {
 }
 
 impl Metadata {
-    // Yes this is rather ugly. It is used to convert metadata into a JSON
-    // string for use in emitting events. Events can only be strings, so
-    // serializing it into a JSON string allows the indexer to parse it
-    // and represent it as a type. Note that we have to use the CosmWasm fork
-    // of serde_json to avoid floats.
-    pub fn into_json_string(self: &Metadata) -> String {
-        String::from_utf8(cosmwasm_std::to_json_vec(&self).unwrap_or_default()).unwrap_or_default()
+    pub fn into_json_string(self: &Metadata) -> Result<String, StdError> {
+        let json_vec = cosmwasm_std::to_json_vec(&self)?;
+        String::from_utf8(json_vec).map_err(StdError::from)
     }
 }
 
@@ -111,7 +106,7 @@ mod test {
         let records = vec![record_1, record_2];
         let metadata = Metadata { image_nft, records };
 
-        let json = metadata.into_json_string();
+        let json = metadata.into_json_string().unwrap();
         assert_eq!(
             json,
             r#"{"image_nft":{"collection":"bitsong1y54exmx84cqtasvjnskf9f63djuuj68pj7jph3","token_id":"1"},"records":[{"name":"twitter","value":"shan3v","verified":null},{"name":"discord","value":"shan3v","verified":true}]}"#,

@@ -28,7 +28,6 @@ bs721-account-minter         = { version = "0.1.0-alpha.1", path = "./contracts/
 bs721-account-marketplace    = { version = "0.1.0-alpha.1", path = "./contracts/markets/account-market" }
 btsg-account                 = { version = "0.1.0-rc1", path = "./packages/btsg-account" }
 bs-controllers               = { version = "0.1.0-rc1", path = "./packages/controllers" }
-bs-std                       = { version = "0.1.0-rc1", path = "./packages/bs-std" }
 btsg-cw-orch                 = { version = "0.1.0-rc1", path = "./packages/cw-orch" }
 cosmwasm-schema              = "1.1.5"
 cosmwasm-std                 = "1.1.5"

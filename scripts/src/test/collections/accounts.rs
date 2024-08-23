@@ -1,10 +1,7 @@
-use crate::BtsgAccountTestSuite;
-use ::bs721_account::{
-    commands::transcode,
-    msg::{Bs721AccountsQueryMsgFns, ExecuteMsg as Bs721AccountExecuteMsg, ExecuteMsgFns},
-    ContractError,
-};
+use crate::bundles::account::BtsgAccountSuite;
+use ::bs721_account::{commands::transcode, ContractError};
 use bs721_base::ContractError::Unauthorized;
+use btsg_account::account::{Bs721AccountsQueryMsgFns, ExecuteMsgFns};
 use btsg_account::{market::InstantiateMsg, Metadata};
 use btsg_account::{minter, TextRecord, NFT};
 use cosmwasm_std::{from_json, StdError};
@@ -16,13 +13,13 @@ fn init() -> anyhow::Result<()> {
     // new mock Bech32 chain environment
     let mock = MockBech32::new("mock");
     // simulate deploying the test suite to the mock chain env.
-    BtsgAccountTestSuite::deploy_on(mock.clone(), mock.sender)?;
+    BtsgAccountSuite::deploy_on(mock.clone(), mock.sender)?;
     Ok(())
 }
 #[test]
 fn mint_and_update() -> anyhow::Result<()> {
     let mock = MockBech32::new("mock");
-    let mut suite = BtsgAccountTestSuite::new(mock.clone());
+    let mut suite = BtsgAccountSuite::new(mock.clone());
     suite.default_setup(mock.clone(), None, None)?;
 
     let not_minter = mock.addr_make("not-minter");
@@ -170,7 +167,7 @@ fn mint_and_update() -> anyhow::Result<()> {
 #[test]
 fn test_query_names() -> anyhow::Result<()> {
     let mock = MockBech32::new("bitsong");
-    let mut suite = BtsgAccountTestSuite::new(mock.clone());
+    let mut suite = BtsgAccountSuite::new(mock.clone());
     suite.default_setup(mock.clone(), None, None)?;
 
     let addr = mock.addr_make("babber");

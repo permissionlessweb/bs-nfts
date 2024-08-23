@@ -1,7 +1,5 @@
 use std::vec;
 
-use btsg_account::market::ExecuteMsg as MarketplaceExecuteMsg;
-use btsg_account::Metadata;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
@@ -13,11 +11,15 @@ use cw_utils::{maybe_addr, must_pay, parse_reply_instantiate_data};
 
 use semver::Version;
 
-use bs721_account::msg::{
-    ExecuteMsg as BsAccountExecuteMsg, InstantiateMsg as BsAccountCollectionInstantiateMsg,
+use btsg_account::{
+    account::{
+        ExecuteMsg as BsAccountExecuteMsg, InstantiateMsg as BsAccountCollectionInstantiateMsg,
+    },
+    common::{charge_fees, SECONDS_PER_YEAR},
+    market::ExecuteMsg as MarketplaceExecuteMsg,
+    minter::{Config, SudoParams},
+    Metadata,
 };
-use btsg_account::common::{charge_fees, SECONDS_PER_YEAR};
-use btsg_account::minter::{Config, SudoParams};
 
 use crate::commands::{
     execute_mint_and_list, execute_pause, execute_update_config, query_collection, query_config,

@@ -1,9 +1,7 @@
 use btsg_account::common::SECONDS_PER_YEAR;
 use cw_orch::{anyhow, mock::MockBech32, prelude::*};
 
-use crate::BtsgAccountTestSuite;
-use bs721_account::msg::InstantiateMsg;
-use bs721_account::msg::{Bs721AccountsQueryMsgFns, ExecuteMsgFns as _};
+use crate::bundles::account::BtsgAccountSuite;
 use btsg_account::market::{ExecuteMsgFns as _, QueryMsgFns, SudoMsg as MarketplaceSudoMsg};
 use cosmwasm_std::{attr, coins, to_json_binary, Decimal};
 use cw_orch::mock::cw_multi_test::{SudoMsg, WasmSudo};
@@ -42,18 +40,20 @@ pub fn init() -> anyhow::Result<()> {
     // new mock Bech32 chain environment
     let mock = MockBech32::new("mock");
     // simulate deploying the test suite to the mock chain env.
-    BtsgAccountTestSuite::deploy_on(mock.clone(), mock.sender)?;
+    BtsgAccountSuite::deploy_on(mock.clone(), mock.sender)?;
     Ok(())
 }
 
 mod execute {
+
+    use btsg_account::account::{Bs721AccountsQueryMsgFns, ExecuteMsgFns};
 
     use super::*;
 
     #[test]
     fn test_check_approvals() -> anyhow::Result<()> {
         let mock = MockBech32::new("mock");
-        let mut suite = BtsgAccountTestSuite::new(mock.clone());
+        let mut suite = BtsgAccountSuite::new(mock.clone());
         suite.default_setup(mock.clone(), None, None)?;
 
         let owner = mock.sender.clone();
@@ -76,7 +76,7 @@ mod execute {
     #[test]
     fn test_mint() -> anyhow::Result<()> {
         let mock = MockBech32::new("mock");
-        let mut suite = BtsgAccountTestSuite::new(mock.clone());
+        let mut suite = BtsgAccountSuite::new(mock.clone());
         suite.default_setup(mock.clone(), None, None)?;
         let owner = mock.sender.clone();
         let token_id = "bobo";
@@ -99,7 +99,7 @@ mod execute {
     #[test]
     fn test_bid() -> anyhow::Result<()> {
         let mock = MockBech32::new("mock");
-        let mut suite = BtsgAccountTestSuite::new(mock.clone());
+        let mut suite = BtsgAccountSuite::new(mock.clone());
         suite.default_setup(mock.clone(), None, None)?;
         let owner = mock.sender.clone();
         let bidder = mock.addr_make("bidder");
@@ -114,7 +114,7 @@ mod execute {
     #[test]
     fn test_accept_bid() -> anyhow::Result<()> {
         let mock = MockBech32::new("mock");
-        let mut suite = BtsgAccountTestSuite::new(mock.clone());
+        let mut suite = BtsgAccountSuite::new(mock.clone());
         suite.default_setup(mock.clone(), None, None)?;
         let owner = mock.sender.clone();
         let bidder = mock.addr_make("bidder");
@@ -156,7 +156,7 @@ mod execute {
 
     fn test_two_sales_cycles() -> anyhow::Result<()> {
         let mock = MockBech32::new("bitsong");
-        let mut suite = BtsgAccountTestSuite::new(mock.clone());
+        let mut suite = BtsgAccountSuite::new(mock.clone());
         suite.default_setup(mock.clone(), None, None)?;
         let owner = mock.sender.clone();
         let bidder = mock.addr_make("bidder");
@@ -183,7 +183,7 @@ mod execute {
     #[test]
     fn test_reverse_map() -> anyhow::Result<()> {
         let mock = MockBech32::new("bitsong");
-        let mut suite = BtsgAccountTestSuite::new(mock.clone());
+        let mut suite = BtsgAccountSuite::new(mock.clone());
         suite.default_setup(mock.clone(), None, None)?;
         mock.wait_seconds(1)?;
 
@@ -230,7 +230,7 @@ mod execute {
     #[test]
     fn test_reverse_map_not_contract_address_admin() -> anyhow::Result<()> {
         let mock = MockBech32::new("bitsong");
-        let mut suite = BtsgAccountTestSuite::new(mock.clone());
+        let mut suite = BtsgAccountSuite::new(mock.clone());
         suite.default_setup(mock.clone(), None, None)?;
 
         let addr = mock.addr_make_with_balance("not-admin", coins(1000000000, "ubtsg"))?;
@@ -249,7 +249,7 @@ mod execute {
     #[test]
     fn test_reverse_map_not_owner() -> anyhow::Result<()> {
         let mock = MockBech32::new("bitsong");
-        let mut suite = BtsgAccountTestSuite::new(mock.clone());
+        let mut suite = BtsgAccountSuite::new(mock.clone());
         suite.default_setup(mock.clone(), None, None)?;
         let token_id = "bobo";
         let admin2 = mock.addr_make("admin2");
@@ -267,7 +267,7 @@ mod execute {
     #[test]
     fn test_pause() -> anyhow::Result<()> {
         let mock = MockBech32::new("bitsong");
-        let mut suite = BtsgAccountTestSuite::new(mock.clone());
+        let mut suite = BtsgAccountSuite::new(mock.clone());
         suite.default_setup(mock.clone(), None, Some(mock.sender.clone()))?;
         let token_id = "bobo";
         let admin2 = mock.addr_make("admin2");
@@ -289,7 +289,7 @@ mod execute {
     #[test]
     fn test_update_mkt_sudo() -> anyhow::Result<()> {
         let mock = MockBech32::new("bitsong");
-        let mut suite = BtsgAccountTestSuite::new(mock.clone());
+        let mut suite = BtsgAccountSuite::new(mock.clone());
         suite.default_setup(mock.clone(), None, None)?;
         let token_id = "bobo";
         let admin2 = mock.addr_make("admin2");
@@ -322,7 +322,7 @@ mod admin {
     #[test]
     fn test_update_admin() -> anyhow::Result<()> {
         let mock = MockBech32::new("bitsong");
-        let mut suite = BtsgAccountTestSuite::new(mock.clone());
+        let mut suite = BtsgAccountSuite::new(mock.clone());
         suite.default_setup(mock.clone(), None, Some(mock.sender.clone()))?;
         let admin2 = mock.addr_make("admin2");
         // non-admin tries to set admin to None
@@ -344,14 +344,17 @@ mod admin {
     }
 }
 mod query {
-    use btsg_account::market::BidOffset;
+    use btsg_account::{
+        account::{Bs721AccountsQueryMsgFns, ExecuteMsgFns},
+        market::BidOffset,
+    };
 
     use super::*;
 
     #[test]
     fn test_query_ask() -> anyhow::Result<()> {
         let mock = MockBech32::new("bitsong");
-        let mut suite = BtsgAccountTestSuite::new(mock.clone());
+        let mut suite = BtsgAccountSuite::new(mock.clone());
         suite.default_setup(mock.clone(), None, Some(mock.sender.clone()))?;
         let admin2 = mock.addr_make("admin2");
         let token_id = "bobo";
@@ -368,7 +371,7 @@ mod query {
     #[test]
     fn test_query_asks() -> anyhow::Result<()> {
         let mock = MockBech32::new("bitsong");
-        let mut suite = BtsgAccountTestSuite::new(mock.clone());
+        let mut suite = BtsgAccountSuite::new(mock.clone());
         suite.default_setup(mock.clone(), None, Some(mock.sender.clone()))?;
         let admin = mock.sender.clone();
         let admin2 = mock.addr_make("admin2");
@@ -385,7 +388,7 @@ mod query {
     #[test]
     fn test_query_asks_by_seller() -> anyhow::Result<()> {
         let mock = MockBech32::new("bitsong");
-        let mut suite = BtsgAccountTestSuite::new(mock.clone());
+        let mut suite = BtsgAccountSuite::new(mock.clone());
         suite.default_setup(mock.clone(), None, Some(mock.sender.clone()))?;
         let admin = mock.sender.clone();
         let admin2 = mock.addr_make("admin2");
@@ -407,7 +410,7 @@ mod query {
     #[test]
     fn test_query_ask_count() -> anyhow::Result<()> {
         let mock = MockBech32::new("bitsong");
-        let mut suite = BtsgAccountTestSuite::new(mock.clone());
+        let mut suite = BtsgAccountSuite::new(mock.clone());
         suite.default_setup(mock.clone(), None, Some(mock.sender.clone()))?;
         let admin = mock.sender.clone();
         let admin2 = mock.addr_make("admin2");
@@ -423,7 +426,7 @@ mod query {
     #[test]
     fn test_query_top_bids() -> anyhow::Result<()> {
         let mock = MockBech32::new("bitsong");
-        let mut suite = BtsgAccountTestSuite::new(mock.clone());
+        let mut suite = BtsgAccountSuite::new(mock.clone());
         suite.default_setup(mock.clone(), None, Some(mock.sender.clone()))?;
         let admin = mock.sender.clone();
         let admin2 = mock.addr_make("admin2");
@@ -472,7 +475,7 @@ mod query {
     #[test]
     fn test_query_bids_by_seller() -> anyhow::Result<()> {
         let mock = MockBech32::new("bitsong");
-        let mut suite = BtsgAccountTestSuite::new(mock.clone());
+        let mut suite = BtsgAccountSuite::new(mock.clone());
         suite.default_setup(mock.clone(), None, Some(mock.sender.clone()))?;
         let admin = mock.sender.clone();
         let admin2 = mock.addr_make("admin2");
@@ -526,7 +529,7 @@ mod query {
     #[test]
     fn test_query_highest_bid() -> anyhow::Result<()> {
         let mock = MockBech32::new("bitsong");
-        let mut suite = BtsgAccountTestSuite::new(mock.clone());
+        let mut suite = BtsgAccountSuite::new(mock.clone());
         suite.default_setup(mock.clone(), None, Some(mock.sender.clone()))?;
         let admin = mock.sender.clone();
         let bidder1 = mock.addr_make("bidder1");
@@ -554,7 +557,7 @@ mod query {
     #[test]
     fn test_query_name() -> anyhow::Result<()> {
         let mock = MockBech32::new("bitsong");
-        let mut suite = BtsgAccountTestSuite::new(mock.clone());
+        let mut suite = BtsgAccountSuite::new(mock.clone());
         suite.default_setup(mock.clone(), None, Some(mock.sender.clone()))?;
         let admin = mock.sender.clone();
         let user1 = mock.addr_make("user1");
@@ -579,20 +582,23 @@ mod query {
     // #[test]
     // fn test_query_trading_start_time() -> anyhow::Result<()> {
     //     let mock = MockBech32::new("bitsong");
-    //     let mut suite = BtsgAccountTestSuite::new(mock.clone());
+    //     let mut suite = BtsgAccountSuite::new(mock.clone());
     //     suite.default_setup(mock.clone(), None, Some(mock.sender.clone()))?;
 
     //     Ok(())
     // }
 }
 mod collection {
-    use btsg_account::TextRecord;
+    use btsg_account::{
+        account::{Bs721AccountsQueryMsgFns, ExecuteMsgFns},
+        TextRecord,
+    };
 
     use super::*;
     #[test]
     fn test_verify_twitter() -> anyhow::Result<()> {
         let mock = MockBech32::new("bitsong");
-        let mut suite = BtsgAccountTestSuite::new(mock.clone());
+        let mut suite = BtsgAccountSuite::new(mock.clone());
         suite.default_setup(mock.clone(), None, Some(mock.sender.clone()))?;
 
         mock.wait_seconds(1)?;
@@ -636,7 +642,7 @@ mod collection {
     #[test]
     fn test_verify_false() -> anyhow::Result<()> {
         let mock = MockBech32::new("bitsong");
-        let mut suite = BtsgAccountTestSuite::new(mock.clone());
+        let mut suite = BtsgAccountSuite::new(mock.clone());
         suite.default_setup(mock.clone(), None, Some(mock.sender.clone()))?;
 
         mock.wait_seconds(1)?;
@@ -670,7 +676,7 @@ mod collection {
     #[test]
     fn test_verified_text_record() -> anyhow::Result<()> {
         let mock = MockBech32::new("bitsong");
-        let mut suite = BtsgAccountTestSuite::new(mock.clone());
+        let mut suite = BtsgAccountSuite::new(mock.clone());
         suite.default_setup(mock.clone(), None, Some(mock.sender.clone()))?;
 
         mock.wait_seconds(1)?;
@@ -715,7 +721,7 @@ mod collection {
     #[test]
     fn test_transfer_nft() -> anyhow::Result<()> {
         let mock = MockBech32::new("bitsong");
-        let mut suite = BtsgAccountTestSuite::new(mock.clone());
+        let mut suite = BtsgAccountSuite::new(mock.clone());
         suite.default_setup(mock.clone(), None, Some(mock.sender.clone()))?;
 
         let admin_user = mock.sender.clone();
@@ -733,7 +739,7 @@ mod collection {
     #[test]
     fn test_send_nft() -> anyhow::Result<()> {
         let mock = MockBech32::new("bitsong");
-        let mut suite = BtsgAccountTestSuite::new(mock.clone());
+        let mut suite = BtsgAccountSuite::new(mock.clone());
         suite.default_setup(mock.clone(), None, Some(mock.sender.clone()))?;
 
         let admin_user = mock.sender.clone();
@@ -742,17 +748,15 @@ mod collection {
         mock.wait_seconds(1)?;
         suite.mint_and_list(mock.clone(), token_id, &admin_user)?;
 
-        suite.account.send_nft(
-            mock.addr_make("new-addr"),
-            to_json_binary("ini".into())?,
-            token_id,
-        )?;
+        suite
+            .account
+            .send_nft(mock.addr_make("new-addr"), to_json_binary("ini")?, token_id)?;
         Ok(())
     }
     #[test]
     fn test_transfer_nft_and_bid() -> anyhow::Result<()> {
         let mock = MockBech32::new("bitsong");
-        let mut suite = BtsgAccountTestSuite::new(mock.clone());
+        let mut suite = BtsgAccountSuite::new(mock.clone());
         suite.default_setup(mock.clone(), None, Some(mock.sender.clone()))?;
         let bidder1 = mock.addr_make("bidder1");
         let market = suite.market.address()?;
@@ -784,7 +788,7 @@ mod collection {
     #[test]
     fn test_transfer_nft_with_reverse_map() -> anyhow::Result<()> {
         let mock = MockBech32::new("bitsong");
-        let mut suite = BtsgAccountTestSuite::new(mock.clone());
+        let mut suite = BtsgAccountSuite::new(mock.clone());
         suite.default_setup(mock.clone(), None, Some(mock.sender.clone()))?;
 
         let user = mock.addr_make("user");
@@ -827,7 +831,7 @@ mod collection {
     #[test]
     fn test_sudo_update() -> anyhow::Result<()> {
         let mock = MockBech32::new("bitsong");
-        let mut suite = BtsgAccountTestSuite::new(mock.clone());
+        let mut suite = BtsgAccountSuite::new(mock.clone());
         suite.default_setup(mock.clone(), None, Some(mock.sender.clone()))?;
 
         let max_record_count = suite.account.params()?.max_record_count;
@@ -835,7 +839,7 @@ mod collection {
         // run sudo msg
         mock.app.borrow_mut().sudo(SudoMsg::Wasm(WasmSudo {
             contract_addr: suite.account.address()?,
-            message: to_json_binary(&bs721_account::msg::SudoMsg::UpdateParams {
+            message: to_json_binary(&btsg_account::account::SudoMsg::UpdateParams {
                 max_record_count: max_record_count + 1,
             })?,
         }))?;
@@ -855,7 +859,7 @@ mod public_start_time {
     #[test]
     fn test_mint_before_start() -> anyhow::Result<()> {
         let mock = MockBech32::new("bitsong");
-        let mut suite = BtsgAccountTestSuite::new(mock.clone());
+        let mut suite = BtsgAccountSuite::new(mock.clone());
         suite.default_setup(mock.clone(), None, Some(mock.sender.clone()))?;
 
         let admin_user = mock.sender.clone();
@@ -873,7 +877,7 @@ mod public_start_time {
     #[test]
     fn test_update_start_time() -> anyhow::Result<()> {
         let mock = MockBech32::new("bitsong");
-        let mut suite = BtsgAccountTestSuite::new(mock.clone());
+        let mut suite = BtsgAccountSuite::new(mock.clone());
         suite.default_setup(mock.clone(), None, Some(mock.sender.clone()))?;
 
         let res = suite.minter.config()?;
@@ -898,12 +902,14 @@ mod public_start_time {
 
 mod associate_address {
 
+    use btsg_account::account::{Bs721AccountsQueryMsgFns, ExecuteMsgFns, InstantiateMsg};
+
     use super::*;
 
     #[test]
     fn test_transfer_to_eoa() -> anyhow::Result<()> {
         let mock = MockBech32::new("bitsong");
-        let mut suite = BtsgAccountTestSuite::new(mock.clone());
+        let mut suite = BtsgAccountSuite::new(mock.clone());
         suite.default_setup(mock.clone(), None, Some(mock.sender.clone()))?;
 
         let admin_user = mock.sender.clone();
@@ -944,7 +950,7 @@ mod associate_address {
         // This contract needs to have a creator that is itself a contract and this creator contract should have an admin (USER).
         // The admin (USER) of the creator contract will mint a name and associate the name with the collection contract that doesn't have an admin successfully.
         let mock = MockBech32::new("bitsong");
-        let mut suite = BtsgAccountTestSuite::new(mock.clone());
+        let mut suite = BtsgAccountSuite::new(mock.clone());
         suite.default_setup(mock.clone(), None, Some(mock.sender.clone()))?;
 
         let admin_user = mock.sender.clone();
@@ -1012,7 +1018,7 @@ mod associate_address {
         // This contract needs to have a creator that is itself a contract and this creator contract should have an admin (USER).
         // An address other than the admin (USER) of the creator contract will mint a name, try to associate the name with the collection contract that doesn't have an admin and fail.
         let mock = MockBech32::new("bitsong");
-        let mut suite = BtsgAccountTestSuite::new(mock.clone());
+        let mut suite = BtsgAccountSuite::new(mock.clone());
         suite.default_setup(mock.clone(), None, Some(mock.sender.clone()))?;
 
         let admin_user = mock.addr_make("admin-user");
@@ -1082,7 +1088,7 @@ mod associate_address {
     #[test]
     fn test_associate_with_a_contract_with_an_admin_fail() -> anyhow::Result<()> {
         let mock = MockBech32::new("bitsong");
-        let mut suite = BtsgAccountTestSuite::new(mock.clone());
+        let mut suite = BtsgAccountSuite::new(mock.clone());
         suite.default_setup(mock.clone(), None, Some(mock.sender.clone()))?;
 
         let admin_user = mock.addr_make("admin-user");

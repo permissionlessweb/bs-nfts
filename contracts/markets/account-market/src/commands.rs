@@ -3,7 +3,7 @@ use crate::{
     error::ContractError,
     hooks::{prepare_ask_hook, prepare_bid_hook, prepare_sale_hook},
 };
-use bs_std::NATIVE_DENOM;
+use btsg_account::common::NATIVE_DENOM;
 use btsg_account::{
     common::{charge_fees, SECONDS_PER_YEAR},
     minter::SudoParams as BsProfileMinterSudoParams,

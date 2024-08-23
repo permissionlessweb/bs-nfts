@@ -104,7 +104,6 @@ pub enum QueryMsg<Q: JsonSchema> {
     /// Total number of tokens issued
     #[returns(bs721::NumTokensResponse)]
     NumTokens {},
-
     /// With MetaData Extension.
     /// Returns top-level metadata about the contract
     #[returns(bs721::ContractInfoResponse)]
@@ -123,7 +122,6 @@ pub enum QueryMsg<Q: JsonSchema> {
         /// unset or false will filter out expired approvals, you must set to true to see them
         include_expired: Option<bool>,
     },
-
     /// With Enumerable extension.
     /// Returns all tokens owned by the given address, [] if unset.
     #[returns(bs721::TokensResponse)]
@@ -139,17 +137,14 @@ pub enum QueryMsg<Q: JsonSchema> {
         start_after: Option<String>,
         limit: Option<u32>,
     },
-
     /// Return the minter
     #[returns(MinterResponse)]
     Minter {},
-
-    // #[returns(CollectionInfoResponse)]
-    // CollectionInfo {},
-
     /// Extension query
     #[returns(())]
     Extension { msg: Q },
+    // #[returns(CollectionInfoResponse)]
+    // CollectionInfo {},
 }
 
 /// Shows who can mint these tokens

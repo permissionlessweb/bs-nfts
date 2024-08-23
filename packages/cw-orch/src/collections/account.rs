@@ -1,8 +1,10 @@
 use cw_orch::{interface, prelude::*};
 
-use bs721_account::msg::{Bs721AccountsQueryMsg as QueryMsg, ExecuteMsg, InstantiateMsg};
 use bs721_account::{execute, instantiate, query, sudo};
-use btsg_account::Metadata;
+use btsg_account::{
+    account::{Bs721AccountsQueryMsg as QueryMsg, ExecuteMsg, InstantiateMsg},
+    Metadata,
+};
 
 #[interface(InstantiateMsg, ExecuteMsg::<Metadata>, QueryMsg, Empty)]
 pub struct BitsongAccountCollection;

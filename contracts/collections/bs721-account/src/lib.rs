@@ -1,21 +1,18 @@
 pub mod commands;
 pub mod error;
-pub mod msg;
 pub mod state;
 
-
 pub use error::ContractError;
-use msg::SudoMsg;
 
 use crate::{
     commands::*,
-    {
-        msg::{Bs721AccountsQueryMsg, InstantiateMsg, SudoParams},
-        state::{ACCOUNT_MARKETPLACE, SUDO_PARAMS, VERIFIER},
-    },
+    state::{ACCOUNT_MARKETPLACE, SUDO_PARAMS, VERIFIER},
 };
 use bs721_base::ContractError as Bs721ContractError;
-use btsg_account::Metadata;
+use btsg_account::{
+    account::{Bs721AccountsQueryMsg, InstantiateMsg, SudoMsg, SudoParams},
+    Metadata,
+};
 use cosmwasm_std::{
     to_json_binary, Binary, Deps, DepsMut, Empty, Env, MessageInfo, Response, StdResult,
 };
@@ -26,7 +23,7 @@ const CONTRACT_NAME: &str = "crates.io:bs721-account";
 
 pub type Bs721AccountsContract<'a> =
     bs721_base::Bs721Contract<'a, Metadata, Empty, Empty, Bs721AccountsQueryMsg>;
-pub type ExecuteMsg = crate::msg::ExecuteMsg<Metadata>;
+pub type ExecuteMsg = btsg_account::account::ExecuteMsg<Metadata>;
 pub type QueryMsg = Bs721AccountsQueryMsg;
 
 #[cfg_attr(not(feature = "library"), cosmwasm_std::entry_point)]
