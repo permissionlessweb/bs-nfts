@@ -11,8 +11,4 @@ version.workspace = true
 cw-orch.workspace = true
 cosmwasm-std.workspace = true
 serde.workspace     = true
-bs721-account.workspace = true
-btsg-account.workspace = true
-bs721-account-marketplace.workspace = true
-bs721-account-minter.workspace = true
 

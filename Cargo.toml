@@ -3,7 +3,6 @@ members = [
  "packages/*", 
  "contracts/collections/*",
  "contracts/minters/*",
- "contracts/markets/*",
  "contracts/factories/*",
  "scripts"
  ]
@@ -19,14 +18,10 @@ documentation = "https://docs.bitsong.io"
 [workspace.dependencies]
 anyhow                       = { version = "1.0" }
 bs721                        = { version = "0.1.0-alpha.1", path = "./packages/bs721" }
-bs721-account                = { version = "0.1.0-alpha.1", path = "./contracts/collections/bs721-account" }
 bs721-base                   = { version = "0.1.0-alpha.1", path = "./contracts/collections/bs721-base" }
 bs721-curve                  = { version = "0.1.0-alpha.1", path = "./contracts/collections/bs721-curve" }
 bs721-royalties              = { version = "0.1.0-alpha.1", path = "./contracts/collections/bs721-royalties" }
 bs721-factory                = { version = "0.1.0-alpha.1", path = "./contracts/factories/bs721-factory" }
-bs721-account-minter         = { version = "0.1.0-alpha.1", path = "./contracts/minters/account-minter" }
-bs721-account-marketplace    = { version = "0.1.0-alpha.1", path = "./contracts/markets/account-market" }
-btsg-account                 = { version = "0.1.0-rc1", path = "./packages/btsg-account" }
 bs-controllers               = { version = "0.1.0-rc1", path = "./packages/controllers" }
 btsg-cw-orch                 = { version = "0.1.0-rc1", path = "./packages/cw-orch" }
 cosmwasm-schema              = "1.1.5"

@@ -1,6 +1,5 @@
 pub mod ibc;
 pub mod networks;
-pub mod bin;
 use cw_orch::prelude::*;
 
 use networks::{GAS_TO_DEPLOY, SUPPORTED_CHAINS};

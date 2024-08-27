@@ -7,7 +7,6 @@ use std::net::TcpStream;
 // use dca_app::{contract::DCA_APP_ID, DCA};
 
 use clap::Parser;
-use cosmwasm_std::Decimal;
 use cw_orch::{daemon::networks::parse_network, prelude::*};
 use reqwest::Url;
 use tokio::runtime::Runtime;
