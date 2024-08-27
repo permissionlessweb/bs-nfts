@@ -6,9 +6,9 @@ repository = "https://github.com/DA0-DA0/dao-contracts"
 version.workspace = true
 
 [dependencies]
-bs721                      = { path = "../packages/bs721", version = "0.1.0-rc1" }
-bs721-base                 = { path = "../contracts/collections/bs721-base", version = "0.1.0-rc1" }
-btsg-cw-orch               = { path = "../packages/cw-orch", version = "0.1.0-rc1" }
+bs721                      = { path = "../packages/bs721", version = "0.2.0" }
+bs721-base                 = { path = "../contracts/collections/bs721-base", version = "0.2.0" }
+btsg-cw-orch               = { path = "../packages/cw-orch", version = "0.2.0" }
 cosmwasm-std.workspace     = true
 dotenv                     = { version = "0.15.0" }
 

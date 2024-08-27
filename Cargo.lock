@@ -1288,7 +1288,7 @@ checksum = "3e31ea183f6ee62ac8b8a8cf7feddd766317adfb13ff469de57ce033efd6a790"
 
 [[package]]
 name = "bs-controllers"
-version = "0.1.0-rc1"
+version = "0.2.0"
 dependencies = [
  "cosmwasm-schema 1.5.7",
  "cosmwasm-std 1.5.7",
@@ -1310,7 +1310,7 @@ dependencies = [
 
 [[package]]
 name = "bs721"
-version = "0.1.0-rc1"
+version = "0.2.0"
 dependencies = [
  "cosmwasm-schema 1.5.7",
  "cosmwasm-std 1.5.7",
@@ -1322,7 +1322,7 @@ dependencies = [
 
 [[package]]
 name = "bs721-base"
-version = "0.1.0-rc1"
+version = "0.2.0"
 dependencies = [
  "bs721",
  "cosmwasm-schema 1.5.7",
@@ -1340,7 +1340,7 @@ dependencies = [
 
 [[package]]
 name = "bs721-curve"
-version = "0.1.0-rc1"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "bs721",
@@ -1363,7 +1363,7 @@ dependencies = [
 
 [[package]]
 name = "bs721-factory"
-version = "0.1.0-rc1"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "bs721",
@@ -1387,7 +1387,7 @@ dependencies = [
 
 [[package]]
 name = "bs721-launchparty"
-version = "0.1.0-rc1"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "bs721",
@@ -1409,7 +1409,7 @@ dependencies = [
 
 [[package]]
 name = "bs721-royalties"
-version = "0.1.0-rc1"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "bs721-base",
@@ -1438,7 +1438,7 @@ dependencies = [
 
 [[package]]
 name = "btsg-cw-orch"
-version = "0.1.0-rc1"
+version = "0.2.0"
 dependencies = [
  "cosmwasm-std 1.5.7",
  "cw-orch",
@@ -5816,7 +5816,7 @@ checksum = "94143f37725109f92c262ed2cf5e59bce7498c01bcc1502d7b9afe439a4e9f49"
 
 [[package]]
 name = "scripts"
-version = "0.1.0-rc1"
+version = "0.2.0"
 dependencies = [
  "abstract-client",
  "abstract-cw-orch-polytone",

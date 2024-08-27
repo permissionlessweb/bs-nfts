@@ -5,13 +5,9 @@
 --------------------------------------
 
 ### Added
-
+* **Changelog** - basic template for manual recordkeeping.
 * **Cw-Orchestrator**- advanced testing and deployment tool for CosmWasm smart-contracts https://orchestrator.abstract.money/intro.html
-* **BS721-Account** - Bitsong native NFT collection for Bitsong Smart Contract Accounts.
-* **BS721-Minter** BS721-Account Minter Contract. 
-* **BS721-Marketplace** BS721-Account Marketplace
 * **Bitsong-Controller Library** - Library for managing hooks & other contract controlling actions.
-* **Bitsong Account Package Library** - Library for entry points to all bitsong account related contracts
 * **Scripts Library** - Library for interacting with simulation and production environments.
 
 ### Changed
