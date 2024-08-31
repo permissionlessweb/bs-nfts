@@ -1,9 +1,13 @@
 use abstract_interface::Abstract;
 use abstract_std::objects::gov_type::GovernanceDetails;
 use clap::Parser;
-use cw_orch::{daemon::networks::parse_network, prelude::*};
+use cw_orch::prelude::*;
 use reqwest::Url;
-use scripts::framework::{assert_wallet_balance, networks::{bitsong_parse_networks, SUPPORTED_CHAINS}, DeploymentStatus};
+use scripts::framework::{
+    // assert_wallet_balance,
+    networks::{bitsong_parse_networks, SUPPORTED_CHAINS},
+    DeploymentStatus,
+};
 use std::{
     fs::{self, File},
     io::BufReader,
@@ -13,32 +17,34 @@ use tokio::runtime::Runtime;
 
 pub const ABSTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
+pub const MNEMONIC: &str = "";
+
 // Run "cargo run --example download_wasms" in the `abstract-interfaces` package before deploying!
-fn full_deploy(mut networks: Vec<ChainInfoOwned>) -> anyhow::Result<()> {
+pub fn full_deploy(mut networks: Vec<ChainInfoOwned>) -> anyhow::Result<()> {
     let rt = Runtime::new()?;
 
     if networks.is_empty() {
         networks = SUPPORTED_CHAINS.iter().map(|x| x.clone().into()).collect();
     }
 
-    let deployment_status = read_deployment()?;
-    if deployment_status.success {
-        log::info!("Do you want to re-deploy to {:?}?", networks);
-        let mut input = String::new();
-        std::io::stdin().read_line(&mut input)?;
-        if input.to_lowercase().contains('n') {
-            return Ok(());
-        }
-    }
+    // Helpers for loading existing deployment state.
+    // This can be found in ~/.orchestrator.
+    // let deployment_status = read_deployment()?;
+    // if deployment_status.success {
+    //     log::info!("Do you want to re-deploy to {:?}?", networks);
+    //     let mut input = String::new();
+    //     std::io::stdin().read_line(&mut input)?;
+    //     if input.to_lowercase().contains('n') {
+    //         return Ok(());
+    //     }
+    // }
     // let deployment_status = deployment_status.clone();
 
     // If some chains need to be deployed, deploy them
     // if !deployment_status.chain_ids.is_empty() {
     //     networks = deployment_status.chain_ids.into_iter().map(|n| parse_network(&n)).collect();
     // }
-
-    let networks = rt.block_on(assert_wallet_balance(networks));
-
+    // let networks = rt.block_on(assert_wallet_balance(networks));
     // write_deployment(&deployment_status)?;
 
     for network in networks {
@@ -49,6 +55,7 @@ fn full_deploy(mut networks: Vec<ChainInfoOwned>) -> anyhow::Result<()> {
 
         let chain = DaemonBuilder::new(network.clone())
             .handle(rt.handle())
+            .mnemonic(MNEMONIC)
             .build()?;
 
         let sender = chain.sender_addr();
@@ -63,6 +70,7 @@ fn full_deploy(mut networks: Vec<ChainInfoOwned>) -> anyhow::Result<()> {
                 return Err(e.into());
             }
         };
+        // todo: deploy bs-account framework
 
         // Create the Abstract Account because it's needed for the fees for the dex module
         deployment
@@ -105,7 +113,7 @@ fn write_deployment(status: &DeploymentStatus) -> anyhow::Result<()> {
     Ok(())
 }
 
-fn read_deployment() -> anyhow::Result<DeploymentStatus> {
+pub fn read_deployment() -> anyhow::Result<DeploymentStatus> {
     let path = dirs::home_dir()
         .unwrap()
         .join(".cw-orchestrator")
@@ -121,27 +129,25 @@ fn read_deployment() -> anyhow::Result<DeploymentStatus> {
 #[command(author, version, about, long_about = None)]
 struct Arguments {
     /// Network Id to deploy on
-    #[arg(short, long, value_delimiter = ' ', num_args = 1..)]
-    network_ids: Vec<String>,
+    #[arg(short, long)]
+    network: String,
 }
 
-fn main() {
+pub fn main() {
     dotenv().ok();
     env_logger::init();
-
     use dotenv::dotenv;
 
     let args = Arguments::parse();
 
-    // let networks = vec![crate::framework::networks::BITSONG_MAINNET];
+    let bitsong_chain = match args.network.as_str() {
+        "main" => scripts::framework::networks::BITSONG_MAINNET.to_owned(),
+        "testnet" => scripts::framework::networks::BITSONG_TESTNET.to_owned(),
+        "local" => scripts::framework::networks::LOCAL_NETWORK1.to_owned(),
+        _ => panic!("Invalid network"),
+    };
 
-    let networks = args
-        .network_ids
-        .iter()
-        .map(|n| bitsong_parse_networks(n).unwrap().into())
-        .collect::<Vec<_>>();
-
-    if let Err(ref err) = full_deploy(networks) {
+    if let Err(ref err) = full_deploy(vec![bitsong_chain.into()]) {
         log::error!("{}", err);
         err.chain()
             .skip(1)

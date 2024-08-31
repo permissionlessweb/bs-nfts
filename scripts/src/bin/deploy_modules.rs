@@ -13,8 +13,10 @@ use tokio::runtime::Runtime;
 
 pub const ABSTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
+pub const MNEMONIC: &str = "";
+
 // Run "cargo run --example download_wasms" in the `abstract-interfaces` package before deploying!
-fn full_deploy() -> anyhow::Result<()> {
+pub fn full_deploy() -> anyhow::Result<()> {
     let rt = Runtime::new()?;
 
     let deployment = Abstract::<Daemon>::get_all_deployed_chains();
@@ -24,8 +26,9 @@ fn full_deploy() -> anyhow::Result<()> {
         .collect();
 
     for network in networks {
-        let chain = DaemonBuilder::new(network.clone())
+        let _chain = DaemonBuilder::new(network.clone())
             .handle(rt.handle())
+            .mnemonic(MNEMONIC)
             .build()?;
 
         // Deploy Adapters
@@ -84,7 +87,7 @@ struct Arguments {
     network_ids: Vec<String>,
 }
 
-fn main() {
+pub fn main() {
     dotenv().ok();
     env_logger::init();
 

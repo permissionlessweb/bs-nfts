@@ -1,7 +1,6 @@
 use abstract_client::AbstractClient;
 
 use cosmwasm_std::CosmosMsg;
-use cw_orch::daemon::networks::{PION_1, XION_TESTNET_1};
 use cw_orch::daemon::DaemonState;
 use cw_orch::environment::ChainState;
 use cw_orch::prelude::*;
@@ -12,10 +11,9 @@ use networks::JUNO_1;
 use scripts::framework::networks::BITSONG_MAINNET;
 use tokio::runtime::Runtime;
 
-
 /// Connect IBC between two chains.
 /// @TODO update this to take in the networks as arguments.
-fn main() -> cw_orch::anyhow::Result<()> {
+pub fn main() -> cw_orch::anyhow::Result<()> {
     dotenv::dotenv()?;
     env_logger::init();
 

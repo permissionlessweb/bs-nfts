@@ -48,4 +48,4 @@ pub async fn assert_wallet_balance(mut chains: Vec<ChainInfoOwned>) -> Vec<Chain
 }
 
 
-fn main() {}
+pub fn main() {}

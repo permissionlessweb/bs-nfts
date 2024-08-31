@@ -5,6 +5,7 @@ pub mod deploy_ibc;
 pub mod deploy_modules;
 pub mod full_deploy;
 pub mod ibc_test;
+pub mod create_nft_account;
 pub mod manual_deploy;
 pub mod helper;
 // pub mod migrate;

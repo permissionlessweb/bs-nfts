@@ -15,7 +15,7 @@ use scripts::framework::ibc::{has_abstract_ibc, has_polytone_connection, verify_
 use scripts::framework::networks::BITSONG_MAINNET;
 use tokio::runtime::Runtime;
 
-fn main() -> cw_orch::anyhow::Result<()> {
+pub fn main() -> cw_orch::anyhow::Result<()> {
     dotenv::dotenv()?;
     env_logger::init();
 

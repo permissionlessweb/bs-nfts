@@ -3,7 +3,7 @@ use cosmwasm_std::Empty;
 
 use bs721_base::{ExecuteMsg, InstantiateMsg, QueryMsg};
 
-fn main() {
+pub fn main() {
     write_api! {
         instantiate: InstantiateMsg,
         execute: ExecuteMsg<Empty>,

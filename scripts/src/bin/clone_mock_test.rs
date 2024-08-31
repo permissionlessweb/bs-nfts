@@ -9,7 +9,7 @@ use cw_orch::daemon::networks::OSMOSIS_1;
 use cw_orch::prelude::*;
 use cw_orch_clone_testing::CloneTesting;
 
-fn main() -> anyhow::Result<()> {
+pub fn main() -> anyhow::Result<()> {
     let chain = OSMOSIS_1;
     let mut app = CloneTesting::new(chain)?;
     // Set the sender to the host proxy

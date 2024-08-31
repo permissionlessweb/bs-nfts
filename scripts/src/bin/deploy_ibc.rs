@@ -12,23 +12,24 @@ use cw_orch::{
     tokio::runtime::{Handle, Runtime},
 };
 use scripts::framework::networks::BITSONG_MAINNET;
-
 pub const NETWORK: ChainInfo = BITSONG_MAINNET;
+
+pub const MNEMONIC: &str = "";
 
 /// Script to deploy the IBC modules on a chain.
 /// Currently deployed by abstract, so only used on chains where IBC is not present.
-fn main() -> cw_orch::anyhow::Result<()> {
+pub fn main() -> cw_orch::anyhow::Result<()> {
     dotenv::dotenv()?;
     env_logger::init();
 
     let runtime = Runtime::new()?;
-    let first_daemon = get_daemon(NETWORK, runtime.handle(), None, None)?;
+    let first_daemon = get_daemon(NETWORK, runtime.handle(), Some(MNEMONIC.to_string()), None)?;
     let daemons = vec![
-        get_daemon(JUNO_1, runtime.handle(), None, Some(first_daemon.state()))?,
+        get_daemon(JUNO_1, runtime.handle(), Some(MNEMONIC.to_string()), Some(first_daemon.state()))?,
         get_daemon(
             BITSONG_MAINNET,
             runtime.handle(),
-            None,
+            Some(MNEMONIC.to_string()),
             Some(first_daemon.state()),
         )?,
         // get_daemon(

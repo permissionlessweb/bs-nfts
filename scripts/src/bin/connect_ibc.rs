@@ -9,8 +9,7 @@ use scripts::framework::networks::BITSONG_MAINNET;
 use tokio::runtime::Runtime;
 
 /// Connect IBC between two chains.
-/// @TODO update this to take in the networks as arguments.
-fn main() -> cw_orch::anyhow::Result<()> {
+pub fn main() -> cw_orch::anyhow::Result<()> {
     dotenv::dotenv()?;
     env_logger::init();
 
@@ -29,7 +28,7 @@ fn main() -> cw_orch::anyhow::Result<()> {
     Ok(())
 }
 
-fn get_daemon(
+pub fn get_daemon(
     chain: ChainInfo,
     handle: &Handle,
     mnemonic: Option<String>,
@@ -54,7 +53,7 @@ pub fn get_deployment_id(src_chain: &ChainInfo, dst_chain: &ChainInfo) -> String
     format!("{}-->{}", src_chain.chain_id, dst_chain.chain_id)
 }
 
-fn connect(
+pub fn connect(
     (src_chain, src_mnemonic): (ChainInfo, Option<String>),
     (dst_chain, dst_mnemonic): (ChainInfo, Option<String>),
     handle: &Handle,

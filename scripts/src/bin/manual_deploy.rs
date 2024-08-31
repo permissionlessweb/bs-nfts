@@ -4,19 +4,17 @@ use abstract_interface::Abstract;
 
 use abstract_std::objects::gov_type::GovernanceDetails;
 use clap::Parser;
-use cw_orch::{environment::NetworkInfoOwned, prelude::*};
+use cw_orch::prelude::*;
 use reqwest::Url;
 use scripts::framework::assert_wallet_balance;
 use tokio::runtime::Runtime;
 
-use cw_orch::environment::ChainKind;
 use cw_orch_polytone::Polytone;
-
 
 pub const ABSTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// Script to deploy Abstract & polytone to a new network provided by commmand line arguments
-fn manual_deploy(network: ChainInfoOwned) -> anyhow::Result<()> {
+pub fn manual_deploy(network: ChainInfoOwned) -> anyhow::Result<()> {
     let rt = Runtime::new()?;
 
     rt.block_on(assert_wallet_balance(vec![network.clone()]));
@@ -89,30 +87,12 @@ async fn ping_grpc(url_str: &str) -> anyhow::Result<()> {
 #[derive(Parser, Default, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Arguments {
-    /// Network Id to deploy on
+    /// network to deploy on: main, testnet, local
     #[arg(long)]
-    network_id: String,
-    /// Chain Id to deploy on
-    #[arg(long)]
-    chain_id: String,
-    /// Address prefix
-    #[arg(long)]
-    address_prefix: String,
-    /// Coin type, optional default 118u32
-    #[arg(long)]
-    coin_type: Option<u32>,
-    /// Gas price, optional default 0.025
-    #[arg(long)]
-    gas_price: Option<f64>,
-    /// GRPC URL
-    #[arg(long)]
-    grpc_url: String,
-    /// Gas denom
-    #[arg(long)]
-    gas_denom: String,
+    network: String,
 }
 
-fn main() {
+pub fn main() {
     dotenv().ok();
     env_logger::init();
 
@@ -120,24 +100,14 @@ fn main() {
 
     let args = Arguments::parse();
 
-    let network_info: NetworkInfoOwned = NetworkInfoOwned {
-        chain_name: args.network_id,
-        pub_address_prefix: args.address_prefix,
-        coin_type: args.coin_type.unwrap_or(118u32),
+    let bitsong_chain = match args.network.as_str() {
+        "main" => scripts::framework::networks::BITSONG_MAINNET.to_owned(),
+        "testnet" => scripts::framework::networks::BITSONG_TESTNET.to_owned(),
+        "local" => scripts::framework::networks::LOCAL_NETWORK1.to_owned(),
+        _ => panic!("Invalid network"),
     };
 
-    let chain_info: ChainInfoOwned = ChainInfoOwned {
-        kind: ChainKind::Testnet,
-        chain_id: args.chain_id,
-        gas_denom: args.gas_denom,
-        gas_price: args.gas_price.unwrap_or(0.025),
-        grpc_urls: vec![args.grpc_url],
-        network_info,
-        lcd_url: None,
-        fcd_url: None,
-    };
-
-    if let Err(ref err) = manual_deploy(chain_info) {
+    if let Err(ref err) = manual_deploy(bitsong_chain.into()) {
         log::error!("{}", err);
         err.chain()
             .skip(1)
