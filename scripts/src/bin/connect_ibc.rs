@@ -70,7 +70,7 @@ pub fn connect(
     let src_abstract = Abstract::load_from(src_daemon.clone())?;
     let dst_abstract = Abstract::load_from(dst_daemon.clone())?;
 
-    let src_polytone_daemon = get_daemon(
+    let _src_polytone_daemon = get_daemon(
         src_chain.clone(),
         handle,
         src_mnemonic,

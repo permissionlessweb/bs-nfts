@@ -1,3 +1,6 @@
+/// Bitsong Accounts Framework Deployment Logic
+/// 
+/// 
 pub mod ibc;
 pub mod networks;
 use cw_orch::prelude::*;

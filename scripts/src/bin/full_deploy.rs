@@ -5,7 +5,7 @@ use cw_orch::prelude::*;
 use reqwest::Url;
 use scripts::framework::{
     // assert_wallet_balance,
-    networks::{bitsong_parse_networks, SUPPORTED_CHAINS},
+    networks::SUPPORTED_CHAINS,
     DeploymentStatus,
 };
 use std::{
@@ -102,6 +102,7 @@ async fn ping_grpc(url_str: &str) -> anyhow::Result<()> {
     let _ = TcpStream::connect(socket_addr);
     Ok(())
 }
+
 #[allow(dead_code)]
 fn write_deployment(status: &DeploymentStatus) -> anyhow::Result<()> {
     let path = dirs::home_dir()

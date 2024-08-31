@@ -61,3 +61,6 @@ path = "src/bin/manual_deploy.rs"
 [[bin]]
 name = "migrate"
 path = "src/bin/migrate.rs"
+[[bin]]
+name = "create-nft-account"
+path = "src/bin/create_nft_account.rs"

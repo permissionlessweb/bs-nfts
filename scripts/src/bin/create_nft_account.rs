@@ -1,10 +1,8 @@
 use abstract_interface::{Abstract, AccountDetails};
 use clap::Parser;
-use cw_orch::{
-    daemon::{DaemonBuilder, DaemonState, TxSender},
-    prelude::*,
-};
-use tokio::runtime::{Handle, Runtime};
+use cw_orch::{daemon::DaemonBuilder, prelude::*};
+use reqwest::Url;
+use tokio::{net::TcpStream, runtime::Runtime};
 
 pub const MNEMONIC: &str = "";
 
@@ -24,8 +22,8 @@ pub fn main() -> cw_orch::anyhow::Result<()> {
     dotenv::dotenv()?;
     env_logger::init();
     let args = Arguments::parse();
-
     let rt = Runtime::new()?;
+
     let bitsong_chain = match args.network.as_str() {
         "main" => scripts::framework::networks::BITSONG_MAINNET.to_owned(),
         "testnet" => scripts::framework::networks::BITSONG_TESTNET.to_owned(),
@@ -33,24 +31,14 @@ pub fn main() -> cw_orch::anyhow::Result<()> {
         _ => panic!("Invalid network"),
     };
     let urls = bitsong_chain.grpc_urls.to_vec();
-    // for url in urls {
-    //     rt.block_on(ping_grpc(&url))?;
-    // }
+    for url in urls {
+        rt.block_on(ping_grpc(&url))?;
+    }
 
     let chain = DaemonBuilder::new(bitsong_chain.clone())
         .handle(rt.handle())
         .mnemonic(MNEMONIC)
         .build()?;
-
-    let src_daemon = get_daemon(
-        bitsong_chain.clone(),
-        rt.handle(),
-        Some(MNEMONIC.to_string()),
-        None,
-        None,
-    )?;
-
-    let sender = chain.sender().address();
 
     let deployment = match Abstract::load_from(chain) {
         Ok(deployment) => {
@@ -84,23 +72,21 @@ pub fn main() -> cw_orch::anyhow::Result<()> {
     Ok(())
 }
 
-fn get_daemon(
-    chain: ChainInfo,
-    handle: &Handle,
-    mnemonic: Option<String>,
-    deployment_id: Option<String>,
-    state: Option<DaemonState>,
-) -> cw_orch::anyhow::Result<Daemon> {
-    let mut builder = DaemonBuilder::new(chain);
-    builder.handle(handle);
-    if let Some(state) = state {
-        builder.state(state);
-    }
-    if let Some(mnemonic) = mnemonic {
-        builder.mnemonic(mnemonic);
-    }
-    if let Some(deployment_id) = deployment_id {
-        builder.deployment_id(deployment_id);
-    }
-    Ok(builder.build()?)
+async fn ping_grpc(url_str: &str) -> anyhow::Result<()> {
+    let parsed_url = Url::parse(url_str)?;
+
+    let host = parsed_url
+        .host_str()
+        .ok_or_else(|| anyhow::anyhow!("No host in url"))?;
+
+    let port = parsed_url.port_or_known_default().ok_or_else(|| {
+        anyhow::anyhow!(
+            "No port in url, and no default for scheme {:?}",
+            parsed_url.scheme()
+        )
+    })?;
+    let socket_addr = format!("{}:{}", host, port);
+
+    let _ = TcpStream::connect(socket_addr);
+    Ok(())
 }

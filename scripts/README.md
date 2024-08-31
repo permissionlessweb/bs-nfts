@@ -29,6 +29,7 @@ This library contains both Rust & Bash scripts for the BS-NFT repository.
 | `cargo run --bin deploy-modules` | Deploy default account modules & adapters |
 | `cargo run --bin full-deploy -- --network-id <chain-id1>, <chain-id2>` | Deploy & register default account framework contracts. |
 | `cargo run --bin ibc-test` | Test ibc connection of bitsong accounts between 2 chains |
+| `cargo run --bin create-nft-account -- --nft-addr <contract-addr>, --id <token-id>` | Manual deployment of tokenized account framework |
 | `cargo run --bin manual-deploy -- --network-ids <chain-id-1> <chain-id-2> ... ` | Manual deployment of account framework |
 <!-- | `cargo run --bin migrate` | Test ibc connection of bitsong accounts between 2 chains | -->
 <!-- | `sh simulate.sh` | Simulate bs721-bonding-curve iterations | -->

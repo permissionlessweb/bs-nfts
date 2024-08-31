@@ -1,5 +1,7 @@
+/// SUPPORTED NETWORK CONFIGS
+///  
+/// 
 use cw_orch::environment::{ChainKind, NetworkInfo};
-//////////////// SUPPORTED NETWORK CONFIGS ////////////////
 /// Add more chains in SUPPORTED_CHAINS to include in account framework instance.
 use cw_orch::prelude::{networks::UNI_6, *};
 
