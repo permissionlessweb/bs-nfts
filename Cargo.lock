@@ -87,7 +87,7 @@ checksum = "56953345e39537a3e18bdaeba4cb0c58a78c1f61f361dc0fa7c5c7340ae87c5f"
 
 [[package]]
 name = "bs-controllers"
-version = "0.1.0-rc1"
+version = "0.2.0"
 dependencies = [
  "bs-std",
  "cosmwasm-schema",
@@ -101,7 +101,7 @@ dependencies = [
 
 [[package]]
 name = "bs-mint-hooks"
-version = "0.1.0-rc1"
+version = "0.2.0"
 dependencies = [
  "bs-controllers",
  "bs-mint-hooks-derive",
@@ -116,7 +116,7 @@ dependencies = [
 
 [[package]]
 name = "bs-mint-hooks-derive"
-version = "0.1.0-rc1"
+version = "0.2.0"
 dependencies = [
  "bs-controllers",
  "proc-macro2",
@@ -126,7 +126,7 @@ dependencies = [
 
 [[package]]
 name = "bs-profile"
-version = "0.1.0-rc1"
+version = "0.2.0"
 dependencies = [
  "bs-controllers",
  "bs-std",
@@ -141,7 +141,7 @@ dependencies = [
 
 [[package]]
 name = "bs-std"
-version = "0.1.0-rc1"
+version = "0.2.0"
 dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
@@ -152,7 +152,7 @@ dependencies = [
 
 [[package]]
 name = "bs721"
-version = "0.1.0-rc1"
+version = "0.2.0"
 dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
@@ -163,7 +163,7 @@ dependencies = [
 
 [[package]]
 name = "bs721-base"
-version = "0.1.0-rc1"
+version = "0.2.0"
 dependencies = [
  "bs721",
  "cosmwasm-schema",
@@ -182,7 +182,7 @@ dependencies = [
 
 [[package]]
 name = "bs721-curve"
-version = "0.1.0-rc1"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "bs721",
@@ -204,7 +204,7 @@ dependencies = [
 
 [[package]]
 name = "bs721-factory"
-version = "0.1.0-rc1"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "bs721",
@@ -228,7 +228,7 @@ dependencies = [
 
 [[package]]
 name = "bs721-launchparty"
-version = "0.1.0-rc1"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "bs721",
@@ -250,7 +250,7 @@ dependencies = [
 
 [[package]]
 name = "bs721-profile"
-version = "0.1.0-rc1"
+version = "0.2.0"
 dependencies = [
  "bs-profile",
  "bs721",
@@ -274,7 +274,7 @@ dependencies = [
 
 [[package]]
 name = "bs721-royalties"
-version = "0.1.0-rc1"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "bs721-base",
@@ -1120,7 +1120,7 @@ dependencies = [
 
 [[package]]
 name = "profile-marketplace"
-version = "0.1.0-rc1"
+version = "0.2.0"
 dependencies = [
  "bs-controllers",
  "bs-profile",
@@ -1144,7 +1144,7 @@ dependencies = [
 
 [[package]]
 name = "profile-minter"
-version = "0.1.0-rc1"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "bs-profile",

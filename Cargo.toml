@@ -7,7 +7,7 @@ members = ["packages/*",
 ]
 
 [workspace.package]
-version       = "0.1.0-rc1"
+version       = "0.2.0"
 edition       = "2021"
 license       = "Apache-2.0"
 repository    = "https://github.com/bitsongofficial/bs-nfts"
@@ -22,12 +22,12 @@ cw2             = "1.1.2"
 cw20            = "1.1.2"
 cw721           = "0.18.0"
 cw721-base      = "0.18.0"
-bs721           = { version = "0.1.0-rc1", path = "./packages/bs721" }
-bs-profile      = { version = "0.1.0-rc1", path = "./packages/bs-profile" }
-bs721-profile   = { version = "0.1.0-rc1", path = "./contracts/collection/bs721-profile" }
-bs721-base      = { version = "0.1.0-rc1", path = "./contracts/collection/bs721-base" }
-bs721-royalties = { version = "0.1.0-rc1", path = "./contracts/collection/bs721-royalties" }
-bs721-factory   = { version = "0.1.0-rc1", path = "./contracts/factory/bs721-factory" }
+bs721           = { version = "0.2.0", path = "./packages/bs721" }
+bs-profile      = { version = "0.2.0", path = "./packages/bs-profile" }
+bs721-profile   = { version = "0.2.0", path = "./contracts/collection/bs721-profile" }
+bs721-base      = { version = "0.2.0", path = "./contracts/collection/bs721-base" }
+bs721-royalties = { version = "0.2.0", path = "./contracts/collection/bs721-royalties" }
+bs721-factory   = { version = "0.2.0", path = "./contracts/factory/bs721-factory" }
 cw-multi-test    = "1.1.0"
 cw-storage-macro = "1.2.0"
 cw-storage-plus = "1.2.0" 
@@ -38,8 +38,8 @@ semver = "1.0"
 serde           = { version = "1.0.140", default-features = false, features = ["derive"] }
 thiserror       = "1.0.31"
 url             = "2.2.2"
-bs-std           = { version = "0.1.0-rc1", path = "./packages/bs-std" }
-bs-controllers        = { version = "0.1.0-rc1", path = "./packages/controllers" }
+bs-std          = { version = "0.2.0", path = "./packages/bs-std" }
+bs-controllers  = { version = "0.2.0", path = "./packages/controllers" }
 
 [profile.release.package.bs721-base]
 codegen-units = 1

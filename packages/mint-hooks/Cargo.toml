@@ -20,4 +20,4 @@ serde                = { workspace = true }
 bs-controllers       = { workspace = true }
 bs-std               = { workspace = true }
 thiserror            = { workspace = true }
-bs-mint-hooks-derive = { path = "./derive", version = "0.1.0-rc1" }
+bs-mint-hooks-derive = { path = "./derive", version = "0.2.0" }
