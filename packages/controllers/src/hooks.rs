@@ -10,7 +10,7 @@ use cosmwasm_std::{
 };
 use cw_storage_plus::Item;
 
-use crate::{init::AdminError, Admin};
+use crate::{admin::AdminError, Admin};
 
 #[cw_serde]
 pub struct HooksResponse {
@@ -19,9 +19,9 @@ pub struct HooksResponse {
 
 #[derive(Error, Debug, PartialEq)]
 pub enum HookError {
-    
     #[error("{0}")]
     AdminError(#[from] AdminError),
+    
     #[error("{0}")]
     Std(#[from] StdError),
 
