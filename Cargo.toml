@@ -24,16 +24,16 @@ bs721-royalties              = { version = "0.3.0", path = "./contracts/collecti
 bs721-factory                = { version = "0.3.0", path = "./contracts/factories/bs721-factory" }
 bs-controllers               = { version = "0.3.0", path = "./packages/controllers" }
 btsg-cw-orch                 = { version = "0.3.0", path = "./packages/cw-orch" }
-cosmos-sdk-proto        = { version = "0.26.1", default-features = false }
-cosmwasm-schema = "2.2.0"
-cosmwasm-std = "2.2.0"
-cw-controllers = "2.0.0"
-cw2 = "2.0.0"
-cw20 = "2.0.0"
+cosmos-sdk-proto             = { version = "0.26.1", default-features = false }
+cosmwasm-schema              = "2.2.0"
+cosmwasm-std                 = "2.2.0"
+cw-controllers               = "2.0.0"
+cw2                          = "2.0.0"
+cw20                         = "2.0.0"
 cw-multi-test                = "2.2.0"
 cw-orch                      = "0.26.0"
-cw-ownable = "2.1.0"
-cw-storage-macro = "2.0.0"
+cw-ownable                   = "2.1.0"
+cw-storage-macro             = "2.0.0"
 cw-storage-plus = "2.0.0"
 cw-utils = "2.0.0"
 schemars = "0.8.21"

@@ -23,7 +23,7 @@ cosmwasm-schema    = { workspace = true }
 cosmwasm-std       = { workspace = true }
 cw-utils           = { workspace = true }
 cw2                = { workspace = true }
-cw-orch                = { workspace = true }
+cw-orch            = { workspace = true }
 bs721              = { workspace = true }
 bs721-base         = { workspace = true, features = ["library"] }
 bs721-royalties    = { workspace = true, features = ["library"] }
@@ -31,10 +31,10 @@ cw-storage-plus    = { workspace = true }
 schemars           = { workspace = true }
 serde              = { workspace = true }
 thiserror          = { workspace = true }
-cosmos-sdk-proto   = { version = "0.16.0", default-features = false }
+cosmos-sdk-proto   = { workspace = true, default-features = false }
 
 [dev-dependencies]
 prost = "0.11.9"
-cw-multi-test = "0.16.4"
+cw-multi-test  = { workspace = true }
 derivative = "2.2"
 anyhow = "1"

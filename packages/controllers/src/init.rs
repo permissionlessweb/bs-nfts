@@ -6,6 +6,12 @@ use thiserror::Error;
 pub struct Admin(Item<Option<Addr>>);
 
 #[cw_serde]
+pub struct AdminResponse {
+    pub admin: Option<String>,
+}
+
+
+#[cw_serde]
 pub struct ContractInstantiateMsg {
     pub code_id: u64,
     pub msg: Binary,
