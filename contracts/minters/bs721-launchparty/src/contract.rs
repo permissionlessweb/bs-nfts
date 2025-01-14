@@ -73,7 +73,7 @@ pub fn instantiate(
     let contract_info = deps
         .querier
         .query_wasm_contract_info(env.contract.address.clone())?;
-    let code_info = deps.querier.query_wasm_code_info(contract_info.code_id)?;
+    let code_info = deps.querier.query_wasm_code_info(msg.bs721_code_id)?;
     let addr = instantiate2_address(
         code_info.checksum.as_slice(),
         &deps.api.addr_canonicalize(&info.sender.as_str())?,
@@ -99,10 +99,7 @@ pub fn instantiate(
         .into(),
         gas_limit: None,
         reply_on: ReplyOn::Success,
-        payload: to_json_binary(&vec![MsgResponse {
-            type_url: "launchparty-addr".into(),
-            value: Binary::new(addr.to_vec()),
-        }])?,
+        payload: Binary::new(addr.to_vec()),
     }];
 
     Ok(Response::new().add_submessages(sub_msgs))
@@ -475,9 +472,9 @@ fn query_config(deps: Deps) -> StdResult<Config> {
 mod tests {
 
     use super::*;
-    use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info, MOCK_CONTRACT_ADDR};
+    use cosmwasm_std::testing::{message_info, mock_dependencies, mock_env, MOCK_CONTRACT_ADDR};
     use cosmwasm_std::{
-        from_json, to_json_binary, MsgResponse, SubMsgResponse, SubMsgResult, Timestamp,
+        from_json, to_json_binary, Api, MsgResponse, SubMsgResponse, SubMsgResult, Timestamp,
     };
     use prost::Message;
 
@@ -719,13 +716,17 @@ mod tests {
     #[test]
     fn initialization_fails() {
         let mut deps = mock_dependencies();
+        let creator = deps.api.addr_make("creator");
+        let admin = deps.api.addr_make("admin");
+        let royalties = deps.api.addr_make("royalties");
+        let nftcontract = deps.api.addr_make("nftcontract");
         let env = mock_env();
 
         let msg = InstantiateMsg {
             price: coin(1, "ubtsg"),
             max_per_address: Some(1),
             // creator: Some(String::from("creator")),
-            payment_address: String::from(ROYALTIES_CONTRACT_ADDR),
+            payment_address: royalties.to_string(),
             symbol: String::from(""),
             name: String::from(""),
             uri: String::from(""),
@@ -735,16 +736,18 @@ mod tests {
             start_time: env.block.time,
             party_type: PartyType::MaxEdition(1),
             bs721_code_id: BS721_CODE_ID,
-            bs721_admin: String::from("bs721_admin"),
+            bs721_admin: admin.to_string(),
         };
 
-        let info = mock_info("creator", &[]);
+        let info = message_info(&creator, &[]);
         instantiate(deps.as_mut(), env, info, msg).unwrap();
     }
 
     #[test]
     fn initialization() {
         let mut deps = mock_dependencies();
+        let creator = deps.api.addr_make("creator");
+        let bs721 = deps.api.addr_make("bs721");
         let env = mock_env();
 
         let msg = InstantiateMsg {
@@ -761,10 +764,10 @@ mod tests {
             party_type: PartyType::MaxEdition(1),
             bs721_code_id: BS721_CODE_ID,
             payment_address: String::from(ROYALTIES_CONTRACT_ADDR),
-            bs721_admin: String::from("bs721_admin"),
+            bs721_admin: bs721.to_string(),
         };
 
-        let info = mock_info("creator", &[]);
+        let info = message_info(&creator, &[]);
         let res = instantiate(deps.as_mut(), env.clone(), info.clone(), msg.clone()).unwrap();
 
         instantiate(deps.as_mut(), env.clone(), info, msg.clone()).unwrap();
@@ -845,6 +848,11 @@ mod tests {
     #[test]
     fn mint_single() {
         let mut deps = mock_dependencies();
+        let creator = deps.api.addr_make("creator");
+        let bs721 = deps.api.addr_make("bs72");
+        let royalties = deps.api.addr_make("royalties");
+        let nftcontract = deps.api.addr_make("nftcontract");
+
         let env = mock_env();
         let msg = InstantiateMsg {
             price: coin(1, "ubtsg"),
@@ -858,33 +866,27 @@ mod tests {
             party_type: PartyType::MaxEdition(1),
             bs721_code_id: 2,
             protocol_fee_bps: 3,
-            payment_address: String::from(ROYALTIES_CONTRACT_ADDR),
-            bs721_admin: String::from("bs721_admin"),
+            payment_address: royalties.to_string(),
+            bs721_admin: bs721.to_string(),
         };
 
-        let info = mock_info("creator", &[coin(1, "ubtsg")]);
+        let info = message_info(&creator, &[coin(1, "ubtsg")]);
         instantiate(deps.as_mut(), env.clone(), info, msg).unwrap();
-
-        let instantiate_reply_bs721 = MsgInstantiateContractResponse {
-            contract_address: NFT_CONTRACT_ADDR.to_string(),
-            data: vec![2u8; 32769],
-        };
-
-        let mut encoded_instantiate_reply_bs721 =
-            Vec::<u8>::with_capacity(instantiate_reply_bs721.encoded_len());
-        instantiate_reply_bs721
-            .encode(&mut encoded_instantiate_reply_bs721)
-            .unwrap();
 
         let reply_msg_bs721 = Reply {
             id: INSTANTIATE_TOKEN_REPLY_ID,
             result: SubMsgResult::Ok(SubMsgResponse {
                 events: vec![],
-                data: Some(encoded_instantiate_reply_bs721.into()),
-                msg_responses: todo!(),
+                data: None,
+                msg_responses: vec![],
             }),
-            payload: todo!(),
-            gas_used: todo!(),
+            payload: Binary::new(
+                deps.api
+                    .addr_canonicalize(&nftcontract.as_str())
+                    .unwrap()
+                    .to_vec(),
+            ),
+            gas_used: u64::default(),
         };
 
         reply(deps.as_mut(), env.clone(), reply_msg_bs721).unwrap();
@@ -893,7 +895,7 @@ mod tests {
             referral: None,
             amount: 1,
         };
-        let info = mock_info(MOCK_CONTRACT_ADDR, &[coin(1, "ubtsg")]);
+        let info = message_info(&nftcontract, &[coin(1, "ubtsg")]);
 
         let res = execute(deps.as_mut(), env.clone(), info.clone(), msg).unwrap();
 
@@ -920,7 +922,7 @@ mod tests {
                 ]),
             },
             owner: info.sender.to_string(),
-            payment_addr: Some(ROYALTIES_CONTRACT_ADDR.to_string()),
+            payment_addr: Some(royalties.to_string()),
             seller_fee_bps: Some(100),
             token_uri: Some(String::from("")),
         };
@@ -929,7 +931,7 @@ mod tests {
             res.messages[0],
             SubMsg {
                 msg: WasmMsg::Execute {
-                    contract_addr: NFT_CONTRACT_ADDR.to_string(),
+                    contract_addr: nftcontract.to_string(),
                     funds: vec![],
                     msg: to_json_binary(&mint_msg).unwrap(),
                 }
@@ -937,7 +939,12 @@ mod tests {
                 id: 0,
                 gas_limit: None,
                 reply_on: ReplyOn::Never,
-                payload: todo!()
+                payload: Binary::new(
+                    deps.api
+                        .addr_canonicalize(&nftcontract.as_str())
+                        .unwrap()
+                        .to_vec(),
+                ),
             }
         );
     }
@@ -945,6 +952,11 @@ mod tests {
     #[test]
     fn mint_multiple() {
         let mut deps = mock_dependencies();
+        let creator = deps.api.addr_make("creator");
+        let bs721 = deps.api.addr_make("bs72");
+        let royalties = deps.api.addr_make("royalties");
+        let nftcontract = deps.api.addr_make("nftcontract");
+        let mockcontract = deps.api.addr_make("mockcontract");
         let env = mock_env();
         let msg = InstantiateMsg {
             price: coin(1, "ubtsg"),
@@ -958,15 +970,15 @@ mod tests {
             party_type: PartyType::MaxEdition(3),
             bs721_code_id: 2,
             protocol_fee_bps: 3,
-            payment_address: String::from(ROYALTIES_CONTRACT_ADDR),
-            bs721_admin: String::from("bs721_admin"),
+            payment_address: String::from(royalties.clone()),
+            bs721_admin: bs721.to_string(),
         };
 
-        let info = mock_info("creator", &[coin(3, "ubtsg")]);
+        let info = message_info(&creator, &[coin(3, "ubtsg")]);
         instantiate(deps.as_mut(), env.clone(), info, msg).unwrap();
 
         let instantiate_reply_bs721 = MsgInstantiateContractResponse {
-            contract_address: NFT_CONTRACT_ADDR.to_string(),
+            contract_address: nftcontract.to_string(),
             data: vec![2u8; 32769],
         };
 
@@ -996,7 +1008,7 @@ mod tests {
             referral: None,
             amount: 3,
         };
-        let info = mock_info(MOCK_CONTRACT_ADDR, &[coin(3, "ubtsg")]);
+        let info = message_info(&mockcontract, &[coin(3, "ubtsg")]);
 
         let res = execute(deps.as_mut(), env.clone(), info.clone(), msg).unwrap();
 
@@ -1023,7 +1035,7 @@ mod tests {
                 ]),
             },
             owner: info.sender.to_string(),
-            payment_addr: Some(ROYALTIES_CONTRACT_ADDR.to_string()),
+            payment_addr: Some(royalties.to_string()),
             seller_fee_bps: Some(100),
             token_uri: Some(String::from("")),
         };
@@ -1032,7 +1044,7 @@ mod tests {
             res.messages[0],
             SubMsg {
                 msg: WasmMsg::Execute {
-                    contract_addr: NFT_CONTRACT_ADDR.to_string(),
+                    contract_addr: nftcontract.to_string(),
                     funds: vec![],
                     msg: to_json_binary(&mint_msg).unwrap(),
                 }
@@ -1067,7 +1079,7 @@ mod tests {
                 ]),
             },
             owner: info.sender.to_string(),
-            payment_addr: Some(ROYALTIES_CONTRACT_ADDR.to_string()),
+            payment_addr: Some(royalties.to_string()),
             seller_fee_bps: Some(100),
             token_uri: Some(String::from("")),
         };
@@ -1076,7 +1088,7 @@ mod tests {
             res.messages[1],
             SubMsg {
                 msg: WasmMsg::Execute {
-                    contract_addr: NFT_CONTRACT_ADDR.to_string(),
+                    contract_addr: nftcontract.to_string(),
                     funds: vec![],
                     msg: to_json_binary(&mint_msg).unwrap(),
                 }
@@ -1111,7 +1123,7 @@ mod tests {
                 ]),
             },
             owner: info.sender.to_string(),
-            payment_addr: Some(ROYALTIES_CONTRACT_ADDR.to_string()),
+            payment_addr: Some(royalties.to_string()),
             seller_fee_bps: Some(100),
             token_uri: Some(String::from("")),
         };
@@ -1120,7 +1132,7 @@ mod tests {
             res.messages[2],
             SubMsg {
                 msg: WasmMsg::Execute {
-                    contract_addr: NFT_CONTRACT_ADDR.to_string(),
+                    contract_addr: nftcontract.to_string(),
                     funds: vec![],
                     msg: to_json_binary(&mint_msg).unwrap(),
                 }

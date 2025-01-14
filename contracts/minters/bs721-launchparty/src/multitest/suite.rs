@@ -115,8 +115,8 @@ impl TestSuiteBuilder {
             start_time: self.start_time,
             party_type: self.party_type.clone(),
             bs721_code_id,
-            payment_address: "contract2".to_string(),
-            bs721_admin: String::from("bs721_admin"),
+            payment_address: app.api().addr_make("contract2").to_string(),
+            bs721_admin: app.api().addr_make("bs721_admin").to_string(),
         };
 
         app.instantiate_contract(
