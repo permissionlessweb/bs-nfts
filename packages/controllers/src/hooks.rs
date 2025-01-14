@@ -1,8 +1,16 @@
+use std::fmt;
+
 use cosmwasm_schema::cw_serde;
+use schemars::JsonSchema;
 use thiserror::Error;
 
-use cosmwasm_std::{Addr, CustomQuery, Deps, StdError, StdResult, Storage, SubMsg};
+use cosmwasm_std::{
+    attr, Addr, CustomQuery, Deps, DepsMut, MessageInfo, Response, StdError, StdResult, Storage,
+    SubMsg,
+};
 use cw_storage_plus::Item;
+
+use crate::{init::AdminError, Admin};
 
 #[cw_serde]
 pub struct HooksResponse {
@@ -11,6 +19,9 @@ pub struct HooksResponse {
 
 #[derive(Error, Debug, PartialEq)]
 pub enum HookError {
+    
+    #[error("{0}")]
+    AdminError(#[from] AdminError),
     #[error("{0}")]
     Std(#[from] StdError),
 
@@ -25,18 +36,15 @@ pub enum HookError {
 }
 
 // store all hook addresses in one item. We cannot have many of them before the contract becomes unusable anyway.
-pub struct Hooks<'a>(Item<'a, Vec<Addr>>);
+pub struct Hooks(Item<Vec<Addr>>);
 
-impl<'a> Hooks<'a> {
-    pub const fn new(storage_key: &'a str) -> Self {
+impl Hooks {
+    pub const fn new(storage_key: &'static str) -> Self {
         Hooks(Item::new(storage_key))
     }
 
     pub fn add_hook(&self, storage: &mut dyn Storage, addr: Addr) -> Result<(), HookError> {
         let mut hooks = self.0.may_load(storage)?.unwrap_or_default();
-        if hooks.len() >= 5 {
-            return Err(HookError::HookTooMany {});
-        }
         if !hooks.iter().any(|h| h == addr) {
             hooks.push(addr);
         } else {
@@ -68,9 +76,56 @@ impl<'a> Hooks<'a> {
             .collect()
     }
 
+    pub fn execute_add_hook<C, Q: CustomQuery>(
+        &self,
+        admin: &Admin,
+        deps: DepsMut<Q>,
+        info: MessageInfo,
+        addr: Addr,
+    ) -> Result<Response<C>, HookError>
+    where
+        C: Clone + fmt::Debug + PartialEq + JsonSchema,
+    {
+        admin.assert_admin(deps.as_ref(), &info.sender)?;
+        self.add_hook(deps.storage, addr.clone())?;
+
+        let attributes = vec![
+            attr("action", "add_hook"),
+            attr("hook", addr),
+            attr("sender", info.sender),
+        ];
+        Ok(Response::new().add_attributes(attributes))
+    }
+
+    pub fn execute_remove_hook<C, Q: CustomQuery>(
+        &self,
+        admin: &Admin,
+        deps: DepsMut<Q>,
+        info: MessageInfo,
+        addr: Addr,
+    ) -> Result<Response<C>, HookError>
+    where
+        C: Clone + fmt::Debug + PartialEq + JsonSchema,
+    {
+        admin.assert_admin(deps.as_ref(), &info.sender)?;
+        self.remove_hook(deps.storage, addr.clone())?;
+
+        let attributes = vec![
+            attr("action", "remove_hook"),
+            attr("hook", addr),
+            attr("sender", info.sender),
+        ];
+        Ok(Response::new().add_attributes(attributes))
+    }
+
     pub fn query_hooks<Q: CustomQuery>(&self, deps: Deps<Q>) -> StdResult<HooksResponse> {
         let hooks = self.0.may_load(deps.storage)?.unwrap_or_default();
         let hooks = hooks.into_iter().map(String::from).collect();
         Ok(HooksResponse { hooks })
+    }
+
+    // Return true if hook is in hooks
+    pub fn query_hook<Q: CustomQuery>(&self, deps: Deps<Q>, hook: String) -> StdResult<bool> {
+        Ok(self.query_hooks(deps)?.hooks.into_iter().any(|h| h == hook))
     }
 }

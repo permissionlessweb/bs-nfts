@@ -15,8 +15,6 @@ documentation = { workspace = true }
 crate-type = ["cdylib", "rlib"]
 
 [features]
-# for more explicit tests, cargo test --features=backtraces
-backtraces = ["cosmwasm-std/backtraces"]
 # use library feature to disable all instantiate/execute/query exports
 library = []
 
@@ -27,8 +25,8 @@ cw-utils           = { workspace = true }
 cw2                = { workspace = true }
 bs721              = { workspace = true }
 bs721-base         = { workspace = true, features = ["library"] }
-bs721-curve        = { version = "0.2.0", path = "../../collections/bs721-curve", features = ["library"] }
-bs721-launchparty  = { version = "0.2.0", path = "../../minters/bs721-launchparty", features = ["library"] }
+bs721-curve        = { version = "0.3.0", path = "../../collections/bs721-curve", features = ["library"] }
+bs721-launchparty  = { version = "0.3.0", path = "../../minters/bs721-launchparty", features = ["library"] }
 bs721-royalties    = { workspace = true, features = ["library"] }
 cw-storage-plus    = { workspace = true }
 schemars           = { workspace = true }

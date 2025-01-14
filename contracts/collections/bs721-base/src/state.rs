@@ -14,12 +14,12 @@ where
     Q: CustomMsg,
     E: CustomMsg,
 {
-    pub contract_info: Item<'a, ContractInfoResponse>,
-    pub minter: Item<'a, Addr>,
-    pub token_count: Item<'a, u64>,
+    pub contract_info: Item<ContractInfoResponse>,
+    pub minter: Item<Addr>,
+    pub token_count: Item<u64>,
     /// Stored as (granter, operator) giving operator full control over granter's account
-    pub operators: Map<'a, (&'a Addr, &'a Addr), Expiration>,
-    pub tokens: IndexedMap<'a, &'a str, TokenInfo<T>, TokenIndexes<'a, T>>,
+    pub operators: Map<(&'a Addr, &'a Addr), Expiration>,
+    pub tokens: IndexedMap<&'a str, TokenInfo<T>, TokenIndexes<'a, T>>,
 
     pub(crate) _custom_response: PhantomData<C>,
     pub(crate) _custom_query: PhantomData<Q>,
@@ -61,12 +61,12 @@ where
     Q: CustomMsg,
 {
     fn new(
-        contract_key: &'a str,
-        minter_key: &'a str,
-        token_count_key: &'a str,
-        operator_key: &'a str,
-        tokens_key: &'a str,
-        tokens_owner_key: &'a str,
+        contract_key: &'static str,
+        minter_key: &'static str,
+        token_count_key: &'static str,
+        operator_key: &'static str,
+        tokens_key: &'static str,
+        tokens_owner_key: &'static str,
     ) -> Self {
         let indexes = TokenIndexes {
             owner: MultiIndex::new(token_owner_idx, tokens_key, tokens_owner_key),
@@ -120,7 +120,7 @@ pub struct TokenInfo<T> {
     /// Payment address, is the address that will receive the payment
     pub payment_addr: Option<Addr>,
 
-    /// You can add any custom metadata here when you extend cw721-base
+    /// You can add any custom metadata here when you extend bs721-base
     pub extension: T,
 }
 

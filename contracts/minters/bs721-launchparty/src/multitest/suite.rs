@@ -229,16 +229,17 @@ impl Suite {
         bs721_address: impl Into<String>,
         owner: impl Into<String>,
     ) -> Vec<String> {
+        let query: Bs721BaseQueryMsg<Empty> =  Bs721BaseQueryMsg::Tokens {
+            owner: owner.into(),
+            start_after: None,
+            limit: None,
+        };
         let resp: bs721::TokensResponse = self
             .app
             .wrap()
             .query_wasm_smart(
                 bs721_address.into(),
-                &Bs721BaseQueryMsg::<Empty>::Tokens {
-                    owner: owner.into(),
-                    start_after: None,
-                    limit: None,
-                },
+                &query,
             )
             .unwrap();
         resp.tokens

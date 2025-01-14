@@ -8,13 +8,13 @@ use cosmos_sdk_proto::{cosmos::distribution::v1beta1::MsgFundCommunityPool, trai
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    attr, coin, to_json_binary, Addr, Attribute, BankMsg, Binary, Coin, CosmosMsg, Deps, DepsMut,
-    Env, MessageInfo, Reply, ReplyOn, Response, StdError, StdResult, SubMsg, Timestamp, Uint128,
-    WasmMsg,
+    attr, coin, from_json, instantiate2_address, to_json_binary, Addr, Attribute, BankMsg, Binary,
+    CanonicalAddr, Coin, CosmosMsg, Deps, DepsMut, Env, MessageInfo, MsgResponse, Reply, ReplyOn,
+    Response, StdError, StdResult, SubMsg, Timestamp, Uint128, WasmMsg,
 };
 use cw2::set_contract_version;
 
-use cw_utils::{may_pay, parse_reply_instantiate_data};
+use cw_utils::{may_pay, parse_instantiate_response_data};
 
 const CONTRACT_NAME: &str = "crates.io:bs721-launchparty";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -52,7 +52,7 @@ pub fn instantiate(
     let bs721_admin = deps.api.addr_validate(msg.bs721_admin.as_str())?;
 
     let config = Config {
-        creator: info.sender,
+        creator: info.sender.clone(),
         symbol: msg.symbol.clone(),
         name: msg.name.clone(),
         uri: msg.uri.clone(),
@@ -69,11 +69,21 @@ pub fn instantiate(
     };
 
     CONFIG.save(deps.storage, &config)?;
+    let salt = &env.block.height.to_be_bytes();
+    let contract_info = deps
+        .querier
+        .query_wasm_contract_info(env.contract.address.clone())?;
+    let code_info = deps.querier.query_wasm_code_info(contract_info.code_id)?;
+    let addr = instantiate2_address(
+        code_info.checksum.as_slice(),
+        &deps.api.addr_canonicalize(&info.sender.as_str())?,
+        salt,
+    )?;
 
     // create submessages to instantiate nft
     let sub_msgs: Vec<SubMsg> = vec![SubMsg {
         id: INSTANTIATE_TOKEN_REPLY_ID,
-        msg: WasmMsg::Instantiate {
+        msg: WasmMsg::Instantiate2 {
             code_id: msg.bs721_code_id,
             msg: to_json_binary(&Bs721BaseInstantiateMsg {
                 name: msg.name.clone(),
@@ -84,10 +94,15 @@ pub fn instantiate(
             label: "Bitsong Studio Launchparty Contract".to_string(),
             admin: Some(bs721_admin.to_string()),
             funds: vec![],
+            salt: salt.into(),
         }
         .into(),
         gas_limit: None,
         reply_on: ReplyOn::Success,
+        payload: to_json_binary(&vec![MsgResponse {
+            type_url: "launchparty-addr".into(),
+            value: Binary::new(addr.to_vec()),
+        }])?,
     }];
 
     Ok(Response::new().add_submessages(sub_msgs))
@@ -99,21 +114,20 @@ pub fn reply(deps: DepsMut, _env: Env, reply: Reply) -> Result<Response, Contrac
 
     let mut res = Response::new();
 
-    let reply_res = parse_reply_instantiate_data(reply.clone()).map_err(|_| {
-        StdError::parse_err("MsgInstantiateContractResponse", "failed to parse data")
-    })?;
-
+    let reply_res: Vec<MsgResponse> = from_json(reply.payload)?;
     match reply.id {
         INSTANTIATE_TOKEN_REPLY_ID => {
             if config.bs721_address.is_some() {
                 return Err(ContractError::Bs721BaseAlreadyLinked {});
             }
 
-            config.bs721_address = Addr::unchecked(reply_res.contract_address.clone()).into();
+            let addr: CanonicalAddr = from_json(reply_res[0].value.clone())?;
+            let human_addr = deps.api.addr_humanize(&addr)?;
+            config.bs721_address = Some(human_addr.clone());
 
             res = res
                 .add_attribute("action", "bs721_base_reply")
-                .add_attribute("contract_address", reply_res.contract_address)
+                .add_attribute("contract_address", human_addr)
         }
         _ => return Err(ContractError::UnknownReplyId {}),
     }
@@ -210,7 +224,7 @@ fn execute_mint(
             });
         }
 
-        let mint_msg = Bs721BaseExecuteMsg::<EditionMetadata>::Mint {
+        let mint_msg: Bs721BaseExecuteMsg<EditionMetadata> = Bs721BaseExecuteMsg::Mint {
             owner: info.sender.to_string(),
             token_id: token_id.to_string(),
             token_uri: Some(config.uri.clone()),
@@ -462,7 +476,9 @@ mod tests {
 
     use super::*;
     use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info, MOCK_CONTRACT_ADDR};
-    use cosmwasm_std::{from_json, to_json_binary, SubMsgResponse, SubMsgResult, Timestamp};
+    use cosmwasm_std::{
+        from_json, to_json_binary, MsgResponse, SubMsgResponse, SubMsgResult, Timestamp,
+    };
     use prost::Message;
 
     const NFT_CONTRACT_ADDR: &str = "nftcontract";
@@ -633,7 +649,7 @@ mod tests {
 
             assert!(result.is_err());
             match result {
-                Err(StdError::GenericErr { msg }) => {
+                Err(StdError::GenericErr { msg, backtrace }) => {
                     assert_eq!(msg, "royalties amount is zero or negative");
                 }
                 _ => panic!("Unexpected error"),
@@ -773,6 +789,7 @@ mod tests {
                 id: INSTANTIATE_TOKEN_REPLY_ID,
                 gas_limit: None,
                 reply_on: ReplyOn::Success,
+                payload: Binary::default(),
             }]
         );
 
@@ -792,7 +809,10 @@ mod tests {
             result: SubMsgResult::Ok(SubMsgResponse {
                 events: vec![],
                 data: Some(encoded_instantiate_reply_bs721.into()),
+                msg_responses: todo!(),
             }),
+            payload: todo!(),
+            gas_used: todo!(),
         };
 
         reply(deps.as_mut(), env.clone(), reply_msg_bs721).unwrap();
@@ -861,7 +881,10 @@ mod tests {
             result: SubMsgResult::Ok(SubMsgResponse {
                 events: vec![],
                 data: Some(encoded_instantiate_reply_bs721.into()),
+                msg_responses: todo!(),
             }),
+            payload: todo!(),
+            gas_used: todo!(),
         };
 
         reply(deps.as_mut(), env.clone(), reply_msg_bs721).unwrap();
@@ -874,7 +897,7 @@ mod tests {
 
         let res = execute(deps.as_mut(), env.clone(), info.clone(), msg).unwrap();
 
-        let mint_msg = Bs721BaseExecuteMsg::<EditionMetadata>::Mint {
+        let mint_msg: Bs721BaseExecuteMsg<EditionMetadata> = Bs721BaseExecuteMsg::Mint {
             token_id: "1".to_string(),
             extension: EditionMetadata {
                 name: format!("{} #{}", "Launchparty".to_string(), "1".to_string()),
@@ -914,6 +937,7 @@ mod tests {
                 id: 0,
                 gas_limit: None,
                 reply_on: ReplyOn::Never,
+                payload: todo!()
             }
         );
     }
@@ -956,8 +980,14 @@ mod tests {
             id: INSTANTIATE_TOKEN_REPLY_ID,
             result: SubMsgResult::Ok(SubMsgResponse {
                 events: vec![],
-                data: Some(encoded_instantiate_reply_bs721.into()),
+                data: None,
+                msg_responses: vec![MsgResponse {
+                    type_url: "bs721-launchparty".into(),
+                    value: encoded_instantiate_reply_bs721.into(),
+                }],
             }),
+            payload: Binary::default(),
+            gas_used: u64::default(),
         };
 
         reply(deps.as_mut(), env.clone(), reply_msg_bs721).unwrap();
@@ -970,7 +1000,7 @@ mod tests {
 
         let res = execute(deps.as_mut(), env.clone(), info.clone(), msg).unwrap();
 
-        let mint_msg = Bs721BaseExecuteMsg::<EditionMetadata>::Mint {
+        let mint_msg = Bs721BaseExecuteMsg::Mint {
             token_id: "1".to_string(),
             extension: EditionMetadata {
                 name: format!("{} #{}", "Launchparty".to_string(), "1".to_string()),
@@ -1010,10 +1040,11 @@ mod tests {
                 id: 0,
                 gas_limit: None,
                 reply_on: ReplyOn::Never,
+                payload: Binary::default(),
             }
         );
 
-        let mint_msg = Bs721BaseExecuteMsg::<EditionMetadata>::Mint {
+        let mint_msg: Bs721BaseExecuteMsg<EditionMetadata> = Bs721BaseExecuteMsg::Mint {
             token_id: "2".to_string(),
             extension: EditionMetadata {
                 name: format!("{} #{}", "Launchparty".to_string(), "2".to_string()),
@@ -1053,10 +1084,11 @@ mod tests {
                 id: 0,
                 gas_limit: None,
                 reply_on: ReplyOn::Never,
+                payload: Binary::default(),
             }
         );
 
-        let mint_msg = Bs721BaseExecuteMsg::<EditionMetadata>::Mint {
+        let mint_msg: Bs721BaseExecuteMsg<EditionMetadata> = Bs721BaseExecuteMsg::Mint {
             token_id: "3".to_string(),
             extension: EditionMetadata {
                 name: format!("{} #{}", "Launchparty".to_string(), "3".to_string()),
@@ -1096,6 +1128,7 @@ mod tests {
                 id: 0,
                 gas_limit: None,
                 reply_on: ReplyOn::Never,
+                payload: Binary::default(),
             }
         );
     }

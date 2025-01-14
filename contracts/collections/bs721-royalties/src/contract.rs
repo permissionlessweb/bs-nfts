@@ -94,7 +94,7 @@ pub fn execute_distribute(deps: DepsMut, env: Env) -> Result<Response, ContractE
 
     let withdrawable_amount = WITHDRAWABLE_AMOUNT.load(deps.storage).unwrap_or_default();
 
-    let distributable_royalties = funds.amount.saturating_sub(withdrawable_amount);
+    let distributable_royalties: Uint128 = funds.amount.saturating_sub(withdrawable_amount);
     if distributable_royalties.is_zero() {
         return Err(ContractError::NothingToDistribute {});
     }
@@ -110,7 +110,9 @@ pub fn execute_distribute(deps: DepsMut, env: Env) -> Result<Response, ContractE
             // to unwrap().
             let mut info = info.unwrap();
 
-            let contributor_royalties = distributable_royalties * info.percentage_shares;
+            let contributor_royalties = info
+                .percentage_shares
+                .checked_mul(Decimal::from_ratio(distributable_royalties, Uint128::one()))?;
             // we should rise an error is we have a contributor with 0 royalties to avoid situations
             // where some contibutor receive royalties and other one no.
             if contributor_royalties.is_zero() {
@@ -119,10 +121,10 @@ pub fn execute_distribute(deps: DepsMut, env: Env) -> Result<Response, ContractE
 
             info.withdrawable_amount = info
                 .withdrawable_amount
-                .checked_add(contributor_royalties)
+                .checked_add(contributor_royalties.atomics())
                 .map_err(ContractError::OverflowErr)?;
             distributed_royalties = distributed_royalties
-                .checked_add(contributor_royalties)
+                .checked_add(contributor_royalties.atomics())
                 .map_err(ContractError::OverflowErr)?;
             Ok(info)
         })?;

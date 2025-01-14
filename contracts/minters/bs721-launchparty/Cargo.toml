@@ -15,8 +15,6 @@ documentation = { workspace = true }
 crate-type = ["cdylib", "rlib"]
 
 [features]
-# for more explicit tests, cargo test --features=backtraces
-backtraces = ["cosmwasm-std/backtraces"]
 # use library feature to disable all instantiate/execute/query exports
 library = []
 
@@ -32,10 +30,9 @@ cw-storage-plus         = { workspace = true }
 schemars                = { workspace = true }
 serde                   = { workspace = true }
 thiserror               = { workspace = true }
-cosmos-sdk-proto        = { version = "0.16.0", default-features = false }
-
+cosmos-sdk-proto        = { workspace = true }
 [dev-dependencies]
 prost = "0.11.9"
-cw-multi-test = { version = "0.16.4", features = ["stargate"] }
+cw-multi-test = { workspace = true , features = ["stargate"] }
 derivative = "2.2"
 anyhow = "1"

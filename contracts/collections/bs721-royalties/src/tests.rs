@@ -98,6 +98,7 @@ fn distribute_shares_fails() {
 
     {
         deps.querier
+            .bank
             .update_balance(env.contract.address.clone(), coins(1_000, "NOT_DENOM"));
         let err = execute(deps.as_mut(), env, info, msg).unwrap_err();
         assert_eq!(
@@ -119,6 +120,7 @@ fn not_nough_to_distribute() {
 
     {
         deps.querier
+            .bank
             .update_balance(env.contract.address.clone(), coins(99, DENOM));
         let resp = execute(deps.as_mut(), env, info, msg).unwrap_err();
         assert_eq!(
@@ -143,6 +145,7 @@ fn distribute_shares_single() {
 
     {
         deps.querier
+            .bank
             .update_balance(env.contract.address.clone(), coins(1_000, DENOM));
         let resp = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone()).unwrap();
         assert_eq!(
@@ -164,6 +167,7 @@ fn distribute_shares_single() {
 
     {
         deps.querier
+            .bank
             .update_balance(env.contract.address.clone(), coins(2_000, DENOM));
         execute(deps.as_mut(), env.clone(), info.clone(), msg.clone()).unwrap();
         let err = execute(deps.as_mut(), env, info, msg).unwrap_err();
@@ -193,6 +197,7 @@ fn distribute_two_contributor() {
 
     {
         deps.querier
+            .bank
             .update_balance(env.contract.address.clone(), coins(101, DENOM));
         let resp = execute(deps.as_mut(), env.clone(), info, msg).unwrap();
         assert_eq!(
@@ -231,6 +236,7 @@ fn distribute_shares_multiple() {
 
     {
         deps.querier
+            .bank
             .update_balance(env.contract.address.clone(), coins(1_000, DENOM));
         let resp = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone()).unwrap();
         assert_eq!(
@@ -273,6 +279,7 @@ fn distribute_shares_multiple() {
 
     {
         deps.querier
+            .bank
             .update_balance(env.contract.address.clone(), coins(2_000, DENOM));
         execute(deps.as_mut(), env.clone(), info.clone(), msg.clone()).unwrap();
         let err = execute(deps.as_mut(), env.clone(), info, msg).unwrap_err();
@@ -336,14 +343,9 @@ fn withdraw_royalties_single() {
     {
         // update contract balance a contributor can withdraw
         deps.querier
+            .bank
             .update_balance(env.contract.address.clone(), coins(1_000, DENOM));
-        execute(
-            deps.as_mut(),
-            env.clone(),
-            info.clone(),
-            distribute_msg,
-        )
-        .unwrap();
+        execute(deps.as_mut(), env.clone(), info.clone(), distribute_msg).unwrap();
 
         let resp = execute(deps.as_mut(), env, info, withdraw_msg).unwrap();
         assert_eq!(
@@ -381,24 +383,13 @@ fn withdraw_royalties_multiple() {
 
     // update contract balance a contributor can withdraw
     deps.querier
+        .bank
         .update_balance(env.contract.address.clone(), coins(1_000, DENOM));
 
     let info = mock_info("address0", &[]);
-    execute(
-        deps.as_mut(),
-        env.clone(),
-        info.clone(),
-        distribute_msg,
-    )
-    .unwrap();
+    execute(deps.as_mut(), env.clone(), info.clone(), distribute_msg).unwrap();
 
-    let resp = execute(
-        deps.as_mut(),
-        env.clone(),
-        info,
-        withdraw_msg.clone(),
-    )
-    .unwrap();
+    let resp = execute(deps.as_mut(), env.clone(), info, withdraw_msg.clone()).unwrap();
     assert_eq!(
         resp.messages[0].msg,
         CosmosMsg::Bank(BankMsg::Send {
@@ -459,6 +450,7 @@ fn mixed_distribute_and_withdraw() {
 
     // update contract balance a contributor can withdraw
     deps.querier
+        .bank
         .update_balance(env.contract.address.clone(), coins(1_000, DENOM));
 
     // first distribution
@@ -483,25 +475,14 @@ fn mixed_distribute_and_withdraw() {
     // we have to update contract balance since bank messages are not executed. We will have:
     // 1_000 (initial) - 500 (address0 withdraw) + 1_000 (new royalties to distribtue)
     deps.querier
+        .bank
         .update_balance(env.contract.address.clone(), coins(1_500, DENOM));
 
     // second distribution
-    execute(
-        deps.as_mut(),
-        env.clone(),
-        info.clone(),
-        distribute_msg,
-    )
-    .unwrap();
+    execute(deps.as_mut(), env.clone(), info.clone(), distribute_msg).unwrap();
 
     // second withdraw from contributor0
-    let resp = execute(
-        deps.as_mut(),
-        env.clone(),
-        info,
-        withdraw_msg.clone(),
-    )
-    .unwrap();
+    let resp = execute(deps.as_mut(), env.clone(), info, withdraw_msg.clone()).unwrap();
     assert_eq!(
         resp.messages[0].msg,
         CosmosMsg::Bank(BankMsg::Send {
@@ -596,6 +577,7 @@ fn query_distributable_amount_works() {
 
     {
         deps.querier
+            .bank
             .update_balance(env.contract.address.clone(), coins(1_000, DENOM));
         WITHDRAWABLE_AMOUNT
             .save(deps.as_mut().storage, &Uint128::zero())

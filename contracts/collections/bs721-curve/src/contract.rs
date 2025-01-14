@@ -12,13 +12,14 @@ use bs721_base::{ExecuteMsg as Bs721BaseExecuteMsg, InstantiateMsg as Bs721BaseI
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    attr, coin, to_json_binary, Addr, Attribute, BankMsg, Binary, Coin, CosmosMsg, Decimal, Deps,
-    DepsMut, Empty, Env, MessageInfo, QuerierWrapper, QueryRequest, Reply, ReplyOn, Response,
-    StdError, StdResult, Storage, SubMsg, Uint128, WasmMsg, WasmQuery,
+    attr, coin, from_json, instantiate2_address, to_json_binary, Addr, Attribute, BankMsg, Binary,
+    CanonicalAddr, Coin, CosmosMsg, Decimal, Deps, DepsMut, Empty, Env, MessageInfo, MsgResponse,
+    QuerierWrapper, QueryRequest, Reply, ReplyOn, Response, StdError, StdResult, Storage, SubMsg,
+    Uint128, WasmMsg, WasmQuery,
 };
 use cw2::set_contract_version;
 
-use cw_utils::{must_pay, nonpayable, parse_reply_instantiate_data};
+use cw_utils::{must_pay, nonpayable};
 
 const CONTRACT_NAME: &str = "crates.io:bs721-curve";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -47,7 +48,7 @@ pub fn instantiate(
     let bs721_admin = deps.api.addr_validate(msg.bs721_admin.as_str())?;
 
     let config = Config {
-        creator: info.sender,
+        creator: info.sender.clone(),
         symbol: msg.symbol.clone(),
         name: msg.name.clone(),
         uri: msg.uri.clone(),
@@ -66,10 +67,21 @@ pub fn instantiate(
 
     CONFIG.save(deps.storage, &config)?;
 
+    let salt = &env.block.height.to_be_bytes();
+    let contract_info = deps
+        .querier
+        .query_wasm_contract_info(env.contract.address.clone())?;
+    let code_info = deps.querier.query_wasm_code_info(contract_info.code_id)?;
+    let addr = instantiate2_address(
+        code_info.checksum.as_slice(),
+        &deps.api.addr_canonicalize(&info.sender.as_str())?,
+        salt,
+    )?;
+
     // create submessages to instantiate token and royalties contracts
     let sub_msgs: Vec<SubMsg> = vec![SubMsg {
         id: INSTANTIATE_TOKEN_REPLY_ID,
-        msg: WasmMsg::Instantiate {
+        msg: WasmMsg::Instantiate2 {
             code_id: msg.bs721_code_id,
             msg: to_json_binary(&Bs721BaseInstantiateMsg {
                 name: msg.name.clone(),
@@ -80,10 +92,12 @@ pub fn instantiate(
             label: "Bitsong Studio Curve Contract".to_string(),
             admin: Some(bs721_admin.to_string()),
             funds: vec![],
+            salt: salt.into(),
         }
         .into(),
         gas_limit: None,
         reply_on: ReplyOn::Success,
+        payload: Binary::new(addr.to_vec()),
     }];
 
     Ok(Response::new().add_submessages(sub_msgs))
@@ -94,22 +108,19 @@ pub fn reply(deps: DepsMut, _env: Env, reply: Reply) -> Result<Response, Contrac
     let mut config: Config = CONFIG.load(deps.storage)?;
 
     let mut res = Response::new();
-
-    let reply_res = parse_reply_instantiate_data(reply.clone()).map_err(|_| {
-        StdError::parse_err("MsgInstantiateContractResponse", "failed to parse data")
-    })?;
-
+    let reply_res: Vec<MsgResponse> = from_json(reply.payload)?;
     match reply.id {
         INSTANTIATE_TOKEN_REPLY_ID => {
             if config.bs721_address.is_some() {
                 return Err(ContractError::Bs721BaseAlreadyLinked {});
             }
-
-            config.bs721_address = Addr::unchecked(reply_res.contract_address.clone()).into();
+            let addr: CanonicalAddr = from_json(reply_res[0].value.clone())?;
+            let human_addr = deps.api.addr_humanize(&addr)?;
+            config.bs721_address = Addr::unchecked(human_addr.clone()).into();
 
             res = res
                 .add_attribute("action", "bs721_base_reply")
-                .add_attribute("contract_address", reply_res.contract_address)
+                .add_attribute("contract_address", human_addr)
         }
         _ => return Err(ContractError::UnknownReplyId {}),
     }
@@ -269,11 +280,12 @@ fn execute_burn(
 
     let mut res = Response::new();
     for token_id in token_ids.clone() {
+        let msg: &Bs721BaseExecuteMsg<Empty> = &Bs721BaseExecuteMsg::Burn {
+            token_id: token_id.to_string(),
+        };
         let burn_msg = WasmMsg::Execute {
             contract_addr: config.bs721_address.clone().unwrap().to_string(),
-            msg: to_json_binary(&Bs721BaseExecuteMsg::<Empty>::Burn {
-                token_id: token_id.to_string(),
-            })?,
+            msg: to_json_binary(msg)?,
             funds: vec![],
         };
 
@@ -440,7 +452,7 @@ fn execute_mint(
             });
         }
 
-        let mint_msg = Bs721BaseExecuteMsg::<EditionMetadata>::Mint {
+        let mint_msg: Bs721BaseExecuteMsg<EditionMetadata> = Bs721BaseExecuteMsg::Mint {
             owner: info.sender.to_string(),
             token_id: token_id.to_string(),
             token_uri: Some(config.uri.clone()),
