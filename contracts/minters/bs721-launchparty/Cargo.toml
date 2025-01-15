@@ -33,6 +33,6 @@ thiserror               = { workspace = true }
 cosmos-sdk-proto        = { workspace = true }
 [dev-dependencies]
 prost = "0.11.9"
-cw-multi-test = { workspace = true , features = ["stargate"] }
+cw-multi-test = { workspace = true  }
 derivative = "2.2"
 anyhow = "1"

@@ -1,7 +1,5 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Addr, Binary, CustomQuery, Deps, StdError, StdResult, WasmMsg};
-use cw_storage_plus::Item;
-use thiserror::Error;
+use cosmwasm_std::{Addr, Binary, WasmMsg};
 
 #[cw_serde]
 pub struct ContractInstantiateMsg {

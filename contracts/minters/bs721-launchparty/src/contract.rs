@@ -14,7 +14,7 @@ use cosmwasm_std::{
 };
 use cw2::set_contract_version;
 
-use cw_utils::{may_pay, parse_instantiate_response_data};
+use cw_utils::may_pay;
 
 const CONTRACT_NAME: &str = "crates.io:bs721-launchparty";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -70,9 +70,6 @@ pub fn instantiate(
 
     CONFIG.save(deps.storage, &config)?;
     let salt = &env.block.height.to_be_bytes();
-    let contract_info = deps
-        .querier
-        .query_wasm_contract_info(env.contract.address.clone())?;
     let code_info = deps.querier.query_wasm_code_info(msg.bs721_code_id)?;
     let addr = instantiate2_address(
         code_info.checksum.as_slice(),

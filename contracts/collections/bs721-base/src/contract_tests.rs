@@ -167,9 +167,6 @@ fn burning() {
     let creator = deps.api.addr_make("creator");
     let minter = deps.api.addr_make("minter");
     let random = deps.api.addr_make("random");
-
-    let medusa = deps.api.addr_make("medusa");
-    let hercules = deps.api.addr_make("hercules");
     let paymemt = deps.api.addr_make("paymemt");
 
     let contract = setup_contract(deps.as_mut(), creator.clone(), minter.clone());
@@ -362,7 +359,6 @@ fn approving_revoking() {
     let creator = deps.api.addr_make("creator");
     let minter = deps.api.addr_make("minter");
     let random = deps.api.addr_make("random");
-    let person = deps.api.addr_make("person");
     let payment = deps.api.addr_make("payment");
     let demeter = deps.api.addr_make("demeter");
     let contract = setup_contract(deps.as_mut(), creator.clone(), minter.clone());
@@ -515,7 +511,6 @@ fn approving_all_revoking_all() {
     let minter = deps.api.addr_make("minter");
     let random = deps.api.addr_make("random");
     let person = deps.api.addr_make("person");
-    let owner = deps.api.addr_make("owner");
     let demeter = deps.api.addr_make("demeter");
     let operator = deps.api.addr_make("operator");
     let payment = deps.api.addr_make("payment");

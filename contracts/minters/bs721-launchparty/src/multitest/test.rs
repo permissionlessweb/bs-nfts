@@ -1,9 +1,10 @@
-use cosmwasm_std::{coin, Addr, Uint128};
+use cosmwasm_std::{coin, testing::mock_dependencies, Addr, Uint128};
 
 use super::suite::TestSuiteBuilder;
 
 #[test]
 fn instantiate() {
+    let api = mock_dependencies().api;
     let suite = TestSuiteBuilder::new().build();
 
     let resp = suite.query_config();
@@ -161,9 +162,12 @@ fn max_per_address() {
 
 #[test]
 fn query_max_per_address() {
+    let mut api = mock_dependencies().api;
+    let addr1 = api.addr_make("address1");
+    let addr2 = api.addr_make("address2");
     let mut suite = TestSuiteBuilder::new()
-        .with_funds("address1", &[coin(1_000, "ubtsg")])
-        .with_funds("address2", &[coin(1_000, "ubtsg")])
+        .with_funds(&addr1.to_string(), &[coin(1_000, "ubtsg")])
+        .with_funds(&addr2.to_string(), &[coin(1_000, "ubtsg")])
         .with_price(coin(1, "ubtsg"))
         .with_party_type(crate::msg::PartyType::MaxEdition(10))
         .with_max_per_address(3)
@@ -177,7 +181,7 @@ fn query_max_per_address() {
         "expected max per address to be 3"
     );
 
-    let response = suite.query_max_per_address("address1");
+    let response = suite.query_max_per_address(&addr1);
     if let Some(remaining) = response.remaining {
         assert_eq!(
             remaining, 3,
@@ -185,11 +189,9 @@ fn query_max_per_address() {
         );
     }
 
-    suite
-        .mint("address1", None, 1, Some(coin(1, "ubtsg")))
-        .unwrap();
+    suite.mint(&addr1, None, 1, Some(coin(1, "ubtsg"))).unwrap();
 
-    let response = suite.query_max_per_address("address1");
+    let response = suite.query_max_per_address(&addr1);
     if let Some(remaining) = response.remaining {
         assert_eq!(
             remaining, 2,
@@ -197,11 +199,9 @@ fn query_max_per_address() {
         );
     }
 
-    suite
-        .mint("address1", None, 1, Some(coin(1, "ubtsg")))
-        .unwrap();
+    suite.mint(&addr1, None, 1, Some(coin(1, "ubtsg"))).unwrap();
 
-    let response = suite.query_max_per_address("address1");
+    let response = suite.query_max_per_address(&addr1);
     if let Some(remaining) = response.remaining {
         assert_eq!(
             remaining, 1,
@@ -209,11 +209,9 @@ fn query_max_per_address() {
         );
     }
 
-    suite
-        .mint("address1", None, 1, Some(coin(1, "ubtsg")))
-        .unwrap();
+    suite.mint(&addr1, None, 1, Some(coin(1, "ubtsg"))).unwrap();
 
-    let response = suite.query_max_per_address("address1");
+    let response = suite.query_max_per_address(&addr1);
     if let Some(remaining) = response.remaining {
         assert_eq!(
             remaining, 0,
@@ -222,10 +220,10 @@ fn query_max_per_address() {
     }
 
     suite
-        .mint("address1", None, 1, Some(coin(1, "ubtsg")))
+        .mint(&addr1, None, 1, Some(coin(1, "ubtsg")))
         .unwrap_err();
 
-    let response = suite.query_max_per_address("address2");
+    let response = suite.query_max_per_address(&addr2);
     if let Some(remaining) = response.remaining {
         assert_eq!(
             remaining, 3,

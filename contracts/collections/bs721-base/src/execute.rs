@@ -466,13 +466,3 @@ where
         }
     }
 }
-
-pub fn execute_update_owner(
-    deps: DepsMut,
-    info: MessageInfo,
-    env: Env,
-    action: cw_ownable::Action,
-) -> Result<Response, ContractError> {
-    let ownership = cw_ownable::update_ownership(deps, &env.block, &info.sender, action)?;
-    Ok(Response::default().add_attributes(ownership.into_attributes()))
-}

@@ -30,7 +30,7 @@ cosmwasm-std                 = "2.2.0"
 cw-controllers               = "2.0.0"
 cw2                          = "2.0.0"
 cw20                         = "2.0.0"
-cw-multi-test                = "2.2.0"
+cw-multi-test                = {version = "2.2.0",features = ["stargate", "cosmwasm_2_1"]}
 cw-orch                      = "0.26.0"
 cw-ownable                   = "2.1.0"
 cw-storage-macro             = "2.0.0"

@@ -1,6 +1,17 @@
 **Changelog for Bitsong NFTS**
 =====================================================
 
+**`0.3.0-rc` -Cosmwasm-std: v2.0.0**
+--------------------------------------
+### Added
+- **bs-controllers:** add admin item store functions (source from original cw-controllers package)
+### Changed
+- **bump cosmwasm deps to 2.0.0** - all cosmwasm crates have been bumped to version 2.0  
+- **bump workspace tests** - bump all tests to compatible versions with v2.0 cosmwasm-std
+### Fixed
+### Removed
+### Upgrade Notes
+
 **`0.2.0-rc` - Cw Orchestrator & Bitsong Accounts**
 --------------------------------------
 
