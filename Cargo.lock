@@ -1443,12 +1443,54 @@ dependencies = [
 ]
 
 [[package]]
+name = "btsg-auth"
+version = "0.3.0"
+source = "git+https://github.com/permissionlessweb/bs-nfts?branch=cosmwasm-std-v2#826ebf20a203b5cd36fd0955f2580218e73d060a"
+dependencies = [
+ "cosmwasm-schema 2.2.0",
+ "cosmwasm-std 2.2.0",
+ "cw-utils 2.0.0",
+ "schemars",
+ "serde",
+ "serde_json",
+ "sha2 0.10.8",
+]
+
+[[package]]
 name = "btsg-cw-orch"
 version = "0.3.0"
 dependencies = [
  "cosmwasm-std 2.2.0",
  "cw-orch 0.26.0",
  "serde",
+]
+
+[[package]]
+name = "btsg-wavs"
+version = "0.3.0"
+dependencies = [
+ "anyhow",
+ "bs721",
+ "bs721-base",
+ "bs721-curve",
+ "bs721-launchparty",
+ "bs721-royalties",
+ "btsg-auth 0.3.0 (git+https://github.com/permissionlessweb/bs-nfts?branch=cosmwasm-std-v2)",
+ "cosmos-sdk-proto 0.26.1",
+ "cosmwasm-crypto 2.2.2",
+ "cosmwasm-schema 2.2.0",
+ "cosmwasm-std 2.2.0",
+ "cw-multi-test",
+ "cw-orch 0.26.0",
+ "cw-storage-plus 2.0.0",
+ "cw-utils 2.0.0",
+ "cw2 2.0.0",
+ "derivative",
+ "prost 0.11.9",
+ "rayon",
+ "schemars",
+ "serde",
+ "thiserror 1.0.69",
 ]
 
 [[package]]
@@ -1749,9 +1791,9 @@ dependencies = [
 
 [[package]]
 name = "cosmwasm-core"
-version = "2.2.0"
+version = "2.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c34c440d4d8e3ecec783d0f9c89d25565168b0f4cdb80a1f6a387cf2168c0740"
+checksum = "35b6dc17e7fd89d0a0a58f12ef33f0bbdf09a6a14c3dfb383eae665e5889250e"
 
 [[package]]
 name = "cosmwasm-crypto"
@@ -1768,9 +1810,9 @@ dependencies = [
 
 [[package]]
 name = "cosmwasm-crypto"
-version = "2.2.0"
+version = "2.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "134e765161d60228cc27635032d2a466542ca83fd6c87f3c87f4963c0bd51008"
+checksum = "aa2f53285517db3e33d825b3e46301efe845135778527e1295154413b2f0469e"
 dependencies = [
  "ark-bls12-381",
  "ark-ec",
@@ -1890,7 +1932,7 @@ dependencies = [
  "bech32 0.11.0",
  "bnum 0.11.0",
  "cosmwasm-core",
- "cosmwasm-crypto 2.2.0",
+ "cosmwasm-crypto 2.2.2",
  "cosmwasm-derive 2.2.0",
  "derive_more 1.0.0",
  "hex",

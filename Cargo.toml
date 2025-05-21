@@ -4,6 +4,7 @@ members = [
  "contracts/collections/*",
  "contracts/minters/*",
  "contracts/factories/*",
+ "contracts/smart-accounts/*",
  "scripts"
  ]
 
@@ -27,6 +28,7 @@ btsg-cw-orch                 = { version = "0.3.0", path = "./packages/cw-orch" 
 cosmos-sdk-proto             = { version = "0.26.1", default-features = false }
 cosmwasm-schema              = "2.2.0"
 cosmwasm-std                 = "2.2.0"
+cosmwasm-crypto              = "2.2.2"
 cw-controllers               = "2.0.0"
 cw2                          = "2.0.0"
 cw20                         = "2.0.0"
