@@ -19,6 +19,7 @@ library = []
 [dependencies]
 cosmwasm-schema    = { workspace = true }
 cosmwasm-crypto    = { workspace = true  }
+cw-ownable      = { workspace = true }
 rayon = "1.9.0"
 cw-orch    = { workspace = true }
 cosmwasm-std       = { workspace = true }

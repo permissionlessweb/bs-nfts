@@ -2,12 +2,16 @@ use btsg_auth::{
     AuthenticationRequest, ConfirmExecutionRequest, OnAuthenticatorAddedRequest,
     OnAuthenticatorRemovedRequest, TrackRequest,
 };
-use cosmwasm_std::{from_json, DepsMut, Env, HashFunction, MessageInfo, Response};
+use cosmwasm_std::{
+    to_json_binary, Binary, DepsMut, Env, HashFunction, MessageInfo, Response,
+    BLS12_381_G1_GENERATOR,
+};
 use cw2::set_contract_version;
+use cw_storage_plus::Item;
 
 use crate::{
     msg::{ExecuteMsg, InstantiateMsg, SudoMsg},
-    state::BlsMetadata,
+    state::WAVS_PUBKEY,
     ContractError,
 };
 
@@ -22,10 +26,21 @@ const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 pub fn instantiate(
     deps: DepsMut,
     _env: Env,
-    _info: MessageInfo,
-    _msg: InstantiateMsg,
+    info: MessageInfo,
+    msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+
+    if msg.wavs_operator_pubkeys.len() > 10 {
+        return Err(ContractError::TooManyWavsKeys {});
+    }
+
+    WAVS_PUBKEY.save(deps.storage, &msg.wavs_operator_pubkeys)?;
+    cw_ownable::initialize_owner(
+        deps.storage,
+        deps.api,
+        Some(msg.owner.unwrap_or(info.sender).as_str()),
+    )?;
 
     Ok(Response::new())
 }
@@ -82,60 +97,37 @@ fn sudo_authentication_request(
     auth_req: Box<AuthenticationRequest>,
 ) -> Result<Response, ContractError> {
     // EXAMPLE IMPLEMENTATION FOR BLS12_381 VERIFICATION
+    // Fetch registered public keys
+    let wavs_pubkeys = WAVS_PUBKEY.load(deps.storage)?;
 
-    // Aggregate public keys (G1 points)
-    let raw_g1_points: Vec<_> = auth_req
-        .signature_data
-        .signers
-        .iter()
-        .map(|a| a.clone().as_str().as_bytes().to_vec())
-        .collect();
-    let g1_points_flat: Vec<u8> = raw_g1_points.concat();
-    let aggregated_pubkey = deps.api.bls12_381_aggregate_g1(&g1_points_flat)?;
-
-    // Aggregate signatures (G2 points)
-    let raw_g2_points: Vec<_> = auth_req
-        .signature_data
-        .signatures
+    let dst = b"QUUX-V01-CS02-with-BLS12381G1_XMD:SHA-256_SSWU_RO_";
+    // Messaage being signed (Stargate Encoded)
+    let message = to_json_binary(&auth_req.msg)?;
+    let signature = auth_req.signature;
+    // ensure that the provided signer pubkey
+    if let Some(pubkey) = wavs_pubkeys
         .into_iter()
-        .map(|a| a.clone().to_vec())
-        .collect();
-    let g2_points_flat: Vec<u8> = raw_g2_points.concat();
-    let aggregated_signature = deps.api.bls12_381_aggregate_g2(&g2_points_flat)?;
+        .find(|wp| wp == &Binary::new(auth_req.signature_data.signers[0].as_bytes().to_vec()))
+    {
+        // confirm signature is derived from signer and message
+        let msg_hash = deps
+            .api
+            .bls12_381_hash_to_g2(HashFunction::Sha256, &message, dst)?;
 
-    // Extract parameters
-    let params: BlsMetadata = from_json(
-        auth_req
-            .authenticator_params
-            .expect("authenticator params missing"),
-    )?;
-
-    let dst: Vec<_> = params
-        .wavs_operator_avs_keys
-        .iter()
-        .map(|w| w.to_vec())
-        .collect();
-
-    // Hash the message to G2
-    let message = auth_req.sign_mode_tx_data.sign_mode_direct;
-    let hashed_message =
-        deps.api
-            .bls12_381_hash_to_g2(HashFunction::Sha256, &message, &dst.concat())?;
-
-    // Verify the signature using pairing equality: e(g1, signature) == e(pubkey, H(message))
-    let is_valid = deps.api.bls12_381_pairing_equality(
-        &aggregated_pubkey,
-        &aggregated_signature,
-        &aggregated_pubkey,
-        &hashed_message,
-    )?;
-
-    if !is_valid {
-        return Err(ContractError::VerificationError(
-            cosmwasm_std::VerificationError::GenericErr,
-        ));
+        // validate signature
+        if !deps.api.bls12_381_pairing_equality(
+            &BLS12_381_G1_GENERATOR,
+            &signature,
+            &pubkey,
+            &msg_hash,
+        )? {
+            return Err(ContractError::VerificationError(
+                cosmwasm_std::VerificationError::GenericErr,
+            ));
+        }
+    } else {
+        return Err(ContractError::Unauthorized {});
     }
-
     Ok(Response::new().add_attribute("action", "auth_req"))
 }
 
@@ -151,7 +143,16 @@ fn sudo_confirm_execution_request(
     _deps: DepsMut,
     _confirm_execution_req: ConfirmExecutionRequest,
 ) -> Result<Response, ContractError> {
-
     // here is were we compare balances post event execution, based on data saved from sudo_track_request,etc..
     Ok(Response::new().add_attribute("action", "conf_exec_req"))
+}
+
+pub fn execute_update_owner(
+    deps: DepsMut,
+    info: MessageInfo,
+    env: Env,
+    action: cw_ownable::Action,
+) -> Result<Response, ContractError> {
+    let ownership = cw_ownable::update_ownership(deps, &env.block, &info.sender, action)?;
+    Ok(Response::default().add_attributes(ownership.into_attributes()))
 }
