@@ -32,7 +32,7 @@ pub fn main() -> cw_orch::anyhow::Result<()> {
     };
     let urls = bitsong_chain.grpc_urls.to_vec();
     for url in urls {
-        rt.block_on(ping_grpc(&url))?;
+        rt.block_on(ping_grpc(url))?;
     }
 
     let chain = DaemonBuilder::new(bitsong_chain.clone())

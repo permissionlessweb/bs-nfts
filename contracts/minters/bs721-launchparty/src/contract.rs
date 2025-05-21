@@ -73,7 +73,7 @@ pub fn instantiate(
     let code_info = deps.querier.query_wasm_code_info(msg.bs721_code_id)?;
     let addr = instantiate2_address(
         code_info.checksum.as_slice(),
-        &deps.api.addr_canonicalize(&info.sender.as_str())?,
+        &deps.api.addr_canonicalize(info.sender.as_str())?,
         salt,
     )?;
 
@@ -167,7 +167,7 @@ fn execute_mint(
     if let Some(max_per_address) = config.max_per_address {
         if new_total_mint > max_per_address {
             return Err(ContractError::MaxPerAddressExceeded {
-                remaining: max_per_address.checked_sub(already_minted).unwrap_or(0),
+                remaining: max_per_address.saturating_sub(already_minted),
             });
         }
     }
@@ -449,7 +449,7 @@ fn query_max_per_address(deps: Deps, address: String) -> StdResult<MaxPerAddress
 
     if let Some(max_per_address) = config.max_per_address {
         return Ok(MaxPerAddressResponse {
-            remaining: Some(max_per_address.checked_sub(already_minted).unwrap_or(0)),
+            remaining: Some(max_per_address.saturating_sub(already_minted)),
         });
     }
 
@@ -879,7 +879,7 @@ mod tests {
             }),
             payload: Binary::new(
                 deps.api
-                    .addr_canonicalize(&nftcontract.as_str())
+                    .addr_canonicalize(nftcontract.as_str())
                     .unwrap()
                     .to_vec(),
             ),
@@ -899,7 +899,7 @@ mod tests {
         let mint_msg: Bs721BaseExecuteMsg<EditionMetadata> = Bs721BaseExecuteMsg::Mint {
             token_id: "1".to_string(),
             extension: EditionMetadata {
-                name: format!("{} #{}", "Launchparty".to_string(), "1".to_string()),
+                name: format!("{} #{}", "Launchparty", "1"),
                 attributes: Some(vec![
                     Trait {
                         trait_type: "Edition".to_string(),
@@ -938,7 +938,7 @@ mod tests {
                 reply_on: ReplyOn::Never,
                 payload: Binary::new(
                     deps.api
-                        .addr_canonicalize(&nftcontract.as_str())
+                        .addr_canonicalize(nftcontract.as_str())
                         .unwrap()
                         .to_vec(),
                 ),
@@ -1012,7 +1012,7 @@ mod tests {
         let mint_msg = Bs721BaseExecuteMsg::Mint {
             token_id: "1".to_string(),
             extension: EditionMetadata {
-                name: format!("{} #{}", "Launchparty".to_string(), "1".to_string()),
+                name: format!("{} #{}", "Launchparty", "1"),
                 attributes: Some(vec![
                     Trait {
                         trait_type: "Edition".to_string(),
@@ -1056,7 +1056,7 @@ mod tests {
         let mint_msg: Bs721BaseExecuteMsg<EditionMetadata> = Bs721BaseExecuteMsg::Mint {
             token_id: "2".to_string(),
             extension: EditionMetadata {
-                name: format!("{} #{}", "Launchparty".to_string(), "2".to_string()),
+                name: format!("{} #{}", "Launchparty", "2"),
                 attributes: Some(vec![
                     Trait {
                         trait_type: "Edition".to_string(),
@@ -1100,7 +1100,7 @@ mod tests {
         let mint_msg: Bs721BaseExecuteMsg<EditionMetadata> = Bs721BaseExecuteMsg::Mint {
             token_id: "3".to_string(),
             extension: EditionMetadata {
-                name: format!("{} #{}", "Launchparty".to_string(), "3".to_string()),
+                name: format!("{} #{}", "Launchparty", "3"),
                 attributes: Some(vec![
                     Trait {
                         trait_type: "Edition".to_string(),

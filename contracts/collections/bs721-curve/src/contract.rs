@@ -74,7 +74,7 @@ pub fn instantiate(
     let code_info = deps.querier.query_wasm_code_info(contract_info.code_id)?;
     let addr = instantiate2_address(
         code_info.checksum.as_slice(),
-        &deps.api.addr_canonicalize(&info.sender.as_str())?,
+        &deps.api.addr_canonicalize(info.sender.as_str())?,
         salt,
     )?;
 
@@ -308,7 +308,7 @@ fn execute_burn(
     let mut royalties_sum = price.royalties;
 
     // Pay referral
-    if !referral.is_none() {
+    if referral.is_some() {
         if !price.referral.is_zero() {
             bank_msgs.push(BankMsg::Send {
                 to_address: referral.clone().unwrap().to_string(),
@@ -353,7 +353,7 @@ fn execute_burn(
 
     // decrease the number of tokens minted by the sender
     let already_minted = (ADDRESS_TOKENS.key(&info.sender).may_load(deps.storage)?).unwrap_or(0);
-    let new_total_mint = already_minted.checked_sub(amount).unwrap_or(0);
+    let new_total_mint = already_minted.saturating_sub(amount);
     ADDRESS_TOKENS.save(deps.storage, &info.sender, &new_total_mint)?;
 
     let token_ids_str: Vec<String> = token_ids.iter().map(|&n| n.to_string()).collect();
@@ -404,7 +404,7 @@ fn execute_mint(
     if let Some(max_per_address) = config.max_per_address {
         if new_total_mint > max_per_address {
             return Err(ContractError::MaxPerAddressExceeded {
-                remaining: max_per_address.checked_sub(already_minted).unwrap_or(0),
+                remaining: max_per_address.saturating_sub(already_minted),
             });
         }
     }
@@ -484,7 +484,7 @@ fn execute_mint(
     let mut royalties_sum = price.royalties;
 
     // Pay referral
-    if !referral.is_none() {
+    if referral.is_some() {
         if !price.referral.is_zero() {
             bank_msgs.push(BankMsg::Send {
                 to_address: referral.clone().unwrap().to_string(),
@@ -560,10 +560,8 @@ pub fn before_mint_checks(
     }
 
     let max_editions = config.max_edition.unwrap_or(0);
-    if max_editions > 0 {
-        if (config.next_token_id - 1) + edition_to_mint > max_editions {
-            return Err(ContractError::SoldOut {});
-        }
+    if max_editions > 0 && (config.next_token_id - 1) + edition_to_mint > max_editions {
+        return Err(ContractError::SoldOut {});
     }
 
     Ok(())
@@ -593,7 +591,7 @@ fn query_max_per_address(deps: Deps, address: String) -> StdResult<MaxPerAddress
 
     if let Some(max_per_address) = config.max_per_address {
         return Ok(MaxPerAddressResponse {
-            remaining: Some(max_per_address.checked_sub(already_minted).unwrap_or(0)),
+            remaining: Some(max_per_address.saturating_sub(already_minted)),
         });
     }
 

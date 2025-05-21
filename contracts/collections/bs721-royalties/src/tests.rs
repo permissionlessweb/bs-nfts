@@ -1,7 +1,7 @@
 use cosmwasm_std::{
     coin, coins,
-    testing::{mock_dependencies, mock_env, mock_info},
-    Attribute, BankMsg, CosmosMsg, Decimal, DepsMut, Uint128,
+    testing::{message_info, mock_dependencies, mock_env},
+    Addr, Attribute, BankMsg, CosmosMsg, Decimal, DepsMut, Uint128,
 };
 
 use crate::{
@@ -42,7 +42,7 @@ fn init(deps: DepsMut) {
         ],
     };
 
-    let info = mock_info("creator", &[]);
+    let info = message_info(&Addr::unchecked("creator"), &[]);
     instantiate(deps, mock_env(), info, msg).unwrap();
 }
 
@@ -62,7 +62,7 @@ fn init_with_shares(deps: DepsMut, shares: Vec<u32>) {
         contributors,
     };
 
-    let info = mock_info("creator", &[]);
+    let info = message_info(&Addr::unchecked("creator"), &[]);
     instantiate(deps, mock_env(), info, msg).unwrap();
 }
 
@@ -84,7 +84,7 @@ fn distribute_shares_fails() {
     let mut deps = mock_dependencies();
     init_with_shares(deps.as_mut(), vec![10]);
 
-    let info = mock_info("random_user", &[]);
+    let info = message_info(&Addr::unchecked("random_user"), &[]);
     let msg = ExecuteMsg::Distribute {};
 
     {
@@ -115,7 +115,7 @@ fn not_nough_to_distribute() {
     let mut deps = mock_dependencies();
     init_with_shares(deps.as_mut(), vec![99, 1]);
 
-    let info = mock_info("random_user", &[]);
+    let info = message_info(&Addr::unchecked("random_user"), &[]);
     let msg = ExecuteMsg::Distribute {};
 
     {
@@ -140,7 +140,7 @@ fn distribute_shares_single() {
     let mut deps = mock_dependencies();
     init_with_shares(deps.as_mut(), vec![10]);
 
-    let info = mock_info("random_user", &[]);
+    let info = message_info(&Addr::unchecked("random_user"), &[]);
     let msg = ExecuteMsg::Distribute {};
 
     {
@@ -192,7 +192,7 @@ fn distribute_two_contributor() {
     let mut deps = mock_dependencies();
     init_with_shares(deps.as_mut(), vec![99, 1]);
 
-    let info = mock_info("random_user", &[]);
+    let info = message_info(&Addr::unchecked("random_user"), &[]);
     let msg = ExecuteMsg::Distribute {};
 
     {
@@ -231,7 +231,7 @@ fn distribute_shares_multiple() {
     let mut deps = mock_dependencies();
     init_with_shares(deps.as_mut(), vec![10, 20, 30, 40]);
 
-    let info = mock_info("random_user", &[]);
+    let info = message_info(&Addr::unchecked("random_user"), &[]);
     let msg = ExecuteMsg::Distribute {};
 
     {
@@ -310,7 +310,7 @@ fn withdraw_royalties_fails() {
     let withdraw_msg = ExecuteMsg::Withdraw {};
 
     {
-        let info = mock_info("random_user", &[]);
+        let info = message_info(&Addr::unchecked("random_user"), &[]);
         let err = execute(deps.as_mut(), env.clone(), info, withdraw_msg.clone()).unwrap_err();
         assert_eq!(
             err,
@@ -320,7 +320,7 @@ fn withdraw_royalties_fails() {
     }
 
     {
-        let info = mock_info(CONTRIBUTOR1, &[]);
+        let info = message_info(&Addr::unchecked(CONTRIBUTOR1), &[]);
         let err = execute(deps.as_mut(), env, info, withdraw_msg).unwrap_err();
         assert_eq!(
             err,
@@ -336,7 +336,7 @@ fn withdraw_royalties_single() {
     let mut deps = mock_dependencies();
     init_with_shares(deps.as_mut(), vec![1]);
 
-    let info = mock_info("address0", &[]);
+    let info = message_info(&Addr::unchecked("address0"), &[]);
     let distribute_msg = ExecuteMsg::Distribute {};
     let withdraw_msg = ExecuteMsg::Withdraw {};
 
@@ -386,7 +386,7 @@ fn withdraw_royalties_multiple() {
         .bank
         .update_balance(env.contract.address.clone(), coins(1_000, DENOM));
 
-    let info = mock_info("address0", &[]);
+    let info = message_info(&Addr::unchecked("address0"), &[]);
     execute(deps.as_mut(), env.clone(), info.clone(), distribute_msg).unwrap();
 
     let resp = execute(deps.as_mut(), env.clone(), info, withdraw_msg.clone()).unwrap();
@@ -413,7 +413,7 @@ fn withdraw_royalties_multiple() {
     );
 
     // we can still withdraw from second contributor
-    let info = mock_info("address1", &[]);
+    let info =  message_info(&Addr::unchecked("address1"), &[]);
 
     let resp = execute(deps.as_mut(), env, info, withdraw_msg).unwrap();
     assert_eq!(
@@ -454,7 +454,7 @@ fn mixed_distribute_and_withdraw() {
         .update_balance(env.contract.address.clone(), coins(1_000, DENOM));
 
     // first distribution
-    let info = mock_info("address0", &[]);
+    let info = message_info(&Addr::unchecked("address0"), &[]);
     execute(
         deps.as_mut(),
         env.clone(),
@@ -491,7 +491,7 @@ fn mixed_distribute_and_withdraw() {
         })
     );
 
-    let info = mock_info("address1", &[]);
+    let info =  message_info(&Addr::unchecked("address1"), &[]);
 
     // first withdraw from contributor1
     let resp = execute(deps.as_mut(), env, info, withdraw_msg).unwrap();

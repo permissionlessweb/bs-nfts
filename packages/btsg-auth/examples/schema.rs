@@ -5,10 +5,7 @@ use btsg_auth::{
     Any, AuthenticationRequest, AuthenticatorSudoMsg, ConfirmExecutionRequest,
     OnAuthenticatorRemovedRequest, SignModeTxData, SignatureData, TrackRequest, TxData,
 };
-use cosmwasm_schema::{export_schema, export_schema_with_title, remove_schemas, schema_for};
-use cosmwasm_std::Empty;
-
-type Extension = Option<Empty>;
+use cosmwasm_schema::{export_schema, remove_schemas, schema_for};
 
 pub fn main() {
     let mut out_dir = current_dir().unwrap();

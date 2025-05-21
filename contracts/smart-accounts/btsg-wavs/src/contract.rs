@@ -2,8 +2,7 @@ use btsg_auth::{
     AuthenticationRequest, ConfirmExecutionRequest, OnAuthenticatorAddedRequest,
     OnAuthenticatorRemovedRequest, TrackRequest,
 };
-use cosmos_sdk_proto::traits::MessageExt;
-use cosmwasm_std::{from_json, Binary, DepsMut, Env, HashFunction, MessageInfo, Response};
+use cosmwasm_std::{from_json, DepsMut, Env, HashFunction, MessageInfo, Response};
 use cw2::set_contract_version;
 
 use crate::{
@@ -24,27 +23,25 @@ pub fn instantiate(
     deps: DepsMut,
     _env: Env,
     _info: MessageInfo,
-    msg: InstantiateMsg,
+    _msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
-
-    // SUDO_PARAMS.save(deps.storage, &msg.params)?;
 
     Ok(Response::new())
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn execute(
-    deps: DepsMut,
-    env: Env,
-    info: MessageInfo,
+    _deps: DepsMut,
+    _env: Env,
+    _info: MessageInfo,
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {}
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn sudo(deps: DepsMut, env: Env, msg: SudoMsg) -> Result<Response, ContractError> {
+pub fn sudo(deps: DepsMut, _env: Env, msg: SudoMsg) -> Result<Response, ContractError> {
     match msg {
         btsg_auth::AuthenticatorSudoMsg::OnAuthenticatorAdded(auth_add) => {
             sudo_on_authenticator_added_request(deps, auth_add)
@@ -68,14 +65,14 @@ fn sudo_on_authenticator_added_request(
 ) -> Result<Response, ContractError> {
     // small storage writes, for example global contract entropy or count of registered accounts
     match auth_added.authenticator_params {
-        Some(_) =>Ok(Response::new().add_attribute("action", "auth_added_req")),
-        None => return Err(ContractError::MissingAuthenticatorMetadata {}),
+        Some(_) => Ok(Response::new().add_attribute("action", "auth_added_req")),
+        None => Err(ContractError::MissingAuthenticatorMetadata {}),
     }
 }
 
 fn sudo_on_authenticator_removed_request(
-    deps: DepsMut,
-    auth_removed: OnAuthenticatorRemovedRequest,
+    _deps: DepsMut,
+    _auth_removed: OnAuthenticatorRemovedRequest,
 ) -> Result<Response, ContractError> {
     Ok(Response::new().add_attribute("action", "auth_removed_req"))
 }
@@ -143,24 +140,18 @@ fn sudo_authentication_request(
 }
 
 fn sudo_track_request(
-    deps: DepsMut,
-    TrackRequest {
-        account,
-        authenticator_id,
-        fee_payer,
-        fee_granter,
-        fee,
-        authenticator_params,
-        ..
-    }: TrackRequest,
+    _deps: DepsMut,
+    TrackRequest { .. }: TrackRequest,
 ) -> Result<Response, ContractError> {
-    // handle any processes after authentication, regarding message contents
+    // this is where we handle any processes after authentication, regarding message contents, prep to track balances prior to msg execution, etc..
     Ok(Response::new().add_attribute("action", "track_req"))
 }
 
 fn sudo_confirm_execution_request(
-    deps: DepsMut,
-    confirm_execution_req: ConfirmExecutionRequest,
+    _deps: DepsMut,
+    _confirm_execution_req: ConfirmExecutionRequest,
 ) -> Result<Response, ContractError> {
+
+    // here is were we compare balances post event execution, based on data saved from sudo_track_request,etc..
     Ok(Response::new().add_attribute("action", "conf_exec_req"))
 }

@@ -6,7 +6,7 @@ use cw_orch::environment::{ChainKind, NetworkInfo};
 use cw_orch::prelude::{networks::UNI_6, *};
 
 pub const SUPPORTED_CHAINS: &[ChainInfo] = &[UNI_6, BITSONG_TESTNET];
-pub const BITSONG_SUPPORTED_NETWORKS: &[ChainInfo] = &SUPPORTED_CHAINS;
+pub const BITSONG_SUPPORTED_NETWORKS: &[ChainInfo] = SUPPORTED_CHAINS;
 
 pub const GAS_TO_DEPLOY: u64 = 60_000_000;
 
