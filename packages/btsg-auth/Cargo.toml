@@ -1,0 +1,20 @@
+[package]
+name          = "btsg-auth"
+description   = "Definition and types for the BitSong Authentication Methods"
+authors       = [""]
+version       = { workspace = true }
+edition       = { workspace = true }
+license       = { workspace = true }
+repository    = { workspace = true }
+homepage      = { workspace = true }
+documentation = { workspace = true }
+
+[dependencies]
+cosmwasm-schema = { workspace = true }
+cosmwasm-std    = { workspace = true }
+cw-utils        = { workspace = true }
+serde_json      = { workspace = true }
+sha2            = { workspace = true }
+ 
+schemars        = { workspace = true }
+serde           = { workspace = true }

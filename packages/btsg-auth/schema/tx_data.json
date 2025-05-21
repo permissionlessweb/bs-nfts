@@ -1,0 +1,65 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "TxData",
+  "type": "object",
+  "required": [
+    "account_number",
+    "chain_id",
+    "memo",
+    "msgs",
+    "sequence",
+    "timeout_height"
+  ],
+  "properties": {
+    "account_number": {
+      "type": "integer",
+      "format": "uint64",
+      "minimum": 0.0
+    },
+    "chain_id": {
+      "type": "string"
+    },
+    "memo": {
+      "type": "string"
+    },
+    "msgs": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/Any"
+      }
+    },
+    "sequence": {
+      "type": "integer",
+      "format": "uint64",
+      "minimum": 0.0
+    },
+    "timeout_height": {
+      "type": "integer",
+      "format": "uint64",
+      "minimum": 0.0
+    }
+  },
+  "additionalProperties": false,
+  "definitions": {
+    "Any": {
+      "type": "object",
+      "required": [
+        "type_url",
+        "value"
+      ],
+      "properties": {
+        "type_url": {
+          "type": "string"
+        },
+        "value": {
+          "$ref": "#/definitions/Binary"
+        }
+      },
+      "additionalProperties": false
+    },
+    "Binary": {
+      "description": "Binary is a wrapper around Vec<u8> to add base64 de/serialization with serde. It also adds some helper methods to help encode inline.\n\nThis is only needed as serde-json-{core,wasm} has a horrible encoding for Vec<u8>. See also <https://github.com/CosmWasm/cosmwasm/blob/main/docs/MESSAGE_TYPES.md>.",
+      "type": "string"
+    }
+  }
+}
