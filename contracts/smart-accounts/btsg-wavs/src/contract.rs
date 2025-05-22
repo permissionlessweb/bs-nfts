@@ -3,15 +3,13 @@ use btsg_auth::{
     OnAuthenticatorRemovedRequest, TrackRequest,
 };
 use cosmwasm_std::{
-    to_json_binary, Binary, DepsMut, Env, HashFunction, MessageInfo, Response,
-    BLS12_381_G1_GENERATOR,
+    to_json_binary, DepsMut, Env, HashFunction, MessageInfo, Response, BLS12_381_G1_GENERATOR,
 };
 use cw2::set_contract_version;
-use cw_storage_plus::Item;
 
 use crate::{
     msg::{ExecuteMsg, InstantiateMsg, SudoMsg},
-    state::WAVS_PUBKEY,
+    state::{BlsMetadata, WAVS_PUBKEY},
     ContractError,
 };
 
@@ -96,38 +94,54 @@ fn sudo_authentication_request(
     deps: DepsMut,
     auth_req: Box<AuthenticationRequest>,
 ) -> Result<Response, ContractError> {
-    // EXAMPLE IMPLEMENTATION FOR BLS12_381 VERIFICATION
-    // Fetch registered public keys
-    let wavs_pubkeys = WAVS_PUBKEY.load(deps.storage)?;
-
-    let dst = b"QUUX-V01-CS02-with-BLS12381G1_XMD:SHA-256_SSWU_RO_";
-    // Messaage being signed (Stargate Encoded)
-    let message = to_json_binary(&auth_req.msg)?;
-    let signature = auth_req.signature;
-    // ensure that the provided signer pubkey
-    if let Some(pubkey) = wavs_pubkeys
-        .into_iter()
-        .find(|wp| wp == &Binary::new(auth_req.signature_data.signers[0].as_bytes().to_vec()))
-    {
-        // confirm signature is derived from signer and message
-        let msg_hash = deps
-            .api
-            .bls12_381_hash_to_g2(HashFunction::Sha256, &message, dst)?;
-
-        // validate signature
-        if !deps.api.bls12_381_pairing_equality(
-            &BLS12_381_G1_GENERATOR,
-            &signature,
-            &pubkey,
-            &msg_hash,
-        )? {
-            return Err(ContractError::VerificationError(
-                cosmwasm_std::VerificationError::GenericErr,
-            ));
-        }
-    } else {
-        return Err(ContractError::Unauthorized {});
+    let pubkeys = WAVS_PUBKEY.load(deps.storage)?;
+    // assert the wavs operator signature length
+    let a = auth_req.signature_data.signers.len();
+    let b = pubkeys.len();
+    if a != b {
+        return Err(ContractError::InvalidPubkeyCount { a, b });
     }
+    // EXAMPLE IMPLEMENTATION FOR BLS12_381 VERIFICATION
+    let dst = b"QUUX-V01-CS02-with-BLS12381G1_XMD:SHA-256_SSWU_RO_";
+    // Aggregate public keys when registered (G1 points)
+    let wavs_ops_pubkeys: Vec<_> = pubkeys.iter().map(|a| a.to_vec()).collect();
+
+    // Aggregate signatures (G2 points)
+    let wavs_ops_signatures: Vec<_> = auth_req
+        .signature_data
+        .signatures
+        .into_iter()
+        .map(|a| a.clone().to_vec())
+        .collect();
+
+    let aggregated_signature = deps
+        .api
+        .bls12_381_aggregate_g2(&wavs_ops_signatures.concat())?;
+
+    // Aggregate the pubkey (G1 points)
+    let aggregated_pubkey = deps
+        .api
+        .bls12_381_aggregate_g1(&wavs_ops_pubkeys.concat())?;
+
+    // hash the json encoded Any (Stargate) msg
+    let hashed_message = deps.api.bls12_381_hash_to_g2(
+        HashFunction::Sha256,
+        &to_json_binary(&auth_req.msg)?,
+        dst,
+    )?;
+
+    // Verify the signature using pairing equality: e(g1, signature) == e(pubkey, H(message))
+    if !deps.api.bls12_381_pairing_equality(
+        &BLS12_381_G1_GENERATOR,
+        &aggregated_signature,
+        &aggregated_pubkey,
+        &hashed_message,
+    )? {
+        return Err(ContractError::VerificationError(
+            cosmwasm_std::VerificationError::GenericErr,
+        ));
+    }
+
     Ok(Response::new().add_attribute("action", "auth_req"))
 }
 

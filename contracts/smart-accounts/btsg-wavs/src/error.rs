@@ -20,6 +20,9 @@ pub enum ContractError {
     #[error("attempting to register too many WAVS operator keys. Currently hardcoded to 10")]
     TooManyWavsKeys {},
 
+    #[error("have: {a}, want: {b}")]
+    InvalidPubkeyCount { a: usize, b: usize },
+
     #[error("unauthorized")]
     Unauthorized {},
 }

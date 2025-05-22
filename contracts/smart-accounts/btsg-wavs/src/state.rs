@@ -1,4 +1,4 @@
-use cosmwasm_std::{Addr, Binary};
+use cosmwasm_std::Binary;
 use cw_storage_plus::Item;
 
 /// Stores the contract's configuration
