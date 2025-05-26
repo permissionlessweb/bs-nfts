@@ -1,38 +1,42 @@
 [package]
-name = "scripts"
+name = "btsg-nft-scripts"
 edition = "2021"
 license = "BSD-3-Clause"
 repository = "https://github.com/DA0-DA0/dao-contracts"
 version.workspace = true
 
 [dependencies]
-bs721                      = { path = "../packages/bs721", version = "0.3.0" }
-bs721-base                 = { path = "../contracts/collections/bs721-base", version = "0.3.0" }
-btsg-cw-orch               = { path = "../packages/cw-orch", version = "0.3.0" }
+bs721                      = { path = "../packages/bs721"}
+bs721-base                 = { path = "../contracts/collections/bs721-base"  }
+bs721-launchparty         = { path = "../contracts/minters/bs721-launchparty"  }
+btsg-wavs                 = { path = "../contracts/smart-accounts/btsg-wavs"   }
+btsg-auth                 = { path = "../packages/btsg-auth"  }
+btsg-cw-orch               = { path = "../packages/cw-orch" }
 cosmwasm-std.workspace     = true
-dotenv                     = { version = "0.15.0" }
 
-# Abstract Framework and CW-Orchestrator Dependencies
-abstract-std = "0.23.0"
-abstract-client = { version = "0.23.0",  features = ["interchain"] }
-abstract-interface = "0.23.1"
-anyhow = "1"
 clap = { version = "4.0.32", features = ["derive"] }
 cw-orch-polytone = { package = "abstract-cw-orch-polytone", version = "4.0.0" }
-cw-orch-interchain = { version = "0.3.0",  features = ["daemon"] }
-cw-orch-clone-testing = { version = "0.6.4" }
-cw-orch   = { version = "0.24.1", features = ["daemon"] }
+cw-orch-interchain = { version = "0.9.0",  features = ["daemon"] }
+cw-orch-interchain-core = "0.10.0"
+cw-orch-clone-testing = "0.9.2"
+cw-orch   = { version = "0.26.0", features = ["daemon"] }
 dirs = "5.0.1"
+
 env_logger = "0.10.0"
 log = "0.4.22"
-polytone = { package = "abstract-polytone", version = "1.0.5" }
-polytone-note = { package = "abstract-polytone-note", version = "3.0.0" }
+dotenv                     = { version = "0.15.0" }
+anyhow = "1"
 pretty_env_logger          = { version = "0.5.0" }
-reqwest = { version = "0.11.9" }
 serde                        = { version = "1.0.140", default-features = false, features = ["derive"] }
 serde_json = "1.0.79"
+
 tokio = "1.39.3"
-cw-orch-interchain-core = "0.5.0"
+reqwest = { version = "0.11.9" }
+
+# crypto libraries
+ark-bls12-381 = "0.5.0"
+base64-serde = "0.8.0"
+base64 = "0.22.0"
 
 [dev-dependencies]
 

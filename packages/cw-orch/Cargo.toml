@@ -12,3 +12,11 @@ cw-orch.workspace = true
 cosmwasm-std.workspace = true
 serde.workspace     = true
 
+bs721.workspace = true 
+bs721-base.workspace = true 
+bs721-curve.workspace = true 
+bs721-royalties.workspace = true 
+btsg-wavs.workspace = true 
+btsg-auth.workspace = true 
+bs721-launchparty.workspace = true 
+bs721-factory.workspace = true 

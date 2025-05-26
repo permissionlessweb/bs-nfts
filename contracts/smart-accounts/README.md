@@ -2,6 +2,8 @@
 
 An authentication contract validated an BLS12_381 signature, specifically for validating actions to take from transactions broadcasted by AVS operators.
 
+## Spec 
+- 
 
 ## TODO
 <!-- - verification: assert message to verify has been signed by one of the registered operator AVS keys (registered during `OnAuthenticatorAdded`) -->
@@ -12,7 +14,6 @@ An authentication contract validated an BLS12_381 signature, specifically for va
 ## Forming Authentication Requests Msgs
 
 The following table describes the properties and definitions of the `AuthenticationRequest` object.
-
 | Property | Type | Description | Definition |
 | --- | --- | --- | --- |
 | `account` | `Addr` | A human-readable address. | [Addr](#addr) |

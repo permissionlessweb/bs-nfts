@@ -1,4 +1,7 @@
 mod deploy;
-mod test;
-
 pub use deploy::*;
+
+pub mod suite;
+pub use suite::BtsgNftSuite;
+
+mod test;

@@ -18,14 +18,16 @@ documentation = "https://docs.bitsong.io"
 
 [workspace.dependencies]
 anyhow                       = { version = "1.0" }
-bs721                        = { version = "0.3.0", path = "./packages/bs721" }
-bs721-base                   = { version = "0.3.0", path = "./contracts/collections/bs721-base" }
-bs721-curve                  = { version = "0.3.0", path = "./contracts/collections/bs721-curve" }
-bs721-royalties              = { version = "0.3.0", path = "./contracts/collections/bs721-royalties" }
-btsg-wavs                = { version = "0.3.0", path = "./contracts/smart-accounts/btsg-wavs" }
-btsg-auth                = { version = "0.3.0", path = "./packages/btsg-auth" }
-bs-controllers               = { version = "0.3.0", path = "./packages/controllers" }
-btsg-cw-orch                 = { version = "0.3.0", path = "./packages/cw-orch" }
+bs721                        = {  path = "./packages/bs721" }
+bs721-base                   = {  path = "./contracts/collections/bs721-base" }
+bs721-curve                  = {  path = "./contracts/collections/bs721-curve" }
+bs721-royalties              = {  path = "./contracts/collections/bs721-royalties" }
+bs721-launchparty            = {  path = "./contracts/minters/bs721-launchparty" }
+bs721-factory                = {  path = "./contracts/factories/bs721-factory" }
+btsg-wavs                    = {  path = "./contracts/smart-accounts/btsg-wavs" }
+btsg-auth                    = {  path = "./packages/btsg-auth" }
+bs-controllers               = {  path = "./packages/controllers" }
+btsg-cw-orch                 = {  path = "./packages/cw-orch" }
 cosmos-sdk-proto             = { version = "0.26.1", default-features = false }
 cosmwasm-schema              = "2.2.0"
 cosmwasm-std                 = "2.2.0"

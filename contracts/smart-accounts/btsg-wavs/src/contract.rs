@@ -3,13 +3,14 @@ use btsg_auth::{
     OnAuthenticatorRemovedRequest, TrackRequest,
 };
 use cosmwasm_std::{
-    to_json_binary, DepsMut, Env, HashFunction, MessageInfo, Response, BLS12_381_G1_GENERATOR,
+    to_json_binary, Binary, Deps, DepsMut, Env, HashFunction, MessageInfo, Response, StdResult,
+    BLS12_381_G1_GENERATOR,
 };
 use cw2::set_contract_version;
 
 use crate::{
-    msg::{ExecuteMsg, InstantiateMsg, SudoMsg},
-    state::{BlsMetadata, WAVS_PUBKEY},
+    msg::{ExecuteMsg, InstantiateMsg, QueryMsg, SudoMsg},
+    state::WAVS_PUBKEY,
     ContractError,
 };
 
@@ -41,6 +42,11 @@ pub fn instantiate(
     )?;
 
     Ok(Response::new())
+}
+
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
+    match msg {}
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -123,7 +129,7 @@ fn sudo_authentication_request(
         .api
         .bls12_381_aggregate_g1(&wavs_ops_pubkeys.concat())?;
 
-    // hash the json encoded Any (Stargate) msg
+    // hash the json encoded Any (Stargate) msg ,into g2 (signature)
     let hashed_message = deps.api.bls12_381_hash_to_g2(
         HashFunction::Sha256,
         &to_json_binary(&auth_req.msg)?,
