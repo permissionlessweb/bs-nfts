@@ -2,19 +2,19 @@ use btsg_auth::{
     AuthenticationRequest, ConfirmExecutionRequest, OnAuthenticatorAddedRequest,
     OnAuthenticatorRemovedRequest, TrackRequest,
 };
-use cosmwasm_std::{
-    to_json_binary, Binary, Deps, DepsMut, Env, HashFunction, MessageInfo, Response, StdResult,
-    BLS12_381_G1_GENERATOR,
-};
+use cosmwasm_std::{from_json, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
 use cw2::set_contract_version;
+use saa_common::Verifiable;
 
 use crate::{
     msg::{ExecuteMsg, InstantiateMsg, QueryMsg, SudoMsg},
-    state::WAVS_PUBKEY,
+    state::PAYLOAD,
     ContractError,
 };
 
 use cosmwasm_std::entry_point;
+
+use saa::PasskeyCredential;
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:btsg-wavs";
@@ -30,11 +30,7 @@ pub fn instantiate(
 ) -> Result<Response, ContractError> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
-    if msg.wavs_operator_pubkeys.len() > 10 {
-        return Err(ContractError::TooManyWavsKeys {});
-    }
-
-    WAVS_PUBKEY.save(deps.storage, &msg.wavs_operator_pubkeys)?;
+    PAYLOAD.save(deps.storage, &msg.payload)?;
     cw_ownable::initialize_owner(
         deps.storage,
         deps.api,
@@ -85,7 +81,7 @@ fn sudo_on_authenticator_added_request(
     // small storage writes, for example global contract entropy or count of registered accounts
     match auth_added.authenticator_params {
         Some(_) => Ok(Response::new().add_attribute("action", "auth_added_req")),
-        None => Err(ContractError::MissingAuthenticatorMetadata {}),
+        None => Err(ContractError::Unauthorized {}),
     }
 }
 
@@ -100,53 +96,17 @@ fn sudo_authentication_request(
     deps: DepsMut,
     auth_req: Box<AuthenticationRequest>,
 ) -> Result<Response, ContractError> {
-    let pubkeys = WAVS_PUBKEY.load(deps.storage)?;
-    // assert the wavs operator signature length
-    let a = auth_req.signature_data.signers.len();
-    let b = pubkeys.len();
-    if a != b {
-        return Err(ContractError::InvalidPubkeyCount { a, b });
-    }
-    // EXAMPLE IMPLEMENTATION FOR BLS12_381 VERIFICATION
-    let dst = b"QUUX-V01-CS02-with-BLS12381G1_XMD:SHA-256_SSWU_RO_";
-    // Aggregate public keys when registered (G1 points)
-    let wavs_ops_pubkeys: Vec<_> = pubkeys.iter().map(|a| a.to_vec()).collect();
+    let cred: PasskeyCredential = from_json(&auth_req.signature)?;
 
-    // Aggregate signatures (G2 points)
-    let wavs_ops_signatures: Vec<_> = auth_req
-        .signature_data
-        .signatures
-        .into_iter()
-        .map(|a| a.clone().to_vec())
-        .collect();
+    // assert client origin is same as one registered
+    // if let Some(origin) = PAYLOAD.load(deps.storage)?.origin {
+    //     if cred.client_data.origin != origin {
+    //         return Err(ContractError::Unauthorized {});
+    //     }
+    // }
 
-    let aggregated_signature = deps
-        .api
-        .bls12_381_aggregate_g2(&wavs_ops_signatures.concat())?;
-
-    // Aggregate the pubkey (G1 points)
-    let aggregated_pubkey = deps
-        .api
-        .bls12_381_aggregate_g1(&wavs_ops_pubkeys.concat())?;
-
-    // hash the json encoded Any (Stargate) msg ,into g2 (signature)
-    let hashed_message = deps.api.bls12_381_hash_to_g2(
-        HashFunction::Sha256,
-        &to_json_binary(&auth_req.msg)?,
-        dst,
-    )?;
-
-    // Verify the signature using pairing equality: e(g1, signature) == e(pubkey, H(message))
-    if !deps.api.bls12_381_pairing_equality(
-        &BLS12_381_G1_GENERATOR,
-        &aggregated_signature,
-        &aggregated_pubkey,
-        &hashed_message,
-    )? {
-        return Err(ContractError::VerificationError(
-            cosmwasm_std::VerificationError::GenericErr,
-        ));
-    }
+    // verify passkey request
+    cred.verify_cosmwasm(deps.api)?;
 
     Ok(Response::new().add_attribute("action", "auth_req"))
 }

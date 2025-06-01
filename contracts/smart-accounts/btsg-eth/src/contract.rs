@@ -3,18 +3,26 @@ use btsg_auth::{
     OnAuthenticatorRemovedRequest, TrackRequest,
 };
 use cosmwasm_std::{
-    to_json_binary, Binary, Deps, DepsMut, Env, HashFunction, MessageInfo, Response, StdResult,
-    BLS12_381_G1_GENERATOR,
+    from_json, to_json_binary, Binary, Deps, DepsMut, Env, HashFunction, MessageInfo, Response,
+    StdResult, BLS12_381_G1_GENERATOR,
 };
 use cw2::set_contract_version;
+use saa_common::Verifiable;
 
 use crate::{
     msg::{ExecuteMsg, InstantiateMsg, QueryMsg, SudoMsg},
-    state::WAVS_PUBKEY,
+    state::PAYLOAD,
     ContractError,
 };
 
 use cosmwasm_std::entry_point;
+
+use saa::{
+    msgs::MsgDataToSign,
+    types::{ClientData, ClientDataOtherKeys},
+    utils::passkey::base64_to_url,
+    EthPersonalSign, PasskeyCredential,
+};
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:btsg-wavs";
@@ -30,11 +38,7 @@ pub fn instantiate(
 ) -> Result<Response, ContractError> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
-    if msg.wavs_operator_pubkeys.len() > 10 {
-        return Err(ContractError::TooManyWavsKeys {});
-    }
-
-    WAVS_PUBKEY.save(deps.storage, &msg.wavs_operator_pubkeys)?;
+    PAYLOAD.save(deps.storage, &msg.payload)?;
     cw_ownable::initialize_owner(
         deps.storage,
         deps.api,
@@ -85,7 +89,7 @@ fn sudo_on_authenticator_added_request(
     // small storage writes, for example global contract entropy or count of registered accounts
     match auth_added.authenticator_params {
         Some(_) => Ok(Response::new().add_attribute("action", "auth_added_req")),
-        None => Err(ContractError::MissingAuthenticatorMetadata {}),
+        None => Err(ContractError::Unauthorized {}),
     }
 }
 
@@ -100,53 +104,16 @@ fn sudo_authentication_request(
     deps: DepsMut,
     auth_req: Box<AuthenticationRequest>,
 ) -> Result<Response, ContractError> {
-    let pubkeys = WAVS_PUBKEY.load(deps.storage)?;
-    // assert the wavs operator signature length
-    let a = auth_req.signature_data.signers.len();
-    let b = pubkeys.len();
-    if a != b {
-        return Err(ContractError::InvalidPubkeyCount { a, b });
-    }
-    // EXAMPLE IMPLEMENTATION FOR BLS12_381 VERIFICATION
-    let dst = b"QUUX-V01-CS02-with-BLS12381G1_XMD:SHA-256_SSWU_RO_";
-    // Aggregate public keys when registered (G1 points)
-    let wavs_ops_pubkeys: Vec<_> = pubkeys.iter().map(|a| a.to_vec()).collect();
+    let cred = EthPersonalSign {
+        message: auth_req.sign_mode_tx_data.sign_mode_direct,
+        signature: auth_req.signature,
+        signer: auth_req.signature_data.signers[0].to_string(),
+    };
 
-    // Aggregate signatures (G2 points)
-    let wavs_ops_signatures: Vec<_> = auth_req
-        .signature_data
-        .signatures
-        .into_iter()
-        .map(|a| a.clone().to_vec())
-        .collect();
+    // assert client origin is same as one registered
 
-    let aggregated_signature = deps
-        .api
-        .bls12_381_aggregate_g2(&wavs_ops_signatures.concat())?;
-
-    // Aggregate the pubkey (G1 points)
-    let aggregated_pubkey = deps
-        .api
-        .bls12_381_aggregate_g1(&wavs_ops_pubkeys.concat())?;
-
-    // hash the json encoded Any (Stargate) msg ,into g2 (signature)
-    let hashed_message = deps.api.bls12_381_hash_to_g2(
-        HashFunction::Sha256,
-        &to_json_binary(&auth_req.msg)?,
-        dst,
-    )?;
-
-    // Verify the signature using pairing equality: e(g1, signature) == e(pubkey, H(message))
-    if !deps.api.bls12_381_pairing_equality(
-        &BLS12_381_G1_GENERATOR,
-        &aggregated_signature,
-        &aggregated_pubkey,
-        &hashed_message,
-    )? {
-        return Err(ContractError::VerificationError(
-            cosmwasm_std::VerificationError::GenericErr,
-        ));
-    }
+    // verify ethereum personal signature 
+    cred.verify_cosmwasm(deps.api)?;
 
     Ok(Response::new().add_attribute("action", "auth_req"))
 }
@@ -175,4 +142,35 @@ pub fn execute_update_owner(
 ) -> Result<Response, ContractError> {
     let ownership = cw_ownable::update_ownership(deps, &env.block, &info.sender, action)?;
     Ok(Response::default().add_attributes(ownership.into_attributes()))
+}
+
+#[cfg(test)]
+mod test {
+    use cosmwasm_std::testing::mock_dependencies;
+    use saa::EthPersonalSign;
+    use saa_common::Verifiable;
+
+    #[test]
+    fn eth_personal_verifiable() {
+        let deps = mock_dependencies();
+
+        let message = r#"{"chain_id":"elgafar-1","contract_address":"stars1gjgfp9wps9c0r3uqhr0xxfgu02rnzcy6gngvwpm7a78j7ykfqquqr2fuj4","messages":["Create TBA account"],"nonce":"0"}"#;
+        let address = "0xac03048da6065e584d52007e22c69174cdf2b91a";
+        let base = "eyJjaGFpbl9pZCI6ImVsZ2FmYXItMSIsImNvbnRyYWN0X2FkZHJlc3MiOiJzdGFyczFnamdmcDl3cHM5YzByM3VxaHIweHhmZ3UwMnJuemN5NmduZ3Z3cG03YTc4ajd5a2ZxcXVxcjJmdWo0IiwibWVzc2FnZXMiOlsiQ3JlYXRlIFRCQSBhY2NvdW50Il0sIm5vbmNlIjoiMCJ9";
+        let message = cosmwasm_std::Binary::new(message.as_bytes().to_vec());
+        assert!(message.to_base64() == base, "not euqal");
+
+        let signature = cosmwasm_std::Binary::from_base64(
+            "a/lQuaTyhcTEeRA2XFTPxoDSIdS3yUUH1VSKOm2zz5EURfheGzzLgXea6QAalswOM2njnUzblqIGiOC0P+j2rhw="
+        ).unwrap();
+
+        let cred = EthPersonalSign {
+            signer: address.to_string(),
+            signature: signature.clone(),
+            message,
+        };
+        let res = cred.verify_cosmwasm(deps.as_ref().api);
+        println!("Res: {:?}", res);
+        assert!(res.is_ok())
+    }
 }

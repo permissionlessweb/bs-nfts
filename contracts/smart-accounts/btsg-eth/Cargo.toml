@@ -1,6 +1,6 @@
 [package]
-name          = "btsg-irl"
-description   = "A custom fantoken minter, being used as an event ticketing distribution."
+name          = "btsg-eth"
+description   = "A demo for authorizations using eth personal offline signatures"
 authors       = [""]
 version       = { workspace = true }
 edition       = { workspace = true }
@@ -25,9 +25,15 @@ cw-orch            = { workspace = true }
 cw-utils           = { workspace = true }
 cw2                = { workspace = true }
 
+
+btsg-auth  = { package = "btsg-auth", git = "https://github.com/permissionlessweb/bs-nfts", branch = "cosmwasm-std-v2" } 
+saa-passkeys  = { library = "passkeys", git = "https://github.com/MegaRockLabs/smart-account-auth",  features = ["cosmwasm"]}
+saa  = { package = "smart-account-auth", git = "https://github.com/MegaRockLabs/smart-account-auth",  features = ["cosmwasm", "native", "curves", "session", "utils", "types"]}
+saa-common  = {  git = "https://github.com/MegaRockLabs/smart-account-auth",  features = [ ]}
+
+
 schemars           = { workspace = true }
 serde              = { workspace = true }
 thiserror          = { workspace = true }
-
 
 [dev-dependencies]
