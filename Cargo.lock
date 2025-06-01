@@ -374,6 +374,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "btsg-irl"
+version = "0.3.0"
+dependencies = [
+ "anyhow",
+ "cosmos-sdk-proto 0.26.1",
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cw-multi-test",
+ "cw-orch",
+ "cw-ownable",
+ "cw-storage-plus",
+ "cw-utils",
+ "cw2",
+ "derivative",
+ "prost 0.11.9",
+ "schemars",
+ "serde",
+ "thiserror 1.0.69",
+]
+
+[[package]]
 name = "btsg-wavs"
 version = "0.3.0"
 dependencies = [
