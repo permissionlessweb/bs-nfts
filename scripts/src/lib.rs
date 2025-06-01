@@ -1,6 +1,7 @@
 mod deploy;
 pub use deploy::*;
 
+pub mod wrappers;
 pub mod suite;
 pub use suite::BtsgNftSuite;
 
