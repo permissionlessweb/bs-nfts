@@ -4,7 +4,6 @@ members = [
  "contracts/collections/*",
  "contracts/minters/*",
  "contracts/factories/*",
- "contracts/smart-accounts/*",
  # "scripts"
  ]
 
@@ -24,8 +23,6 @@ bs721-curve                  = {  path = "./contracts/collections/bs721-curve" }
 bs721-royalties              = {  path = "./contracts/collections/bs721-royalties" }
 bs721-launchparty            = {  path = "./contracts/minters/bs721-launchparty" }
 bs721-factory                = {  path = "./contracts/factories/bs721-factory" }
-btsg-wavs                    = {  path = "./contracts/smart-accounts/btsg-wavs" }
-btsg-auth                    = {  path = "./packages/btsg-auth" }
 bs-controllers               = {  path = "./packages/controllers" }
 cosmos-sdk-proto             = { version = "0.26.1", default-features = false }
 cosmwasm-schema              = "2.2.0"

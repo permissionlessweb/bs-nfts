@@ -643,7 +643,7 @@ mod tests {
 
             assert!(result.is_err());
             match result {
-                Err(StdError::GenericErr { msg, backtrace }) => {
+                Err(StdError::GenericErr { msg, backtrace: _ }) => {
                     assert_eq!(msg, "royalties amount is zero or negative");
                 }
                 _ => panic!("Unexpected error"),
@@ -716,7 +716,7 @@ mod tests {
         let creator = deps.api.addr_make("creator");
         let admin = deps.api.addr_make("admin");
         let royalties = deps.api.addr_make("royalties");
-        let nftcontract = deps.api.addr_make("nftcontract");
+        // let nftcontract = deps.api.addr_make("nftcontract");
         let env = mock_env();
 
         let msg = InstantiateMsg {

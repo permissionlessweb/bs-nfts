@@ -9,8 +9,6 @@ version.workspace = true
 bs721                      = { path = "../packages/bs721"}
 bs721-base                 = { path = "../contracts/collections/bs721-base"  }
 bs721-launchparty         = { path = "../contracts/minters/bs721-launchparty"  }
-btsg-wavs                 = { path = "../contracts/smart-accounts/btsg-wavs"   }
-btsg-auth                 = { path = "../packages/btsg-auth"  }
 cosmwasm-std.workspace     = true
 
 clap = { version = "4.0.32", features = ["derive"] }
