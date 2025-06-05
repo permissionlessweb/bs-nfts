@@ -1,6 +1,6 @@
+use crate::base::Bs721Base;
 use crate::factory::Bs721Factory;
 use crate::launchparty::Btsg721Launchparty;
-use crate::base::Bs721Base;
 use crate::wavs::BtsgWavsAuthenticator;
 use bs721_base::InstantiateMsg;
 use bs721_launchparty::msg::{InstantiateMsg as Bs721LaunchInitMsg, PartyType};
@@ -11,7 +11,7 @@ pub struct BtsgNftSuite<Chain>
 where
     Chain: cw_orch::prelude::CwEnv,
 {
-    pub bs721base: Bs721Base<Chain, Empty, Empty>,
+    pub bs721base: Bs721Base<Chain, Empty>,
     pub bs721launchparty: Btsg721Launchparty<Chain>,
     pub wavs: BtsgWavsAuthenticator<Chain>,
 }

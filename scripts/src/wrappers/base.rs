@@ -1,16 +1,16 @@
 use cw_orch::{interface, prelude::*};
 
-use bs721::{Bs721ExecuteMsg, Bs721QueryMsg};
+use bs721::Bs721QueryMsg;
 use bs721_base::{
     entry::{execute, instantiate, query},
-    InstantiateMsg,
+    ExecuteMsg, InstantiateMsg,
 };
 
 /// Uploadable trait for bs721_account_minter & use with cw-orchestrator library
-#[interface(InstantiateMsg, Bs721ExecuteMsg<Empty,E>, Bs721QueryMsg, Empty)]
+#[interface(InstantiateMsg, ExecuteMsg<E>, Bs721QueryMsg, Empty)]
 pub struct Bs721Base;
 
-impl<Chain> Uploadable for Bs721Base<Chain, Empty, Empty> {
+impl<Chain> Uploadable for Bs721Base<Chain, Empty> {
     /// Return the path to the wasm file corresponding to the contract
     fn wasm(_chain: &ChainInfoOwned) -> WasmPath {
         artifacts_dir_from_workspace!()
