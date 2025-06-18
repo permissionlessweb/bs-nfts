@@ -1,8 +1,4 @@
-/// Bitsong Accounts Framework Deployment Logic
-/// 
-/// 
-pub mod ibc;
-pub mod networks;
+ pub mod networks;
 use cw_orch::prelude::*;
 
 use networks::{GAS_TO_DEPLOY, SUPPORTED_CHAINS};
@@ -30,7 +26,7 @@ pub async fn assert_wallet_balance(mut chains: Vec<ChainInfoOwned>) -> Vec<Chain
         let fee = (GAS_TO_DEPLOY as f64 * gas_price) as u128;
         let bank = queriers::Bank::new_async(chain.channel());
         let balance = bank
-            ._balance(chain.sender_addr(), Some(gas_denom.clone()))
+            ._balance(&chain.sender_addr(), Some(gas_denom.clone()))
             .await
             .unwrap()
             .clone()[0]

@@ -8,7 +8,7 @@ use cw2::set_contract_version;
 use cw_storage_plus::Bound;
 use cw_utils::maybe_addr;
 
-use crate::msg::ExecuteMsg;
+use crate::msg::{ExecuteMsg, MigrateMsg};
 use crate::state::{DENOM, WITHDRAWABLE_AMOUNT};
 use crate::{
     msg::{ContributorListResponse, ContributorResponse, InstantiateMsg, QueryMsg},
@@ -50,6 +50,34 @@ pub fn instantiate(
     Ok(Response::default())
 }
 
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn execute(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    msg: ExecuteMsg,
+) -> Result<Response, ContractError> {
+    match msg {
+        ExecuteMsg::Distribute {} => execute_distribute(deps, env),
+        ExecuteMsg::Withdraw {} => execute_withdraw(deps, info),
+    }
+}
+
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
+    match msg {
+        QueryMsg::ListContributors { start_after, limit } => {
+            to_json_binary(&query_list_contributors(deps, start_after, limit)?)
+        }
+        QueryMsg::WithdrawableAmount {} => to_json_binary(&query_withdrawable_amount(deps)),
+        QueryMsg::DistributableAmount {} => to_json_binary(&query_distributable_amount(deps, env)?),
+    }
+}
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> StdResult<Response> {
+    Ok(Response::new())
+}
+
 /// Helper function to store a contributor after computing their percentage shares. Returns the percentage
 /// shares associated t `contributor_addr`.
 pub fn compute_shares_and_store(
@@ -71,19 +99,6 @@ pub fn compute_shares_and_store(
     CONTRIBUTORS.save(store, &contributor_addr, &new_contributor)?;
 
     Ok(percentage_shares)
-}
-
-#[cfg_attr(not(feature = "library"), entry_point)]
-pub fn execute(
-    deps: DepsMut,
-    env: Env,
-    info: MessageInfo,
-    msg: ExecuteMsg,
-) -> Result<Response, ContractError> {
-    match msg {
-        ExecuteMsg::Distribute {} => execute_distribute(deps, env),
-        ExecuteMsg::Withdraw {} => execute_withdraw(deps, info),
-    }
 }
 
 pub fn execute_distribute(deps: DepsMut, env: Env) -> Result<Response, ContractError> {
@@ -183,17 +198,6 @@ pub fn execute_withdraw(deps: DepsMut, info: MessageInfo) -> Result<Response, Co
             ("amount", &tokens_to_send.amount.to_string()),
         ])
         .add_message(msg))
-}
-
-#[cfg_attr(not(feature = "library"), entry_point)]
-pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
-    match msg {
-        QueryMsg::ListContributors { start_after, limit } => {
-            to_json_binary(&query_list_contributors(deps, start_after, limit)?)
-        }
-        QueryMsg::WithdrawableAmount {} => to_json_binary(&query_withdrawable_amount(deps)),
-        QueryMsg::DistributableAmount {} => to_json_binary(&query_distributable_amount(deps, env)?),
-    }
 }
 
 // settings for pagination

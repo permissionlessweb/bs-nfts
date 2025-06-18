@@ -1,6 +1,6 @@
 /// Migrate framework for each network specified. Used when newer version is available.
-/// 
-/// 
+///
+///
 // use abstract_cw_staking::{interface::CwStakingAdapter, CW_STAKING_ADAPTER_ID};
 // use abstract_dex_adapter::{interface::DexAdapter, msg::DexInstantiateMsg, DEX_ADAPTER_ID};
 // use abstract_interface::{Abstract, AdapterDeployer, AppDeployer, DeployStrategy};
@@ -14,13 +14,13 @@ use cw_orch::prelude::{
     networks::{parse_network, ChainInfo},
     // *,
 };
+
 // use dca_app::{contract::DCA_APP_ID, DCA};
-use tokio::runtime::Runtime;
 
 pub const ABSTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 fn migrate(networks: Vec<ChainInfo>) -> anyhow::Result<()> {
-    let _rt = Runtime::new()?;
+    // let _rt = tokio::runtime::Runtime::new()?;
     for _network in networks {
         // let chain = DaemonBuilder::new(network).handle(rt.handle()).build()?;
         // let deployment = Abstract::load_from(chain.clone())?;

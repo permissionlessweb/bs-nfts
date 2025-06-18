@@ -1,10 +1,12 @@
 use crate::error::ContractError;
-use crate::msg::{ExecuteMsg, InstantiateMsg, MaxPerAddressResponse, PartyType, QueryMsg};
+use crate::msg::{
+    ExecuteMsg, InstantiateMsg, MaxPerAddressResponse, MigrateMsg, PartyType, QueryMsg,
+};
 use crate::state::{Config, EditionMetadata, Trait, ADDRESS_TOKENS, CONFIG};
 
 use bs721_base::{ExecuteMsg as Bs721BaseExecuteMsg, InstantiateMsg as Bs721BaseInstantiateMsg};
 
-use cosmos_sdk_proto::{cosmos::distribution::v1beta1::MsgFundCommunityPool, traits::Message};
+use cosmos_sdk_proto::{cosmos::protocolpool::v1beta1::MsgFundCommunityPool, traits::Message};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
@@ -73,7 +75,7 @@ pub fn instantiate(
     let code_info = deps.querier.query_wasm_code_info(msg.bs721_code_id)?;
     let addr = instantiate2_address(
         code_info.checksum.as_slice(),
-        &deps.api.addr_canonicalize(&info.sender.as_str())?,
+        &deps.api.addr_canonicalize(info.sender.as_str())?,
         salt,
     )?;
 
@@ -149,6 +151,21 @@ pub fn execute(
     }
 }
 
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
+    match msg {
+        QueryMsg::GetConfig {} => to_json_binary(&query_config(deps)?),
+        QueryMsg::MaxPerAddress { address } => {
+            to_json_binary(&query_max_per_address(deps, address)?)
+        }
+    }
+}
+
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> StdResult<Response> {
+    Ok(Response::new())
+}
+
 fn execute_mint(
     deps: DepsMut,
     env: Env,
@@ -167,7 +184,7 @@ fn execute_mint(
     if let Some(max_per_address) = config.max_per_address {
         if new_total_mint > max_per_address {
             return Err(ContractError::MaxPerAddressExceeded {
-                remaining: max_per_address.checked_sub(already_minted).unwrap_or(0),
+                remaining: max_per_address.saturating_sub(already_minted),
             });
         }
     }
@@ -312,7 +329,7 @@ fn fund_community_pool_msg(env: Env, amount: Coin) -> SubMsg {
     .unwrap();
 
     SubMsg::new(CosmosMsg::Stargate {
-        type_url: "/cosmos.distribution.v1beta1.MsgFundCommunityPool".to_string(),
+        type_url: "/cosmos.protocolpool.v1.MsgFundCommunityPool".to_string(),
         value: Binary::from(buffer),
     })
 }
@@ -431,16 +448,6 @@ pub fn party_is_active(
     true
 }
 
-#[cfg_attr(not(feature = "library"), entry_point)]
-pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
-    match msg {
-        QueryMsg::GetConfig {} => to_json_binary(&query_config(deps)?),
-        QueryMsg::MaxPerAddress { address } => {
-            to_json_binary(&query_max_per_address(deps, address)?)
-        }
-    }
-}
-
 fn query_max_per_address(deps: Deps, address: String) -> StdResult<MaxPerAddressResponse> {
     let addr = deps.api.addr_validate(&address)?;
     let already_minted = (ADDRESS_TOKENS.key(&addr).may_load(deps.storage)?).unwrap_or(0);
@@ -449,7 +456,7 @@ fn query_max_per_address(deps: Deps, address: String) -> StdResult<MaxPerAddress
 
     if let Some(max_per_address) = config.max_per_address {
         return Ok(MaxPerAddressResponse {
-            remaining: Some(max_per_address.checked_sub(already_minted).unwrap_or(0)),
+            remaining: Some(max_per_address.saturating_sub(already_minted)),
         });
     }
 
@@ -643,7 +650,7 @@ mod tests {
 
             assert!(result.is_err());
             match result {
-                Err(StdError::GenericErr { msg, backtrace }) => {
+                Err(StdError::GenericErr { msg, backtrace: _ }) => {
                     assert_eq!(msg, "royalties amount is zero or negative");
                 }
                 _ => panic!("Unexpected error"),
@@ -716,7 +723,7 @@ mod tests {
         let creator = deps.api.addr_make("creator");
         let admin = deps.api.addr_make("admin");
         let royalties = deps.api.addr_make("royalties");
-        let nftcontract = deps.api.addr_make("nftcontract");
+        // let nftcontract = deps.api.addr_make("nftcontract");
         let env = mock_env();
 
         let msg = InstantiateMsg {
@@ -879,7 +886,7 @@ mod tests {
             }),
             payload: Binary::new(
                 deps.api
-                    .addr_canonicalize(&nftcontract.as_str())
+                    .addr_canonicalize(nftcontract.as_str())
                     .unwrap()
                     .to_vec(),
             ),
@@ -899,7 +906,7 @@ mod tests {
         let mint_msg: Bs721BaseExecuteMsg<EditionMetadata> = Bs721BaseExecuteMsg::Mint {
             token_id: "1".to_string(),
             extension: EditionMetadata {
-                name: format!("{} #{}", "Launchparty".to_string(), "1".to_string()),
+                name: format!("{} #{}", "Launchparty", "1"),
                 attributes: Some(vec![
                     Trait {
                         trait_type: "Edition".to_string(),
@@ -938,7 +945,7 @@ mod tests {
                 reply_on: ReplyOn::Never,
                 payload: Binary::new(
                     deps.api
-                        .addr_canonicalize(&nftcontract.as_str())
+                        .addr_canonicalize(nftcontract.as_str())
                         .unwrap()
                         .to_vec(),
                 ),
@@ -1012,7 +1019,7 @@ mod tests {
         let mint_msg = Bs721BaseExecuteMsg::Mint {
             token_id: "1".to_string(),
             extension: EditionMetadata {
-                name: format!("{} #{}", "Launchparty".to_string(), "1".to_string()),
+                name: format!("{} #{}", "Launchparty", "1"),
                 attributes: Some(vec![
                     Trait {
                         trait_type: "Edition".to_string(),
@@ -1056,7 +1063,7 @@ mod tests {
         let mint_msg: Bs721BaseExecuteMsg<EditionMetadata> = Bs721BaseExecuteMsg::Mint {
             token_id: "2".to_string(),
             extension: EditionMetadata {
-                name: format!("{} #{}", "Launchparty".to_string(), "2".to_string()),
+                name: format!("{} #{}", "Launchparty", "2"),
                 attributes: Some(vec![
                     Trait {
                         trait_type: "Edition".to_string(),
@@ -1100,7 +1107,7 @@ mod tests {
         let mint_msg: Bs721BaseExecuteMsg<EditionMetadata> = Bs721BaseExecuteMsg::Mint {
             token_id: "3".to_string(),
             extension: EditionMetadata {
-                name: format!("{} #{}", "Launchparty".to_string(), "3".to_string()),
+                name: format!("{} #{}", "Launchparty", "3"),
                 attributes: Some(vec![
                     Trait {
                         trait_type: "Edition".to_string(),

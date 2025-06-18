@@ -162,12 +162,12 @@ fn max_per_address() {
 
 #[test]
 fn query_max_per_address() {
-    let mut api = mock_dependencies().api;
+    let api = mock_dependencies().api;
     let addr1 = api.addr_make("address1");
     let addr2 = api.addr_make("address2");
     let mut suite = TestSuiteBuilder::new()
-        .with_funds(&addr1.to_string(), &[coin(1_000, "ubtsg")])
-        .with_funds(&addr2.to_string(), &[coin(1_000, "ubtsg")])
+        .with_funds(addr1.as_ref(), &[coin(1_000, "ubtsg")])
+        .with_funds(addr2.as_ref(), &[coin(1_000, "ubtsg")])
         .with_price(coin(1, "ubtsg"))
         .with_party_type(crate::msg::PartyType::MaxEdition(10))
         .with_max_per_address(3)

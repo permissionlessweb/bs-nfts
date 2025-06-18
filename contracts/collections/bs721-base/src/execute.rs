@@ -164,9 +164,9 @@ where
         let token = TokenInfo {
             owner: deps.api.addr_validate(&owner)?,
             approvals: vec![],
-            token_uri: token_uri,
-            extension: extension,
-            seller_fee_bps: seller_fee_bps,
+            token_uri,
+            extension,
+            seller_fee_bps,
             payment_addr: maybe_addr(deps.api, payment_addr)?,
         };
         self.tokens

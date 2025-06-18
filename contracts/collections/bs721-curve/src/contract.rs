@@ -1,10 +1,10 @@
 use std::ops::Add;
 
 use crate::error::ContractError;
-use crate::msg::{ExecuteMsg, InstantiateMsg, MaxPerAddressResponse, PriceResponse, QueryMsg};
+use crate::msg::{ExecuteMsg, InstantiateMsg, MaxPerAddressResponse, MigrateMsg, PriceResponse, QueryMsg};
 use crate::state::{Config, EditionMetadata, Trait, ADDRESS_TOKENS, CONFIG};
 
-use cosmos_sdk_proto::{cosmos::distribution::v1beta1::MsgFundCommunityPool, traits::Message};
+use cosmos_sdk_proto::{cosmos::protocolpool::v1beta1::MsgFundCommunityPool, traits::Message};
 
 use bs721::{Bs721QueryMsg, NumTokensResponse};
 use bs721_base::{ExecuteMsg as Bs721BaseExecuteMsg, InstantiateMsg as Bs721BaseInstantiateMsg};
@@ -74,7 +74,7 @@ pub fn instantiate(
     let code_info = deps.querier.query_wasm_code_info(contract_info.code_id)?;
     let addr = instantiate2_address(
         code_info.checksum.as_slice(),
-        &deps.api.addr_canonicalize(&info.sender.as_str())?,
+        &deps.api.addr_canonicalize(info.sender.as_str())?,
         salt,
     )?;
 
@@ -157,6 +157,27 @@ pub fn execute(
             execute_burn(deps, env, info, token_ids, min_out_amount, referral)
         }
     }
+}
+
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
+    match msg {
+        QueryMsg::GetConfig {} => to_json_binary(&query_config(deps)?),
+        QueryMsg::MaxPerAddress { address } => {
+            to_json_binary(&query_max_per_address(deps, address)?)
+        }
+        QueryMsg::BuyPrice { amount } => {
+            to_json_binary(&query_buy_price(deps, Uint128::new(amount))?)
+        }
+        QueryMsg::SellPrice { amount } => {
+            to_json_binary(&query_sell_price(deps, Uint128::new(amount))?)
+        }
+    }
+}
+
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> StdResult<Response> {
+    Ok(Response::new())
 }
 
 // Sum of squares of first n natural numbers
@@ -308,7 +329,7 @@ fn execute_burn(
     let mut royalties_sum = price.royalties;
 
     // Pay referral
-    if !referral.is_none() {
+    if referral.is_some() {
         if !price.referral.is_zero() {
             bank_msgs.push(BankMsg::Send {
                 to_address: referral.clone().unwrap().to_string(),
@@ -353,7 +374,7 @@ fn execute_burn(
 
     // decrease the number of tokens minted by the sender
     let already_minted = (ADDRESS_TOKENS.key(&info.sender).may_load(deps.storage)?).unwrap_or(0);
-    let new_total_mint = already_minted.checked_sub(amount).unwrap_or(0);
+    let new_total_mint = already_minted.saturating_sub(amount);
     ADDRESS_TOKENS.save(deps.storage, &info.sender, &new_total_mint)?;
 
     let token_ids_str: Vec<String> = token_ids.iter().map(|&n| n.to_string()).collect();
@@ -381,7 +402,7 @@ fn fund_community_pool_msg(env: Env, amount: Coin) -> SubMsg {
     .unwrap();
 
     SubMsg::new(CosmosMsg::Stargate {
-        type_url: "/cosmos.distribution.v1beta1.MsgFundCommunityPool".to_string(),
+        type_url: "/cosmos.protocolpool.v1.MsgFundCommunityPool".to_string(),
         value: Binary::from(buffer),
     })
 }
@@ -404,7 +425,7 @@ fn execute_mint(
     if let Some(max_per_address) = config.max_per_address {
         if new_total_mint > max_per_address {
             return Err(ContractError::MaxPerAddressExceeded {
-                remaining: max_per_address.checked_sub(already_minted).unwrap_or(0),
+                remaining: max_per_address.saturating_sub(already_minted),
             });
         }
     }
@@ -484,7 +505,7 @@ fn execute_mint(
     let mut royalties_sum = price.royalties;
 
     // Pay referral
-    if !referral.is_none() {
+    if referral.is_some() {
         if !price.referral.is_zero() {
             bank_msgs.push(BankMsg::Send {
                 to_address: referral.clone().unwrap().to_string(),
@@ -560,30 +581,13 @@ pub fn before_mint_checks(
     }
 
     let max_editions = config.max_edition.unwrap_or(0);
-    if max_editions > 0 {
-        if (config.next_token_id - 1) + edition_to_mint > max_editions {
-            return Err(ContractError::SoldOut {});
-        }
+    if max_editions > 0 && (config.next_token_id - 1) + edition_to_mint > max_editions {
+        return Err(ContractError::SoldOut {});
     }
 
     Ok(())
 }
 
-#[cfg_attr(not(feature = "library"), entry_point)]
-pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
-    match msg {
-        QueryMsg::GetConfig {} => to_json_binary(&query_config(deps)?),
-        QueryMsg::MaxPerAddress { address } => {
-            to_json_binary(&query_max_per_address(deps, address)?)
-        }
-        QueryMsg::BuyPrice { amount } => {
-            to_json_binary(&query_buy_price(deps, Uint128::new(amount))?)
-        }
-        QueryMsg::SellPrice { amount } => {
-            to_json_binary(&query_sell_price(deps, Uint128::new(amount))?)
-        }
-    }
-}
 
 fn query_max_per_address(deps: Deps, address: String) -> StdResult<MaxPerAddressResponse> {
     let addr = deps.api.addr_validate(&address)?;
@@ -593,7 +597,7 @@ fn query_max_per_address(deps: Deps, address: String) -> StdResult<MaxPerAddress
 
     if let Some(max_per_address) = config.max_per_address {
         return Ok(MaxPerAddressResponse {
-            remaining: Some(max_per_address.checked_sub(already_minted).unwrap_or(0)),
+            remaining: Some(max_per_address.saturating_sub(already_minted)),
         });
     }
 

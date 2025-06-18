@@ -101,6 +101,9 @@ pub enum QueryMsg {
     DistributableAmount {},
 }
 
+#[cw_serde]
+pub struct MigrateMsg {}
+
 /// Retrieved contributors response.
 #[cw_serde]
 pub struct ContributorListResponse {

@@ -456,7 +456,7 @@ fn approving_revoking() {
         include_expired: None,
     };
     let res: OwnerOfResponse = from_json(
-        &contract
+        contract
             .query(deps.as_ref(), mock_env(), query_msg.clone())
             .unwrap(),
     )
@@ -490,7 +490,7 @@ fn approving_revoking() {
 
     // Approvals are now removed / cleared
     let res: OwnerOfResponse = from_json(
-        &contract
+        contract
             .query(deps.as_ref(), mock_env(), query_msg)
             .unwrap(),
     )
@@ -740,7 +740,6 @@ fn approving_all_revoking_all() {
 #[test]
 fn query_tokens_by_owner() {
     let mut deps = mock_dependencies();
-    let minter = deps.api.addr_make("minter");
     let creator = deps.api.addr_make("creator");
     let minter = deps.api.addr_make("minter");
     let demeter = deps.api.addr_make("demeter");

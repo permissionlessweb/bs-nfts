@@ -8,7 +8,7 @@ members = [
  ]
 
 [workspace.package]
-version       = "0.3.0"
+version       = "0.4.0"
 edition       = "2021"
 license       = "Apache-2.0"
 repository    = "https://github.com/bitsongofficial/bs-nfts"
@@ -17,14 +17,16 @@ documentation = "https://docs.bitsong.io"
 
 [workspace.dependencies]
 anyhow                       = { version = "1.0" }
-bs721                        = { version = "0.3.0", path = "./packages/bs721" }
-bs721-base                   = { version = "0.3.0", path = "./contracts/collections/bs721-base" }
-bs721-curve                  = { version = "0.3.0", path = "./contracts/collections/bs721-curve" }
-bs721-royalties              = { version = "0.3.0", path = "./contracts/collections/bs721-royalties" }
-bs721-factory                = { version = "0.3.0", path = "./contracts/factories/bs721-factory" }
-bs-controllers               = { version = "0.3.0", path = "./packages/controllers" }
-btsg-cw-orch                 = { version = "0.3.0", path = "./packages/cw-orch" }
-cosmos-sdk-proto             = { version = "0.26.1", default-features = false }
+bs721                        = {  path = "./packages/bs721" }
+bs721-base                   = {  path = "./contracts/collections/bs721-base" }
+bs721-curve                  = {  path = "./contracts/collections/bs721-curve" }
+bs721-royalties              = {  path = "./contracts/collections/bs721-royalties" }
+bs721-launchparty            = {  path = "./contracts/minters/bs721-launchparty" }
+bs721-factory                = {  path = "./contracts/factories/bs721-factory" }
+bs-controllers               = {  path = "./packages/controllers" }
+btsg-auth                    = {  git  = "https://github.com/permissionlessweb/bs-accounts", package = "btsg-auth", branch = "cleanup" }
+btsg-wavs                    = {  git  = "https://github.com/permissionlessweb/bs-accounts", library = "btsg-wavs", branch = "cleanup", features = ["library"] }
+cosmos-sdk-proto             = { git   = "https://github.com/permissionlessweb/cosmos-rust", default-features = false }
 cosmwasm-schema              = "2.2.0"
 cosmwasm-std                 = "2.2.0"
 cw-controllers               = "2.0.0"
@@ -37,7 +39,6 @@ cw-storage-macro             = "2.0.0"
 cw-storage-plus = "2.0.0"
 cw-utils = "2.0.0"
 schemars = "0.8.21"
-semver                       = "1.0"
 serde                        = { version = "1.0.140", default-features = false, features = ["derive"] }
 serde_json                   = "1.0.79"
 sha2                         = "0.10.8"
