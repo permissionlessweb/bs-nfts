@@ -1367,7 +1367,7 @@ dependencies = [
 
 [[package]]
 name = "bs-controllers"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
@@ -1390,7 +1390,7 @@ dependencies = [
 
 [[package]]
 name = "bs721"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
@@ -1401,7 +1401,7 @@ dependencies = [
 
 [[package]]
 name = "bs721-base"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "bs721",
  "cosmwasm-schema",
@@ -1418,7 +1418,7 @@ dependencies = [
 
 [[package]]
 name = "bs721-curve"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "anyhow",
  "bs721",
@@ -1441,7 +1441,7 @@ dependencies = [
 
 [[package]]
 name = "bs721-factory"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "anyhow",
  "bs721",
@@ -1465,7 +1465,7 @@ dependencies = [
 
 [[package]]
 name = "bs721-launchparty"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "anyhow",
  "bs721",
@@ -1487,7 +1487,7 @@ dependencies = [
 
 [[package]]
 name = "bs721-royalties"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "anyhow",
  "bs721-base",
@@ -1534,7 +1534,7 @@ dependencies = [
 
 [[package]]
 name = "btsg-nft-scripts"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "abstract-cw-orch-polytone",
  "anyhow",

@@ -121,6 +121,9 @@ pub enum QueryMsg {
     Config {},
 }
 
+#[cw_serde]
+pub struct MigrateMsg {}
+
 impl InstantiateMsg {
     const MAX_PROTOCOL_FEE_BPS: u32 = 1_000; // 10%
 

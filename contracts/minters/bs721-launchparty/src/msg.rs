@@ -69,6 +69,9 @@ pub enum QueryMsg {
 }
 
 #[cw_serde]
+pub struct MigrateMsg {}
+
+#[cw_serde]
 pub struct MaxPerAddressResponse {
     /// Returns the maximum amount of token an address can mint.
     pub remaining: Option<u32>,

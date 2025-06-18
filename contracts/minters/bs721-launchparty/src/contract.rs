@@ -1,5 +1,7 @@
 use crate::error::ContractError;
-use crate::msg::{ExecuteMsg, InstantiateMsg, MaxPerAddressResponse, PartyType, QueryMsg};
+use crate::msg::{
+    ExecuteMsg, InstantiateMsg, MaxPerAddressResponse, MigrateMsg, PartyType, QueryMsg,
+};
 use crate::state::{Config, EditionMetadata, Trait, ADDRESS_TOKENS, CONFIG};
 
 use bs721_base::{ExecuteMsg as Bs721BaseExecuteMsg, InstantiateMsg as Bs721BaseInstantiateMsg};
@@ -147,6 +149,21 @@ pub fn execute(
             execute_mint(deps, env, info, amount, referral)
         }
     }
+}
+
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
+    match msg {
+        QueryMsg::GetConfig {} => to_json_binary(&query_config(deps)?),
+        QueryMsg::MaxPerAddress { address } => {
+            to_json_binary(&query_max_per_address(deps, address)?)
+        }
+    }
+}
+
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> StdResult<Response> {
+    Ok(Response::new())
 }
 
 fn execute_mint(
@@ -429,16 +446,6 @@ pub fn party_is_active(
         }
     }
     true
-}
-
-#[cfg_attr(not(feature = "library"), entry_point)]
-pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
-    match msg {
-        QueryMsg::GetConfig {} => to_json_binary(&query_config(deps)?),
-        QueryMsg::MaxPerAddress { address } => {
-            to_json_binary(&query_max_per_address(deps, address)?)
-        }
-    }
 }
 
 fn query_max_per_address(deps: Deps, address: String) -> StdResult<MaxPerAddressResponse> {

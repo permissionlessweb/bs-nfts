@@ -1,7 +1,7 @@
 use std::ops::Add;
 
 use crate::error::ContractError;
-use crate::msg::{ExecuteMsg, InstantiateMsg, MaxPerAddressResponse, PriceResponse, QueryMsg};
+use crate::msg::{ExecuteMsg, InstantiateMsg, MaxPerAddressResponse, MigrateMsg, PriceResponse, QueryMsg};
 use crate::state::{Config, EditionMetadata, Trait, ADDRESS_TOKENS, CONFIG};
 
 use cosmos_sdk_proto::{cosmos::protocolpool::v1beta1::MsgFundCommunityPool, traits::Message};
@@ -157,6 +157,27 @@ pub fn execute(
             execute_burn(deps, env, info, token_ids, min_out_amount, referral)
         }
     }
+}
+
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
+    match msg {
+        QueryMsg::GetConfig {} => to_json_binary(&query_config(deps)?),
+        QueryMsg::MaxPerAddress { address } => {
+            to_json_binary(&query_max_per_address(deps, address)?)
+        }
+        QueryMsg::BuyPrice { amount } => {
+            to_json_binary(&query_buy_price(deps, Uint128::new(amount))?)
+        }
+        QueryMsg::SellPrice { amount } => {
+            to_json_binary(&query_sell_price(deps, Uint128::new(amount))?)
+        }
+    }
+}
+
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> StdResult<Response> {
+    Ok(Response::new())
 }
 
 // Sum of squares of first n natural numbers
@@ -567,21 +588,6 @@ pub fn before_mint_checks(
     Ok(())
 }
 
-#[cfg_attr(not(feature = "library"), entry_point)]
-pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
-    match msg {
-        QueryMsg::GetConfig {} => to_json_binary(&query_config(deps)?),
-        QueryMsg::MaxPerAddress { address } => {
-            to_json_binary(&query_max_per_address(deps, address)?)
-        }
-        QueryMsg::BuyPrice { amount } => {
-            to_json_binary(&query_buy_price(deps, Uint128::new(amount))?)
-        }
-        QueryMsg::SellPrice { amount } => {
-            to_json_binary(&query_sell_price(deps, Uint128::new(amount))?)
-        }
-    }
-}
 
 fn query_max_per_address(deps: Deps, address: String) -> StdResult<MaxPerAddressResponse> {
     let addr = deps.api.addr_validate(&address)?;
