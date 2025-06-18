@@ -4,7 +4,7 @@ use crate::state::{Config, EditionMetadata, Trait, ADDRESS_TOKENS, CONFIG};
 
 use bs721_base::{ExecuteMsg as Bs721BaseExecuteMsg, InstantiateMsg as Bs721BaseInstantiateMsg};
 
-use cosmos_sdk_proto::{cosmos::distribution::v1beta1::MsgFundCommunityPool, traits::Message};
+use cosmos_sdk_proto::{cosmos::protocolpool::v1beta1::MsgFundCommunityPool, traits::Message};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
@@ -312,7 +312,7 @@ fn fund_community_pool_msg(env: Env, amount: Coin) -> SubMsg {
     .unwrap();
 
     SubMsg::new(CosmosMsg::Stargate {
-        type_url: "/cosmos.distribution.v1beta1.MsgFundCommunityPool".to_string(),
+        type_url: "/cosmos.protocolpool.v1.MsgFundCommunityPool".to_string(),
         value: Binary::from(buffer),
     })
 }

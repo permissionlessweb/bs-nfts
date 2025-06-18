@@ -2,7 +2,7 @@ use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InstantiateMsg, MsgCreateCurve, MsgCreateLaunchparty, QueryMsg};
 use crate::state::{Config, CONFIG};
 
-use cosmos_sdk_proto::{cosmos::distribution::v1beta1::MsgFundCommunityPool, traits::Message};
+use cosmos_sdk_proto::{cosmos::protocolpool::v1beta1::MsgFundCommunityPool, traits::Message};
 
 use bs721_curve::msg::InstantiateMsg as Bs721CurveMsgInstantiate;
 
@@ -302,7 +302,7 @@ fn fund_community_pool_msg(env: Env, amount: Coin) -> SubMsg {
     .unwrap();
 
     SubMsg::new(CosmosMsg::Stargate {
-        type_url: "/cosmos.distribution.v1beta1.MsgFundCommunityPool".to_string(),
+        type_url: "/cosmos.protocolpool.v1.MsgFundCommunityPool".to_string(),
         value: Binary::from(buffer),
     })
 }

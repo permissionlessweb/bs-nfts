@@ -24,9 +24,9 @@ bs721-royalties              = {  path = "./contracts/collections/bs721-royaltie
 bs721-launchparty            = {  path = "./contracts/minters/bs721-launchparty" }
 bs721-factory                = {  path = "./contracts/factories/bs721-factory" }
 bs-controllers               = {  path = "./packages/controllers" }
-btsg-auth                    = {  git = "https://github.com/permissionlessweb/bs-accounts", package = "btsg-auth", branch = "cleanup" }
-btsg-wavs                    = {  git = "https://github.com/permissionlessweb/bs-accounts", library = "btsg-wavs", branch = "cleanup", features = ["library"] }
-cosmos-sdk-proto             = { version = "0.26.1", default-features = false }
+btsg-auth                    = {  git  = "https://github.com/permissionlessweb/bs-accounts", package = "btsg-auth", branch = "cleanup" }
+btsg-wavs                    = {  git  = "https://github.com/permissionlessweb/bs-accounts", library = "btsg-wavs", branch = "cleanup", features = ["library"] }
+cosmos-sdk-proto             = { git   = "https://github.com/permissionlessweb/cosmos-rust", default-features = false }
 cosmwasm-schema              = "2.2.0"
 cosmwasm-std                 = "2.2.0"
 cw-controllers               = "2.0.0"
