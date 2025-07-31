@@ -1,16 +1,21 @@
 use anyhow::Result as AnyResult;
-use cosmwasm_std::{Addr, Coin, Empty, Timestamp};
+use cosmwasm_std::{coin, Addr, Coin, Empty, Timestamp, Uint128};
 use cw_multi_test::{App, AppResponse, Contract, ContractWrapper, Executor};
 use derivative::Derivative;
 
-use bs721_base::msg::QueryMsg as Bs721BaseQueryMsg;
+use bs721_base::{msg::QueryMsg as Bs721BaseQueryMsg, InstantiateMsg as Bs721InitMsg};
 
 use crate::{
     msg::{ExecuteMsg, InstantiateMsg, MaxPerAddressResponse, PartyType, QueryMsg},
     state::Config,
 };
-
-pub const CREATOR: &str = "creator";
+use easy_addr::addr;
+pub const CREATOR: &str = addr!("creator");
+pub const PAYMENT_RECIPIENT: &str = addr!("contract2");
+pub const BS721_ADMIN: &str = addr!("bs721_admin");
+pub const ADDRESS1: &str = addr!("address1");
+pub const ADDRESS2: &str = addr!("address2");
+pub const REFERRAL: &str = addr!("referral");
 
 /// Helper function to create a wrapper around the bs721 base contract
 pub fn contract_bs721_base() -> Box<dyn Contract<Empty>> {
@@ -23,14 +28,11 @@ pub fn contract_bs721_base() -> Box<dyn Contract<Empty>> {
 
 /// Helper function to create a wrapper around the launchparty contract
 pub fn contract_launchparty() -> Box<dyn Contract<Empty>> {
-    Box::new(
-        ContractWrapper::new_with_empty(
-            crate::contract::execute,
-            crate::contract::instantiate,
-            crate::contract::query,
-        )
-        .with_reply_empty(crate::contract::reply),
-    )
+    Box::new(ContractWrapper::new_with_empty(
+        crate::contract::execute,
+        crate::contract::instantiate,
+        crate::contract::query,
+    ))
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -107,7 +109,10 @@ impl TestSuiteBuilder {
             symbol: self.symbol.clone(),
             name: self.name.clone(),
             uri: self.uri.clone(),
-            price: self.price.clone(),
+            price: match self.price.amount == Uint128::zero() {
+                true => coin(1, "ubtsg"),
+                false => self.price.clone(),
+            },
             max_per_address: self.max_per_address,
             seller_fee_bps: self.seller_fee_bps,
             referral_fee_bps: self.referral_fee_bps,
@@ -115,8 +120,8 @@ impl TestSuiteBuilder {
             start_time: self.start_time,
             party_type: self.party_type.clone(),
             bs721_code_id,
-            payment_address: app.api().addr_make("contract2").to_string(),
-            bs721_admin: app.api().addr_make("bs721_admin").to_string(),
+            payment_address: PAYMENT_RECIPIENT.to_string(),
+            bs721_admin: BS721_ADMIN.to_string(),
         };
 
         app.instantiate_contract(
@@ -150,9 +155,35 @@ impl TestSuiteBuilder {
         })
         .unwrap();
 
+        let bs721_addr = app
+            .instantiate_contract(
+                bs721_base_code_id,
+                contract_address.clone(),
+                &Bs721InitMsg {
+                    name: self.name.clone(),
+                    symbol: self.symbol.clone(),
+                    uri: Some(self.uri.clone()),
+                    minter: contract_address.to_string(),
+                },
+                &[],
+                "Bs721-Contract",
+                None,
+            )
+            .unwrap();
+
+        app.execute_contract(
+            Addr::unchecked(self.creator.clone()),
+            contract_address.clone(),
+            &ExecuteMsg::SetNftAddress {
+                nft_addr: bs721_addr.to_string(),
+            },
+            &[],
+        )
+        .unwrap();
         Suite {
             app,
             contract_address,
+            bs721_addr,
         }
     }
 }
@@ -163,12 +194,18 @@ pub struct Suite {
     app: App,
     /// Address of the launchparty contract.
     contract_address: Addr,
+    /// address of bs721 nft address we manually created and then set. workaround since v2 cosmwasmstd
+    bs721_addr: Addr,
 }
 
 impl Suite {
     /// Returns the contract address.
     fn contract_address(&self) -> Addr {
         self.contract_address.clone()
+    }
+    /// Returns the contract address.
+    pub fn replaced_cw721_addr(&self) -> Addr {
+        self.bs721_addr.clone()
     }
 
     /// Helper function to mint a bs721 token. The sender is defined as a const.
@@ -229,7 +266,7 @@ impl Suite {
         bs721_address: impl Into<String>,
         owner: impl Into<String>,
     ) -> Vec<String> {
-        let query: Bs721BaseQueryMsg<Empty> =  Bs721BaseQueryMsg::Tokens {
+        let query: Bs721BaseQueryMsg<Empty> = Bs721BaseQueryMsg::Tokens {
             owner: owner.into(),
             start_after: None,
             limit: None,
@@ -237,10 +274,7 @@ impl Suite {
         let resp: bs721::TokensResponse = self
             .app
             .wrap()
-            .query_wasm_smart(
-                bs721_address.into(),
-                &query,
-            )
+            .query_wasm_smart(bs721_address.into(), &query)
             .unwrap();
         resp.tokens
     }

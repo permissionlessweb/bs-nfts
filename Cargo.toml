@@ -18,6 +18,7 @@ documentation = "https://docs.bitsong.io"
 [workspace.dependencies]
 anyhow                       = { version = "1.0" }
 bs721                        = {  path = "./packages/bs721" }
+easy-addr                        = {  path = "./packages/easy-addr" }
 bs721-base                   = {  path = "./contracts/collections/bs721-base" }
 bs721-curve                  = {  path = "./contracts/collections/bs721-curve" }
 bs721-royalties              = {  path = "./contracts/collections/bs721-royalties" }

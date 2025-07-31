@@ -53,6 +53,8 @@ pub enum ExecuteMsg {
         /// Referral address used for minting.
         referral: Option<String>,
     },
+    /// Allows us to set the nft contract being used. Primary use for integration tests
+    SetNftAddress { nft_addr: String },
 }
 
 /// Possible query messages that the launchparty-fixed contract can handle.

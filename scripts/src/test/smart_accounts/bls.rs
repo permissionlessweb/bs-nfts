@@ -32,23 +32,23 @@ mod tests {
 
         // Generate the Authentication request format to send to contract
 
-        let auth_req = Box::new(AuthenticationRequest {
-            signature: Binary::new(vec![]),
-            msg: Any {
-                type_url: todo!(),
-                value: todo!(),
-            },
-            signature_data: todo!(),
-            authenticator_id: todo!(),
-            account: todo!(),
-            fee_payer: todo!(),
-            fee_granter: todo!(),
-            fee: todo!(),
-            msg_index: todo!(),
-            sign_mode_tx_data: todo!(),
-            tx_data: todo!(),
-            simulate: todo!(),
-            authenticator_params: todo!(),
-        });
+        // let auth_req = Box::new(AuthenticationRequest {
+        //     signature: Binary::new(vec![]),
+        //     msg: Any {
+        //         type_url: todo!(),
+        //         value: todo!(),
+        //     },
+        //     signature_data: todo!(),
+        //     authenticator_id: todo!(),
+        //     account: todo!(),
+        //     fee_payer: todo!(),
+        //     fee_granter: todo!(),
+        //     fee: todo!(),
+        //     msg_index: todo!(),
+        //     sign_mode_tx_data: todo!(),
+        //     tx_data: todo!(),
+        //     simulate: todo!(),
+        //     authenticator_params: todo!(),
+        // });
     }
 }

@@ -1,5 +1,7 @@
 use cosmwasm_std::{coin, testing::mock_dependencies, Addr, Uint128};
 
+use crate::multitest::suite::{ADDRESS1, ADDRESS2, PAYMENT_RECIPIENT, REFERRAL};
+
 use super::suite::TestSuiteBuilder;
 
 #[test]
@@ -10,15 +12,15 @@ fn instantiate() {
     let resp = suite.query_config();
 
     // ensure created contract addresses are correctly saved in the state
+    // commented out as suite does not give us bs721-created right now.
     assert_eq!(
         resp.bs721_address,
-        Some(Addr::unchecked("contract1")),
+        suite.replaced_cw721_addr(),
         "expected bs721 base as second contract stored and saved in the state"
     );
-
     assert_eq!(
         resp.payment_address,
-        Addr::unchecked("contract2"),
+        Addr::unchecked(PAYMENT_RECIPIENT),
         "expected bs721 royalties as third contract stored and saved in the state"
     )
 }
@@ -26,12 +28,12 @@ fn instantiate() {
 #[test]
 fn mint_single_no_referral() {
     let mut suite = TestSuiteBuilder::new()
-        .with_funds("address1", &[coin(1_000, "ubtsg")])
+        .with_funds(ADDRESS1, &[coin(1_000, "ubtsg")])
         .with_price(coin(1, "ubtsg"))
         .build();
 
     suite
-        .mint("address1", None, 1, Some(coin(1, "ubtsg")))
+        .mint(ADDRESS1, None, 1, Some(coin(1, "ubtsg")))
         .unwrap();
 
     // retrieve royalties contract to query it
@@ -46,21 +48,21 @@ fn mint_single_no_referral() {
     );
 
     suite
-        .mint("address1", None, 1, Some(coin(1, "ubtsg")))
+        .mint(ADDRESS1, None, 1, Some(coin(1, "ubtsg")))
         .unwrap_err();
 }
 
 #[test]
 fn mint_single_with_referral() {
     let mut suite = TestSuiteBuilder::new()
-        .with_funds("address1", &[coin(1_000, "ubtsg")])
+        .with_funds(ADDRESS1, &[coin(1_000, "ubtsg")])
         .with_referral_fee_bps(1_000)
         .with_price(coin(10, "ubtsg"))
         .build();
 
-    let referral = Some("referral".to_string());
+    let referral = Some(REFERRAL.to_string());
     suite
-        .mint("address1", referral.clone(), 1, Some(coin(10, "ubtsg")))
+        .mint(ADDRESS1, referral.clone(), 1, Some(coin(10, "ubtsg")))
         .unwrap();
 
     // retrieve royalties contract to query it
@@ -86,13 +88,13 @@ fn mint_single_with_referral() {
 #[test]
 fn mint_multiple() {
     let mut suite = TestSuiteBuilder::new()
-        .with_funds("address1", &[coin(1_000, "ubtsg")])
+        .with_funds(ADDRESS1, &[coin(1_000, "ubtsg")])
         .with_price(coin(1, "ubtsg"))
         .with_party_type(crate::msg::PartyType::MaxEdition(10))
         .build();
 
     suite
-        .mint("address1", None, 3, Some(coin(3, "ubtsg")))
+        .mint(ADDRESS1, None, 3, Some(coin(3, "ubtsg")))
         .unwrap();
 
     // retrieve royalties contract to query it
@@ -109,18 +111,18 @@ fn mint_multiple() {
 
     assert_eq!(
         vec!["1", "2", "3"],
-        suite.query_nft_token(config.bs721_address.unwrap(), "address1"),
+        suite.query_nft_token(config.bs721_address, ADDRESS1),
         "expected 3 nft with sequential ids starting from 1"
     );
 
     suite
-        .mint("address1", None, 3, Some(coin(3, "ubtsg")))
+        .mint(ADDRESS1, None, 3, Some(coin(3, "ubtsg")))
         .unwrap();
 
     let config = suite.query_config();
     assert_eq!(
         vec!["1", "2", "3", "4", "5", "6"],
-        suite.query_nft_token(config.bs721_address.unwrap(), "address1"),
+        suite.query_nft_token(config.bs721_address, ADDRESS1),
         "expected 3 nft with sequential ids starting from 1"
     );
 }
@@ -128,46 +130,45 @@ fn mint_multiple() {
 #[test]
 fn max_per_address() {
     let mut suite = TestSuiteBuilder::new()
-        .with_funds("address1", &[coin(1_000, "ubtsg")])
-        .with_funds("address2", &[coin(1_000, "ubtsg")])
+        .with_funds(ADDRESS1, &[coin(1_000, "ubtsg")])
+        .with_funds(ADDRESS2, &[coin(1_000, "ubtsg")])
         .with_price(coin(1, "ubtsg"))
         .with_party_type(crate::msg::PartyType::MaxEdition(10))
         .with_max_per_address(3)
         .build();
 
     suite
-        .mint("address1", None, 1, Some(coin(1, "ubtsg")))
+        .mint(ADDRESS1, None, 1, Some(coin(1, "ubtsg")))
         .unwrap();
 
     suite
-        .mint("address1", None, 2, Some(coin(2, "ubtsg")))
+        .mint(ADDRESS1, None, 2, Some(coin(2, "ubtsg")))
         .unwrap();
 
     suite
-        .mint("address1", None, 1, Some(coin(1, "ubtsg")))
+        .mint(ADDRESS1, None, 1, Some(coin(1, "ubtsg")))
         .unwrap_err();
 
     suite
-        .mint("address2", None, 1, Some(coin(1, "ubtsg")))
+        .mint(ADDRESS2, None, 1, Some(coin(1, "ubtsg")))
         .unwrap();
 
     suite
-        .mint("address2", None, 2, Some(coin(2, "ubtsg")))
+        .mint(ADDRESS2, None, 2, Some(coin(2, "ubtsg")))
         .unwrap();
 
     suite
-        .mint("address2", None, 1, Some(coin(1, "ubtsg")))
+        .mint(ADDRESS2, None, 1, Some(coin(1, "ubtsg")))
         .unwrap_err();
 }
 
 #[test]
 fn query_max_per_address() {
     let api = mock_dependencies().api;
-    let addr1 = api.addr_make("address1");
-    let addr2 = api.addr_make("address2");
+
     let mut suite = TestSuiteBuilder::new()
-        .with_funds(addr1.as_ref(), &[coin(1_000, "ubtsg")])
-        .with_funds(addr2.as_ref(), &[coin(1_000, "ubtsg")])
+        .with_funds(ADDRESS1.as_ref(), &[coin(1_000, "ubtsg")])
+        .with_funds(ADDRESS2.as_ref(), &[coin(1_000, "ubtsg")])
         .with_price(coin(1, "ubtsg"))
         .with_party_type(crate::msg::PartyType::MaxEdition(10))
         .with_max_per_address(3)
@@ -181,7 +182,7 @@ fn query_max_per_address() {
         "expected max per address to be 3"
     );
 
-    let response = suite.query_max_per_address(&addr1);
+    let response = suite.query_max_per_address(ADDRESS1);
     if let Some(remaining) = response.remaining {
         assert_eq!(
             remaining, 3,
@@ -189,9 +190,11 @@ fn query_max_per_address() {
         );
     }
 
-    suite.mint(&addr1, None, 1, Some(coin(1, "ubtsg"))).unwrap();
+    suite
+        .mint(ADDRESS1, None, 1, Some(coin(1, "ubtsg")))
+        .unwrap();
 
-    let response = suite.query_max_per_address(&addr1);
+    let response = suite.query_max_per_address(ADDRESS1);
     if let Some(remaining) = response.remaining {
         assert_eq!(
             remaining, 2,
@@ -199,9 +202,11 @@ fn query_max_per_address() {
         );
     }
 
-    suite.mint(&addr1, None, 1, Some(coin(1, "ubtsg"))).unwrap();
+    suite
+        .mint(ADDRESS1, None, 1, Some(coin(1, "ubtsg")))
+        .unwrap();
 
-    let response = suite.query_max_per_address(&addr1);
+    let response = suite.query_max_per_address(ADDRESS1);
     if let Some(remaining) = response.remaining {
         assert_eq!(
             remaining, 1,
@@ -209,9 +214,11 @@ fn query_max_per_address() {
         );
     }
 
-    suite.mint(&addr1, None, 1, Some(coin(1, "ubtsg"))).unwrap();
+    suite
+        .mint(ADDRESS1, None, 1, Some(coin(1, "ubtsg")))
+        .unwrap();
 
-    let response = suite.query_max_per_address(&addr1);
+    let response = suite.query_max_per_address(ADDRESS1);
     if let Some(remaining) = response.remaining {
         assert_eq!(
             remaining, 0,
@@ -220,10 +227,10 @@ fn query_max_per_address() {
     }
 
     suite
-        .mint(&addr1, None, 1, Some(coin(1, "ubtsg")))
+        .mint(ADDRESS1, None, 1, Some(coin(1, "ubtsg")))
         .unwrap_err();
 
-    let response = suite.query_max_per_address(&addr2);
+    let response = suite.query_max_per_address(ADDRESS2);
     if let Some(remaining) = response.remaining {
         assert_eq!(
             remaining, 3,

@@ -1,6 +1,6 @@
 use cw_orch::{interface, prelude::*};
 
-use bs721_launchparty::contract::{execute, instantiate, query, reply};
+use bs721_launchparty::contract::{execute, instantiate, query};
 use bs721_launchparty::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 
 /// Uploadable trait for bs721_account_minter & use with cw-orchestrator library
@@ -17,7 +17,7 @@ impl<Chain> Uploadable for Btsg721Launchparty<Chain> {
     /// Returns a CosmWasm contract wrapper
     fn wrapper() -> Box<dyn MockContract<Empty>> {
         Box::new(
-            ContractWrapper::new_with_empty(execute, instantiate, query).with_reply(reply), // .with_sudo(sudo),
+            ContractWrapper::new_with_empty(execute, instantiate, query), // .with_sudo(sudo),
         )
     }
 }

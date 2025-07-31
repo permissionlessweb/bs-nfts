@@ -14,11 +14,15 @@ use crate::{
     ContractError,
 };
 use crate::{msg::ExecuteMsg, state::WITHDRAWABLE_AMOUNT};
+use easy_addr::addr;
 
 const DENOM: &str = "ubtsg";
-const CONTRIBUTOR1: &str = "contributor1";
-const CONTRIBUTOR2: &str = "contributor2";
-const CONTRIBUTOR3: &str = "contributor3";
+const CONTRIBUTOR1: &str = addr!("contributor1");
+const CONTRIBUTOR2: &str = addr!("contributor2");
+const CONTRIBUTOR3: &str = addr!("contributor3");
+const RANDO: &str = addr!("random_user");
+
+const CREATOR: &str = addr!("creator");
 
 fn init(deps: DepsMut) {
     let msg = InstantiateMsg {
@@ -42,28 +46,35 @@ fn init(deps: DepsMut) {
         ],
     };
 
-    let info = message_info(&Addr::unchecked("creator"), &[]);
+    let info = message_info(&Addr::unchecked(CREATOR), &[]);
     instantiate(deps, mock_env(), info, msg).unwrap();
 }
 
 /// Helper function to initialize the contract with a number of contributors equal to the number of shares
 /// passed as input.
-fn init_with_shares(deps: DepsMut, shares: Vec<u32>) {
+fn init_with_shares(deps: DepsMut, shares: Vec<u32>) -> Vec<String> {
     let mut contributors: Vec<ContributorMsg> = Vec::with_capacity(shares.len());
+    let mut addrs = Vec::with_capacity(shares.len());
+    let mock = mock_dependencies();
+
     for (idx, curr_shares) in shares.into_iter().enumerate() {
+        let address = mock.api.addr_make(&format!("address{}", idx)).to_string();
+        println!("index: {:#?}, address: {:#?}", idx, address);
         contributors.push(ContributorMsg {
             role: String::from(""),
             shares: curr_shares,
-            address: format!("address{}", idx),
-        })
+            address: address.clone(),
+        });
+        addrs.push(address);
     }
     let msg = InstantiateMsg {
         denom: DENOM.into(),
         contributors,
     };
 
-    let info = message_info(&Addr::unchecked("creator"), &[]);
+    let info = message_info(&Addr::unchecked(CREATOR), &[]);
     instantiate(deps, mock_env(), info, msg).unwrap();
+    addrs
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -82,9 +93,9 @@ fn test_instantiate() {
 fn distribute_shares_fails() {
     let env = mock_env();
     let mut deps = mock_dependencies();
-    init_with_shares(deps.as_mut(), vec![10]);
+    let contribs = init_with_shares(deps.as_mut(), vec![10]);
 
-    let info = message_info(&Addr::unchecked("random_user"), &[]);
+    let info = message_info(&Addr::unchecked(RANDO), &[]);
     let msg = ExecuteMsg::Distribute {};
 
     {
@@ -115,7 +126,7 @@ fn not_nough_to_distribute() {
     let mut deps = mock_dependencies();
     init_with_shares(deps.as_mut(), vec![99, 1]);
 
-    let info = message_info(&Addr::unchecked("random_user"), &[]);
+    let info = message_info(&Addr::unchecked(RANDO), &[]);
     let msg = ExecuteMsg::Distribute {};
 
     {
@@ -140,7 +151,7 @@ fn distribute_shares_single() {
     let mut deps = mock_dependencies();
     init_with_shares(deps.as_mut(), vec![10]);
 
-    let info = message_info(&Addr::unchecked("random_user"), &[]);
+    let info = message_info(&Addr::unchecked(RANDO), &[]);
     let msg = ExecuteMsg::Distribute {};
 
     {
@@ -192,7 +203,7 @@ fn distribute_two_contributor() {
     let mut deps = mock_dependencies();
     init_with_shares(deps.as_mut(), vec![99, 1]);
 
-    let info = message_info(&Addr::unchecked("random_user"), &[]);
+    let info = message_info(&Addr::unchecked(RANDO), &[]);
     let msg = ExecuteMsg::Distribute {};
 
     {
@@ -229,9 +240,9 @@ fn distribute_two_contributor() {
 fn distribute_shares_multiple() {
     let env = mock_env();
     let mut deps = mock_dependencies();
-    init_with_shares(deps.as_mut(), vec![10, 20, 30, 40]);
+    let contribs = init_with_shares(deps.as_mut(), vec![10, 20, 30, 40]);
 
-    let info = message_info(&Addr::unchecked("random_user"), &[]);
+    let info = message_info(&Addr::unchecked(RANDO), &[]);
     let msg = ExecuteMsg::Distribute {};
 
     {
@@ -257,22 +268,42 @@ fn distribute_shares_multiple() {
 
         let query_resp = query_list_contributors(deps.as_ref(), None, None).unwrap();
         assert_eq!(
-            query_resp.contributors[0].withdrawable_royalties,
+            query_resp
+                .contributors
+                .iter()
+                .find(|a| a.address == contribs[0])
+                .unwrap()
+                .withdrawable_royalties,
             Uint128::new(100)
         );
         let query_resp = query_list_contributors(deps.as_ref(), None, None).unwrap();
         assert_eq!(
-            query_resp.contributors[1].withdrawable_royalties,
+            query_resp
+                .contributors
+                .iter()
+                .find(|a| a.address == contribs[1])
+                .unwrap()
+                .withdrawable_royalties,
             Uint128::new(200)
         );
         let query_resp = query_list_contributors(deps.as_ref(), None, None).unwrap();
         assert_eq!(
-            query_resp.contributors[2].withdrawable_royalties,
+            query_resp
+                .contributors
+                .iter()
+                .find(|a| a.address == contribs[2])
+                .unwrap()
+                .withdrawable_royalties,
             Uint128::new(300)
         );
         let query_resp = query_list_contributors(deps.as_ref(), None, None).unwrap();
         assert_eq!(
-            query_resp.contributors[3].withdrawable_royalties,
+            query_resp
+                .contributors
+                .iter()
+                .find(|a| a.address == contribs[3])
+                .unwrap()
+                .withdrawable_royalties,
             Uint128::new(400)
         );
     }
@@ -310,7 +341,7 @@ fn withdraw_royalties_fails() {
     let withdraw_msg = ExecuteMsg::Withdraw {};
 
     {
-        let info = message_info(&Addr::unchecked("random_user"), &[]);
+        let info = message_info(&Addr::unchecked(RANDO), &[]);
         let err = execute(deps.as_mut(), env.clone(), info, withdraw_msg.clone()).unwrap_err();
         assert_eq!(
             err,
@@ -334,9 +365,9 @@ fn withdraw_royalties_fails() {
 fn withdraw_royalties_single() {
     let env = mock_env();
     let mut deps = mock_dependencies();
-    init_with_shares(deps.as_mut(), vec![1]);
+    let contribs = init_with_shares(deps.as_mut(), vec![1]);
 
-    let info = message_info(&Addr::unchecked("address0"), &[]);
+    let info = message_info(&Addr::unchecked(contribs[0].clone()), &[]);
     let distribute_msg = ExecuteMsg::Distribute {};
     let withdraw_msg = ExecuteMsg::Withdraw {};
 
@@ -351,7 +382,7 @@ fn withdraw_royalties_single() {
         assert_eq!(
             resp.messages[0].msg,
             CosmosMsg::Bank(BankMsg::Send {
-                to_address: "address0".into(),
+                to_address: contribs[0].clone(),
                 amount: vec![coin(1_000, DENOM.to_string())],
             })
         );
@@ -376,7 +407,7 @@ fn withdraw_royalties_single() {
 fn withdraw_royalties_multiple() {
     let env = mock_env();
     let mut deps = mock_dependencies();
-    init_with_shares(deps.as_mut(), vec![10, 10]);
+    let contribs = init_with_shares(deps.as_mut(), vec![10, 10]);
 
     let distribute_msg = ExecuteMsg::Distribute {};
     let withdraw_msg = ExecuteMsg::Withdraw {};
@@ -386,14 +417,14 @@ fn withdraw_royalties_multiple() {
         .bank
         .update_balance(env.contract.address.clone(), coins(1_000, DENOM));
 
-    let info = message_info(&Addr::unchecked("address0"), &[]);
+    let info = message_info(&Addr::unchecked(contribs[0].clone()), &[]);
     execute(deps.as_mut(), env.clone(), info.clone(), distribute_msg).unwrap();
 
     let resp = execute(deps.as_mut(), env.clone(), info, withdraw_msg.clone()).unwrap();
     assert_eq!(
         resp.messages[0].msg,
         CosmosMsg::Bank(BankMsg::Send {
-            to_address: "address0".into(),
+            to_address: contribs[0].clone(),
             amount: vec![coin(500, DENOM.to_string())],
         })
     );
@@ -406,20 +437,31 @@ fn withdraw_royalties_multiple() {
     );
 
     let query_resp = query_list_contributors(deps.as_ref(), None, None).unwrap();
+    let assertion = format!(
+        "expected withdrawable royalties of {} zero after withdraw",
+        contribs[0]
+    );
+    println!("query_resp, {:#?}!", query_resp);
     assert_eq!(
-        query_resp.contributors[0].withdrawable_royalties,
+        query_resp
+            .contributors
+            .iter()
+            .find(|a| a.address == contribs[0])
+            .unwrap()
+            .withdrawable_royalties,
         Uint128::zero(),
-        "expected withdrawable royalties of address0 zero after withdraw"
+        "{}",
+        assertion,
     );
 
     // we can still withdraw from second contributor
-    let info =  message_info(&Addr::unchecked("address1"), &[]);
+    let info = message_info(&Addr::unchecked(contribs[1].clone()), &[]);
 
     let resp = execute(deps.as_mut(), env, info, withdraw_msg).unwrap();
     assert_eq!(
         resp.messages[0].msg,
         CosmosMsg::Bank(BankMsg::Send {
-            to_address: "address1".into(),
+            to_address: contribs[1].clone(),
             amount: vec![coin(500, DENOM.to_string())],
         })
     );
@@ -443,7 +485,7 @@ fn withdraw_royalties_multiple() {
 fn mixed_distribute_and_withdraw() {
     let env = mock_env();
     let mut deps = mock_dependencies();
-    init_with_shares(deps.as_mut(), vec![10, 10]);
+    let contribs = init_with_shares(deps.as_mut(), vec![10, 10]);
 
     let distribute_msg = ExecuteMsg::Distribute {};
     let withdraw_msg = ExecuteMsg::Withdraw {};
@@ -454,7 +496,7 @@ fn mixed_distribute_and_withdraw() {
         .update_balance(env.contract.address.clone(), coins(1_000, DENOM));
 
     // first distribution
-    let info = message_info(&Addr::unchecked("address0"), &[]);
+    let info = message_info(&Addr::unchecked(contribs[0].clone()), &[]);
     execute(
         deps.as_mut(),
         env.clone(),
@@ -486,19 +528,19 @@ fn mixed_distribute_and_withdraw() {
     assert_eq!(
         resp.messages[0].msg,
         CosmosMsg::Bank(BankMsg::Send {
-            to_address: "address0".into(),
+            to_address: contribs[0].clone(),
             amount: vec![coin(500, DENOM.to_string())],
         })
     );
 
-    let info =  message_info(&Addr::unchecked("address1"), &[]);
+    let info = message_info(&Addr::unchecked(contribs[1].clone()), &[]);
 
     // first withdraw from contributor1
     let resp = execute(deps.as_mut(), env, info, withdraw_msg).unwrap();
     assert_eq!(
         resp.messages[0].msg,
         CosmosMsg::Bank(BankMsg::Send {
-            to_address: "address1".into(),
+            to_address: contribs[1].clone(),
             amount: vec![coin(1_000, DENOM.to_string())],
         })
     );
@@ -606,17 +648,17 @@ fn test_query_list_contributors() {
         ContributorListResponse {
             contributors: vec![
                 ContributorResponse {
-                    address: CONTRIBUTOR1.into(),
-                    role: "role".into(),
-                    initial_shares: 10,
-                    percentage_shares: Decimal::from_ratio(10u128, 60u128),
-                    withdrawable_royalties: Uint128::zero(),
-                },
-                ContributorResponse {
                     address: CONTRIBUTOR2.into(),
                     role: "role".into(),
                     initial_shares: 20,
                     percentage_shares: Decimal::from_ratio(20u128, 60u128),
+                    withdrawable_royalties: Uint128::zero(),
+                },
+                ContributorResponse {
+                    address: CONTRIBUTOR1.into(),
+                    role: "role".into(),
+                    initial_shares: 10,
+                    percentage_shares: Decimal::from_ratio(10u128, 60u128),
                     withdrawable_royalties: Uint128::zero(),
                 },
                 ContributorResponse {
@@ -632,11 +674,11 @@ fn test_query_list_contributors() {
 
     let contributors =
         query_list_contributors(deps.as_ref(), Some(CONTRIBUTOR1.into()), None).unwrap();
-    assert_eq!(contributors.contributors.len(), 2);
+    assert_eq!(contributors.contributors.len(), 1);
 
     let contributors =
         query_list_contributors(deps.as_ref(), Some(CONTRIBUTOR2.into()), None).unwrap();
-    assert_eq!(contributors.contributors.len(), 1);
+    assert_eq!(contributors.contributors.len(), 2);
 
     let contributors =
         query_list_contributors(deps.as_ref(), Some(CONTRIBUTOR3.into()), None).unwrap();
@@ -650,10 +692,10 @@ fn test_query_list_contributors() {
         contributors,
         ContributorListResponse {
             contributors: vec![ContributorResponse {
-                address: CONTRIBUTOR2.into(),
+                address: CONTRIBUTOR3.into(),
                 role: "role".into(),
-                initial_shares: 20,
-                percentage_shares: Decimal::from_ratio(20u128, 60u128),
+                initial_shares: 30,
+                percentage_shares: Decimal::from_ratio(30u128, 60u128),
                 withdrawable_royalties: Uint128::zero(),
             }]
         }

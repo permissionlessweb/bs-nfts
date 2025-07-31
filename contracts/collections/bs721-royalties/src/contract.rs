@@ -1,8 +1,10 @@
+use bs721::cosmwasm_ext::DecimalToInteger;
+use bs721::cosmwasm_ext::IntegerToDecimal;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_json_binary, Addr, BankMsg, Binary, Coin, Decimal, Deps, DepsMut, Env, MessageInfo, Order,
-    Response, StdResult, Storage, Uint128,
+    to_json_binary, Addr, BankMsg, Binary, Coin, Decimal, Decimal256, Deps, DepsMut, Env,
+    MessageInfo, Order, Response, StdResult, Storage, Uint128,
 };
 use cw2::set_contract_version;
 use cw_storage_plus::Bound;
@@ -121,30 +123,36 @@ pub fn execute_distribute(deps: DepsMut, env: Env) -> Result<Response, ContractE
     let mut distributed_royalties = Uint128::zero();
     for contributor_address in contributors {
         CONTRIBUTORS.update(deps.storage, &contributor_address, |info| {
-            // since contributor_address comes from a key of CONTRIBUTORS we should always be able
-            // to unwrap().
             let mut info = info.unwrap();
 
-            let contributor_royalties = info
-                .percentage_shares
-                .checked_mul(Decimal::from_ratio(distributable_royalties, Uint128::one()))?;
-            // we should rise an error is we have a contributor with 0 royalties to avoid situations
-            // where some contibutor receive royalties and other one no.
+            // Step 1: Convert distributable_royalties (Uint128) to Decimal256 with desired precision
+            let distributable_royalties_decimal = distributable_royalties.to_decimal256(18u32)?;
+
+            // Step 2: Convert contributor percentage (Decimal) to Decimal256
+            let percentage_decimal256 = Decimal256::from(info.percentage_shares);
+
+            // Step 3: Multiply to get royalty in Decimal256
+            let contributor_royalties_decimal =
+                percentage_decimal256 * distributable_royalties_decimal;
+
+            // Step 4: Convert Decimal256 result to Uint128 using same precision
+            let contributor_royalties = contributor_royalties_decimal.to_uint(18u32)?;
+            // Step 5: Ensure contributor gets a non-zero amount
             if contributor_royalties.is_zero() {
                 return Err(ContractError::NotEnoughToDistribute {});
             }
 
+            // Step 6: Update contributor's withdrawable amount
             info.withdrawable_amount = info
                 .withdrawable_amount
-                .checked_add(contributor_royalties.atomics())
-                .map_err(ContractError::OverflowErr)?;
-            distributed_royalties = distributed_royalties
-                .checked_add(contributor_royalties.atomics())
-                .map_err(ContractError::OverflowErr)?;
+                .checked_add(contributor_royalties)?;
+
+            // Step 7: Track total distributed amount
+            distributed_royalties = distributed_royalties.checked_add(contributor_royalties)?;
+
             Ok(info)
         })?;
     }
-
     if distributed_royalties > distributable_royalties {
         return Err(ContractError::NotEnoughToDistribute {});
     }

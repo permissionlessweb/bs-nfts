@@ -1479,6 +1479,7 @@ dependencies = [
  "cw-utils",
  "cw2",
  "derivative",
+ "easy-addr",
  "prost 0.11.9",
  "schemars",
  "serde",
@@ -1490,6 +1491,7 @@ name = "bs721-royalties"
 version = "0.4.0"
 dependencies = [
  "anyhow",
+ "bs721",
  "bs721-base",
  "cosmwasm-schema",
  "cosmwasm-std",
@@ -1498,6 +1500,7 @@ dependencies = [
  "cw-utils",
  "cw2",
  "derivative",
+ "easy-addr",
  "prost 0.11.9",
  "schemars",
  "serde",
@@ -3570,6 +3573,16 @@ name = "dyn-clone"
 version = "1.0.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1c7a8fb8a9fbf66c1f703fe16184d10ca0ee9d23be5b4436400408ba54a95005"
+
+[[package]]
+name = "easy-addr"
+version = "0.4.0"
+dependencies = [
+ "cosmwasm-std",
+ "proc-macro2 1.0.95",
+ "quote",
+ "syn 1.0.109",
+]
 
 [[package]]
 name = "ecdsa"

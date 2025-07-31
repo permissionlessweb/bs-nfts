@@ -31,7 +31,7 @@ pub struct Config {
     /// End condition of the collection launchparty.
     pub party_type: PartyType,
     /// Address of the bs721 metadata-onchain token contract.
-    pub bs721_address: Option<Addr>,
+    pub bs721_address: Addr,
 }
 
 /// Stores the contract's configuration
