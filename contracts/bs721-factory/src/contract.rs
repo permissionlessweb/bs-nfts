@@ -1,5 +1,5 @@
 use crate::error::ContractError;
-use crate::msg::{ExecuteMsg, InstantiateMsg, MsgCreateCurve, MsgCreateLaunchparty, QueryMsg};
+use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, MsgCreateCurve, MsgCreateLaunchparty, QueryMsg};
 use crate::state::{Config, CONFIG};
 
 use cosmos_sdk_proto::{cosmos::distribution::v1beta1::MsgFundCommunityPool, traits::Message};
@@ -305,4 +305,9 @@ fn fund_community_pool_msg(env: Env, amount: Coin) -> SubMsg {
         type_url: "/cosmos.distribution.v1beta1.MsgFundCommunityPool".to_string(),
         value: Binary::from(buffer),
     })
+}
+
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> StdResult<Response> {
+    Ok(Response::new())
 }

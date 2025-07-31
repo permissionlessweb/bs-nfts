@@ -167,3 +167,7 @@ pub enum QueryMsg<Q: JsonSchema> {
 pub struct MinterResponse {
     pub minter: String,
 }
+
+
+#[cw_serde]
+pub struct MigrateMsg {}

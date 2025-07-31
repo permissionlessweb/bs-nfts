@@ -19,6 +19,8 @@ pub const CONTRACT_NAME: &str = "crates.io:bs721-base";
 pub const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub mod entry {
+    use crate::msg::MigrateMsg;
+
     use super::*;
 
     #[cfg(not(feature = "library"))]
@@ -54,5 +56,10 @@ pub mod entry {
     pub fn query(deps: Deps, env: Env, msg: QueryMsg<Empty>) -> StdResult<Binary> {
         let tract = Bs721Contract::<Extension, Empty, Empty, Empty>::default();
         tract.query(deps, env, msg)
+    }
+
+    #[cfg_attr(not(feature = "library"), entry_point)]
+    pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> StdResult<Response> {
+        Ok(Response::new())
     }
 }

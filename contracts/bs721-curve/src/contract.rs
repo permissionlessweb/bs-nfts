@@ -1,7 +1,7 @@
 use std::ops::Add;
 
 use crate::error::ContractError;
-use crate::msg::{ExecuteMsg, InstantiateMsg, MaxPerAddressResponse, PriceResponse, QueryMsg};
+use crate::msg::{ExecuteMsg, InstantiateMsg, MaxPerAddressResponse, MigrateMsg, PriceResponse, QueryMsg};
 use crate::state::{Config, EditionMetadata, Trait, ADDRESS_TOKENS, CONFIG};
 
 use cosmos_sdk_proto::{cosmos::distribution::v1beta1::MsgFundCommunityPool, traits::Message};
@@ -150,6 +150,10 @@ pub fn execute(
     }
 }
 
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> StdResult<Response> {
+    Ok(Response::new())
+}
 // Sum of squares of first n natural numbers
 // n * (n + 1) * (2 * n + 1) / 6;
 fn sum_of_squares(n: Uint128) -> Uint128 {

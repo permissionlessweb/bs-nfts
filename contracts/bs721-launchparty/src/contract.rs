@@ -1,5 +1,5 @@
 use crate::error::ContractError;
-use crate::msg::{ExecuteMsg, InstantiateMsg, MaxPerAddressResponse, PartyType, QueryMsg};
+use crate::msg::{ExecuteMsg, InstantiateMsg, MaxPerAddressResponse, MigrateMsg, PartyType, QueryMsg};
 use crate::state::{Config, EditionMetadata, Trait, ADDRESS_TOKENS, CONFIG};
 
 use bs721_base::{
@@ -453,6 +453,11 @@ fn query_config(deps: Deps) -> StdResult<Config> {
     let config: Config = CONFIG.load(deps.storage)?;
 
     Ok(config)
+}
+
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> StdResult<Response> {
+    Ok(Response::new())
 }
 
 // -------------------------------------------------------------------------------------------------

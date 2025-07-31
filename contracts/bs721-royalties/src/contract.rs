@@ -8,7 +8,7 @@ use cw2::set_contract_version;
 use cw_storage_plus::Bound;
 use cw_utils::maybe_addr;
 
-use crate::msg::ExecuteMsg;
+use crate::msg::{ExecuteMsg, MigrateMsg};
 use crate::state::{DENOM, WITHDRAWABLE_AMOUNT};
 use crate::{
     msg::{ContributorListResponse, ContributorResponse, InstantiateMsg, QueryMsg},
@@ -242,6 +242,11 @@ pub fn query_distributable_amount(deps: Deps, env: Env) -> StdResult<Uint128> {
 /// Returns the withdrawable amount.
 pub fn query_withdrawable_amount(deps: Deps) -> Uint128 {
     WITHDRAWABLE_AMOUNT.load(deps.storage).unwrap_or_default()
+}
+
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> StdResult<Response> {
+    Ok(Response::new())
 }
 
 // -------------------------------------------------------------------------------------------------
