@@ -235,9 +235,12 @@ where
             QueryMsg::OwnerOf {
                 token_id,
                 include_expired,
-            } => {
-                to_json_binary(&self.owner_of(deps, env, token_id, include_expired.unwrap_or(false))?)
-            }
+            } => to_json_binary(&self.owner_of(
+                deps,
+                env,
+                token_id,
+                include_expired.unwrap_or(false),
+            )?),
             QueryMsg::AllNftInfo {
                 token_id,
                 include_expired,
@@ -283,9 +286,12 @@ where
             QueryMsg::Approvals {
                 token_id,
                 include_expired,
-            } => {
-                to_json_binary(&self.approvals(deps, env, token_id, include_expired.unwrap_or(false))?)
-            }
+            } => to_json_binary(&self.approvals(
+                deps,
+                env,
+                token_id,
+                include_expired.unwrap_or(false),
+            )?),
             QueryMsg::Extension { msg: _ } => Ok(Binary::default()),
         }
     }

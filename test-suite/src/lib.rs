@@ -6,4 +6,3 @@ mod factories;
 mod minters;
 #[cfg(test)]
 mod royalties;
- 

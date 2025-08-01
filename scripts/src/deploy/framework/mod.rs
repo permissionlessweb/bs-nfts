@@ -1,4 +1,4 @@
- pub mod networks;
+pub mod networks;
 use cw_orch::prelude::*;
 
 use networks::{GAS_TO_DEPLOY, SUPPORTED_CHAINS};

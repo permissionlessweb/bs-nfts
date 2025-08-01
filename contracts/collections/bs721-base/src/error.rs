@@ -23,7 +23,7 @@ pub enum ContractError {
 
     #[error("Seller fee and payment address must be set together")]
     InvalidSellerFee {},
-    
+
     #[error(transparent)]
     Ownership(#[from] cw_ownable::OwnershipError),
 }

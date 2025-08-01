@@ -195,7 +195,5 @@ mod test {
 }
 */
 
-
-
 #[cw_serde]
 pub struct MigrateMsg {}

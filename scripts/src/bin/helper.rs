@@ -1,5 +1,5 @@
-use cw_orch::prelude::*;
 use btsg_nft_scripts::framework::networks::{GAS_TO_DEPLOY, SUPPORTED_CHAINS};
+use cw_orch::prelude::*;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -46,6 +46,5 @@ pub async fn assert_wallet_balance(mut chains: Vec<ChainInfoOwned>) -> Vec<Chain
 
     chains
 }
-
 
 pub fn main() {}

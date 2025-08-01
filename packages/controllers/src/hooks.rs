@@ -21,7 +21,7 @@ pub struct HooksResponse {
 pub enum HookError {
     #[error("{0}")]
     AdminError(#[from] AdminError),
-    
+
     #[error("{0}")]
     Std(#[from] StdError),
 
