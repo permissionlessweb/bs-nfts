@@ -4,12 +4,10 @@ use crate::error::ContractError;
 use crate::msg::{
     ExecuteMsg, InstantiateMsg, MaxPerAddressResponse, MigrateMsg, PriceResponse, QueryMsg,
 };
-use crate::msg::{
-    ExecuteMsg, InstantiateMsg, MaxPerAddressResponse, MigrateMsg, PriceResponse, QueryMsg,
-};
+
 use crate::state::{Config, EditionMetadata, Trait, ADDRESS_TOKENS, CONFIG};
 
-use cosmos_sdk_proto::{cosmos::protocolpool::v1beta1::MsgFundCommunityPool, traits::Message};
+use cosmos_sdk_proto::{cosmos::distribution::v1beta1::MsgFundCommunityPool, traits::Message};
 
 use bs721::{Bs721QueryMsg, NumTokensResponse};
 use bs721_base::{ExecuteMsg as Bs721BaseExecuteMsg, InstantiateMsg as Bs721BaseInstantiateMsg};
@@ -17,10 +15,10 @@ use bs721_base::{ExecuteMsg as Bs721BaseExecuteMsg, InstantiateMsg as Bs721BaseI
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    attr, coin, from_json, instantiate2_address, to_json_binary, Addr, Attribute, BankMsg, Binary,
-    CanonicalAddr, Coin, CosmosMsg, Decimal, Deps, DepsMut, Empty, Env, MessageInfo, MsgResponse,
-    QuerierWrapper, QueryRequest, Reply, ReplyOn, Response, StdError, StdResult, Storage, SubMsg,
-    Uint128, WasmMsg, WasmQuery,
+    attr, coin, from_json, instantiate2_address, to_json_binary, Addr, AnyMsg, Attribute, BankMsg,
+    Binary, CanonicalAddr, Coin, CosmosMsg, Decimal, Deps, DepsMut, Empty, Env, MessageInfo,
+    MsgResponse, QuerierWrapper, QueryRequest, Reply, ReplyOn, Response, StdError, StdResult,
+    Storage, SubMsg, Uint128, WasmMsg, WasmQuery,
 };
 use cw2::set_contract_version;
 
@@ -406,10 +404,10 @@ fn fund_community_pool_msg(env: Env, amount: Coin) -> SubMsg {
     .encode(&mut buffer)
     .unwrap();
 
-    SubMsg::new(CosmosMsg::Stargate {
-        type_url: "/cosmos.protocolpool.v1.MsgFundCommunityPool".to_string(),
+    SubMsg::new(CosmosMsg::Any(AnyMsg {
+        type_url: "/cosmos.distribution.v1beta1.MsgFundCommunityPool".to_string(),
         value: Binary::from(buffer),
-    })
+    }))
 }
 
 fn execute_mint(

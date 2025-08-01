@@ -4,7 +4,7 @@ use crate::msg::{
 };
 use crate::state::{Config, CONFIG};
 
-use cosmos_sdk_proto::{cosmos::protocolpool::v1beta1::MsgFundCommunityPool, traits::Message};
+use cosmos_sdk_proto::{cosmos::distribution::v1beta1::MsgFundCommunityPool, traits::Message};
 
 use bs721_curve::msg::InstantiateMsg as Bs721CurveMsgInstantiate;
 
@@ -12,8 +12,8 @@ use bs721_launchparty::msg::InstantiateMsg as LaunchpartyFixedMsgInstantiate;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    coin, to_json_binary, Binary, Coin, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Response,
-    StdResult, SubMsg, WasmMsg,
+    coin, to_json_binary, AnyMsg, Binary, Coin, CosmosMsg, Deps, DepsMut, Env, MessageInfo,
+    Response, StdResult, SubMsg, WasmMsg,
 };
 use cw2::set_contract_version;
 use cw_utils::must_pay;
@@ -308,13 +308,8 @@ fn fund_community_pool_msg(env: Env, amount: Coin) -> SubMsg {
     .encode(&mut buffer)
     .unwrap();
 
-    SubMsg::new(CosmosMsg::Stargate {
-        type_url: "/cosmos.protocolpool.v1.MsgFundCommunityPool".to_string(),
+    SubMsg::new(CosmosMsg::Any(AnyMsg {
+        type_url: "/cosmos.distribution.v1beta1.MsgFundCommunityPool".to_string(),
         value: Binary::from(buffer),
-    })
-}
-
-#[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> StdResult<Response> {
-    Ok(Response::new())
+    }))
 }

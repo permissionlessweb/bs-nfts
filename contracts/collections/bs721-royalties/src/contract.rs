@@ -258,11 +258,6 @@ pub fn query_withdrawable_amount(deps: Deps) -> Uint128 {
     WITHDRAWABLE_AMOUNT.load(deps.storage).unwrap_or_default()
 }
 
-#[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> StdResult<Response> {
-    Ok(Response::new())
-}
-
 // -------------------------------------------------------------------------------------------------
 // Unit tests
 // -------------------------------------------------------------------------------------------------

@@ -1,4 +1,4 @@
-use cosmwasm_std::{coin, testing::mock_dependencies, Addr, Uint128};
+use cosmwasm_std::{coin, Addr, Uint128};
 
 use crate::multitest::suite::{ADDRESS1, ADDRESS2, PAYMENT_RECIPIENT, REFERRAL};
 
@@ -6,7 +6,6 @@ use super::suite::TestSuiteBuilder;
 
 #[test]
 fn instantiate() {
-    let api = mock_dependencies().api;
     let suite = TestSuiteBuilder::new().build();
 
     let resp = suite.query_config();
@@ -164,8 +163,6 @@ fn max_per_address() {
 
 #[test]
 fn query_max_per_address() {
-    let api = mock_dependencies().api;
-
     let mut suite = TestSuiteBuilder::new()
         .with_funds(ADDRESS1.as_ref(), &[coin(1_000, "ubtsg")])
         .with_funds(ADDRESS2.as_ref(), &[coin(1_000, "ubtsg")])

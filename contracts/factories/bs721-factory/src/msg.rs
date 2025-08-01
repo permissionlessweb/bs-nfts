@@ -138,5 +138,3 @@ impl InstantiateMsg {
         Ok(())
     }
 }
-#[cw_serde]
-pub struct MigrateMsg {}

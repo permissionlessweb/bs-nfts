@@ -7,13 +7,13 @@ use crate::state::{Config, EditionMetadata, Trait, ADDRESS_TOKENS, CONFIG};
 use bs721::ContractInfoResponse;
 use bs721_base::{ExecuteMsg as Bs721BaseExecuteMsg, InstantiateMsg as Bs721BaseInstantiateMsg};
 
-use cosmos_sdk_proto::{cosmos::protocolpool::v1beta1::MsgFundCommunityPool, traits::Message};
+use cosmos_sdk_proto::{cosmos::distribution::v1beta1::MsgFundCommunityPool, traits::Message};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    attr, coin, ensure, from_json, instantiate2_address, to_json_binary, Addr, Attribute, BankMsg,
-    Binary, CanonicalAddr, Coin, CosmosMsg, Deps, DepsMut, Env, MessageInfo, MsgResponse, Reply,
-    ReplyOn, Response, StdError, StdResult, SubMsg, Timestamp, Uint128, WasmMsg,
+    attr, coin, ensure, instantiate2_address, to_json_binary, Addr, AnyMsg, Attribute, BankMsg,
+    Binary, Coin, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Response, StdError, StdResult,
+    SubMsg, Timestamp, Uint128, WasmMsg,
 };
 use cw2::set_contract_version;
 
@@ -22,8 +22,6 @@ use cw_utils::may_pay;
 const CONTRACT_NAME: &str = "crates.io:bs721-launchparty";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
-/// ID used to recognize the instantiate token reply in the reply entry point.
-const INSTANTIATE_TOKEN_REPLY_ID: u64 = 1;
 /// Maximum tokens that can be minted in both cases of the `PartyType`.
 // TODO: investigate how this can be removed by adding metadata to NFTs.
 const OVERAL_MAXIMUM_MINTABLE: u32 = 10_000;
@@ -322,10 +320,10 @@ fn fund_community_pool_msg(env: Env, amount: Coin) -> SubMsg {
     .encode(&mut buffer)
     .unwrap();
 
-    SubMsg::new(CosmosMsg::Stargate {
-        type_url: "/cosmos.protocolpool.v1.MsgFundCommunityPool".to_string(),
+    SubMsg::new(CosmosMsg::Any(AnyMsg {
+        type_url: "/cosmos.distribution.v1beta1.MsgFundCommunityPool".to_string(),
         value: Binary::from(buffer),
-    })
+    }))
 }
 
 /// Computes the amount of `total_amount` associated with the referral address, if any, and the amount
@@ -466,16 +464,14 @@ fn query_config(deps: Deps) -> StdResult<Config> {
 mod tests {
 
     use super::*;
-    use cosmwasm_std::testing::{message_info, mock_dependencies, mock_env, MOCK_CONTRACT_ADDR};
-    use cosmwasm_std::{
-        from_json, to_json_binary, Api, MsgResponse, SubMsgResponse, SubMsgResult, Timestamp,
-    };
-    use easy_addr::addr;
+    use cosmwasm_std::testing::mock_env;
+    use cosmwasm_std::Timestamp;
     use prost::Message;
-
-    const NFT_CONTRACT_ADDR: &str = addr!("nftcontract");
-    const ROYALTIES_CONTRACT_ADDR: &str = addr!("royaltiescontract");
-    const BS721_CODE_ID: u64 = 1;
+    
+    // use easy_addr::addr;
+    // const NFT_CONTRACT_ADDR: &str = addr!("nftcontract");
+    // const ROYALTIES_CONTRACT_ADDR: &str = addr!("royaltiescontract");
+    // const BS721_CODE_ID: u64 = 1;
 
     // Type for replies to contract instantiate messes
     #[derive(Clone, PartialEq, Message)]

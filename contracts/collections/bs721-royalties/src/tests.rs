@@ -93,7 +93,7 @@ fn test_instantiate() {
 fn distribute_shares_fails() {
     let env = mock_env();
     let mut deps = mock_dependencies();
-    let contribs = init_with_shares(deps.as_mut(), vec![10]);
+    let _contribs = init_with_shares(deps.as_mut(), vec![10]);
 
     let info = message_info(&Addr::unchecked(RANDO), &[]);
     let msg = ExecuteMsg::Distribute {};

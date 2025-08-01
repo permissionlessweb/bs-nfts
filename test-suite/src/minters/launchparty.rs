@@ -43,7 +43,7 @@ impl TestLaunchpartySuite<MockBech32> {
         let suite = BtsgNftSuite::new(chain.clone());
         let creator = chain.addr_make("creator");
         Ok(TestLaunchpartySuite {
-            chain: chain,
+            chain,
             btsg: suite,
             creator: creator.clone(),
             symbol: "album".into(),
@@ -96,7 +96,7 @@ impl TestLaunchpartySuite<MockBech32> {
                 name: self.name.clone(),
                 uri: self.uri.clone(),
                 price: self.price.clone(),
-                max_per_address: self.max_per_address.clone(),
+                max_per_address: self.max_per_address,
                 payment_address: self.creator.to_string(),
                 seller_fee_bps: self.seller_fee_bps,
                 referral_fee_bps: self.referral_fee_bps,
@@ -143,7 +143,7 @@ impl TestLaunchpartySuite<MockBech32> {
         println!("launchpad contract: {}", self.btsg.launchparty.addr_str()?);
         println!("bs721-base contract: {}", self.btsg.base.addr_str()?);
         let binding = self.chain.clone().state().get_all_addresses()?;
-        let res: Vec<(&String, &Addr)> = binding.iter().map(|a| a).collect();
+        let res: Vec<(&String, &Addr)> = binding.iter().collect();
 
         println!("res {:#?}!", res);
         Ok(self)
@@ -164,7 +164,7 @@ fn instantiate() -> anyhow::Result<()> {
 fn mint_single_no_referral() -> anyhow::Result<()> {
     let minter = "bitsong1h6t805h2vjfzpa3m9n8kyadyng9xf604nhvev8tf5qdg65jh3ruq4z9ty9";
     let mut suite = TestLaunchpartySuite::new()?
-        .with_funds(&minter.to_string(), &[coin(1_000, "ubtsg")])
+        .with_funds(minter, &[coin(1_000, "ubtsg")])
         .with_price(coin(1, "ubtsg"))
         .build()?;
 

@@ -37,12 +37,15 @@ impl<Chain: CwEnv> BtsgNftSuite<Chain> {
         let _wavs = self.wavs.upload()?.uploaded_code_id()?;
         let _bs721base = self.base.upload()?.uploaded_code_id()?;
         let _launchpad = self.launchparty.upload()?.uploaded_code_id()?;
-        let factory = self.factory.upload()?.uploaded_code_id()?;
-        let royalties = self.royalties.upload()?.uploaded_code_id()?;
-        let curve = self.curve.upload()?.uploaded_code_id()?;
+        let _factory = self.factory.upload()?.uploaded_code_id()?;
+        let _royalties = self.royalties.upload()?.uploaded_code_id()?;
+        let _curve = self.curve.upload()?.uploaded_code_id()?;
 
-        println!("bs721 code-id: {}", _bs721base);
-        println!("launchpad code-id: {}", _launchpad);
+        // println!("bs721 code-id: {}", _bs721base);
+        // println!("launchpad code-id: {}", _launchpad);
+        // println!("factory code-id: {}", _factory);
+        // println!("royalties code-id: {}", _royalties);
+        // println!("curve code-id: {}", _curve);
         Ok(())
     }
 }
@@ -75,9 +78,9 @@ impl<Chain: CwEnv> cw_orch::contract::Deploy<Chain> for BtsgNftSuite<Chain> {
         Ok(suite)
     }
 
-    fn deploy_on(chain: Chain, data: Self::DeployData) -> Result<Self, Self::Error> {
+    fn deploy_on(chain: Chain, _data: Self::DeployData) -> Result<Self, Self::Error> {
         // ########### Upload ##############
-        let mut suite: BtsgNftSuite<Chain> = BtsgNftSuite::store_on(chain.clone())?;
+        let suite: BtsgNftSuite<Chain> = BtsgNftSuite::store_on(chain.clone())?;
         let start_time = chain
             .node_querier()
             .latest_block()
@@ -111,7 +114,7 @@ impl<Chain: CwEnv> cw_orch::contract::Deploy<Chain> for BtsgNftSuite<Chain> {
         suite.base.set_address(&Addr::unchecked(bs721));
 
         let binding = chain.clone().state().get_all_addresses()?;
-        let res: Vec<(&String, &Addr)> = binding.iter().map(|a| a).collect();
+        let res: Vec<(&String, &Addr)> = binding.iter().collect();
         println!(" {:#?}!", res);
 
         Ok(suite)
