@@ -14,18 +14,12 @@ just optimize
 
 ## Testing
 
-for unit test coverage:
 ```sh
+# for unit test coverage:
 cargo test
+# for integration tests coverage, using our test-suite library:
+cargo test -p test-suite
 ```
-
-for integration tests coverage:
-```sh
-# using our test-suite library
-TBD
-```
-
-
 
 ## Contributing
 
