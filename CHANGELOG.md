@@ -1,6 +1,19 @@
 **Changelog for Bitsong NFTS**
 =====================================================
 
+**`0.4.0` -Test Suite, Scripts & Documentation Refactoring**
+### Added
+- Justfile
+- test-suite
+### Changed
+- launchparty instantiate response attribute: changed attribute key from `bs721_address `to `bs721-addr`
+- improved contract schema & ts-codegen
+- CircleCi: refactored for this workspace
+### Removed
+- Makefile
+- redundant schema files
+- launchparty: removed reply entrypoint
+--------------------------------------
 **`0.3.0-rc` -Cosmwasm-std: v2.0.0**
 --------------------------------------
 ### Added
