@@ -1,3 +1,4 @@
+pub mod cosmwasm_ext;
 mod msg;
 mod query;
 mod receiver;

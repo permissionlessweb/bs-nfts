@@ -1,8 +1,15 @@
 [workspace]
-members = ["packages/*", "contracts/*"]
+members = [
+ "packages/*", 
+ "contracts/collections/*",
+ "contracts/minters/*",
+ "contracts/factories/*",
+ "scripts",
+ "test-suite"
+ ]
 
 [workspace.package]
-version       = "0.1.0-rc1"
+version       = "0.4.0"
 edition       = "2021"
 license       = "Apache-2.0"
 repository    = "https://github.com/bitsongofficial/bs-nfts"
@@ -10,22 +17,36 @@ homepage      = "https://bitsong.io"
 documentation = "https://docs.bitsong.io"
 
 [workspace.dependencies]
-cosmwasm-schema = "1.1.5"
-cosmwasm-std    = "1.1.5"
-cw2             = "0.16.0"
-cw20            = "0.16.0"
-cw721           = "0.18.0"
-cw721-base      = "0.18.0"
-bs721           = { version = "0.1.0-alpha.1", path = "./packages/bs721" }
-bs721-base      = { version = "0.1.0-alpha.1", path = "./contracts/bs721-base" }
-bs721-royalties = { version = "0.1.0-alpha.1", path = "./contracts/bs721-royalties" }
-bs721-factory   = { version = "0.1.0-alpha.1", path = "./contracts/bs721-factory" }
-cw-storage-plus = "0.16.0"
-cw-utils        = "0.16.0"
-cw-ownable      = "0.5.1"
-schemars        = "0.8.10"
-serde           = { version = "1.0.140", default-features = false, features = ["derive"] }
-thiserror       = "1.0.31"
+anyhow                       = { version = "1.0" }
+btsg-nft-scripts             = {  path = "./scripts" }
+bs721                        = {  path = "./packages/bs721" }
+easy-addr                    = {  path = "./packages/easy-addr" }
+bs721-base                   = {  path = "./contracts/collections/bs721-base" }
+bs721-curve                  = {  path = "./contracts/collections/bs721-curve" }
+bs721-royalties              = {  path = "./contracts/collections/bs721-royalties" }
+bs721-launchparty            = {  path = "./contracts/minters/bs721-launchparty" }
+bs721-factory                = {  path = "./contracts/factories/bs721-factory" }
+bs-controllers               = {  path = "./packages/controllers" }
+btsg-auth                    = {  git  = "https://github.com/permissionlessweb/bs-accounts", package = "btsg-auth", branch = "cleanup" }
+btsg-wavs                    = {  git  = "https://github.com/permissionlessweb/bs-accounts", library = "btsg-wavs", branch = "cleanup", features = ["library"] }
+cosmos-sdk-proto             = { git   = "https://github.com/permissionlessweb/cosmos-rust", default-features = false }
+cosmwasm-schema              = "2.2.0"
+cosmwasm-std                 = "2.2.0"
+cw-controllers               = "2.0.0"
+cw2                          = "2.0.0"
+cw20                         = "2.0.0"
+cw-multi-test                = {version = "2.2.0",features = ["stargate", "cosmwasm_2_1"]}
+cw-orch                      = "0.26.0"
+cw-ownable                   = "2.1.0"
+cw-storage-macro             = "2.0.0"
+cw-storage-plus = "2.0.0"
+cw-utils = "2.0.0"
+schemars = "0.8.21"
+serde                        = { version = "1.0.140", default-features = false, features = ["derive"] }
+serde_json                   = "1.0.79"
+sha2                         = "0.10.8"
+thiserror                    = "1.0.31"
+url                          = "2.2.2"
 
 [profile.release.package.bs721-base]
 codegen-units = 1

@@ -124,7 +124,7 @@ pub struct NftInfoResponse<T> {
     pub seller_fee_bps: Option<u16>,
     /// Payment address, is the address that will receive the payment
     pub payment_addr: Option<Addr>,
-    /// You can add any custom metadata here when you extend cw721-base
+    /// You can add any custom metadata here when you extend bs721-base
     pub extension: T,
 }
 
