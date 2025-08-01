@@ -70,7 +70,7 @@ pub fn instantiate(
         uri: msg.uri.clone(),
         price: msg.price,
         max_per_address: msg.max_per_address,
-        bs721_address: human_addr,
+        bs721_address: human_addr.clone(),
         next_token_id: 1, // first token ID is 1
         payment_address,
         seller_fee_bps: msg.seller_fee_bps,
@@ -97,7 +97,9 @@ pub fn instantiate(
         salt: salt.into(),
     };
 
-    Ok(Response::new().add_message(msg))
+    Ok(Response::new()
+        .add_message(msg)
+        .add_attribute("bs721_addr", human_addr.to_string()))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]

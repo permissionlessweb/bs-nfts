@@ -6,5 +6,3 @@ pub use wrappers::*;
 
 pub mod suite;
 pub use suite::BtsgNftSuite;
-
-mod test;

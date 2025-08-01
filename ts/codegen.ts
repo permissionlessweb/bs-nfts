@@ -3,32 +3,24 @@ import codegen from '@cosmwasm/ts-codegen';
 codegen({
   contracts: [
     {
-      name: 'Bs721Account',
-      dir: '../contracts/collections/bs721-accounts/schema'
-    },
-    {
       name: 'Bs721Base',
-       dir: '../contracts/collections/bs721-base/schema'
+      dir: '../contracts/collections/bs721-base/schema'
     },
     {
       name: 'Bs721Curve',
-       dir: '../contracts/collections/bs721-curve/schema'
+      dir: '../contracts/collections/bs721-curve/schema'
     },
     {
       name: 'Bs721Royalties',
-       dir: '../contracts/collections/bs721-royalties/schema'
+      dir: '../contracts/collections/bs721-royalties/schema'
     },
     {
-      name: 'Bs721AccountMarketplace',
-       dir: '../contracts/markets/account-market/schema'
+      name: 'Bs721Factory',
+      dir: '../contracts/factories/bs721-factory/schema'
     },
     {
-      name: 'Bs721AccountMarketplace',
-       dir: '../contracts/minters/account-minter/schema'
-    },
-    {
-      name: 'Bs721AccountMarketplace',
-       dir: '../contracts/minters/bs721-launchparty/schema'
+      name: 'Bs721Launchparty',
+      dir: '../contracts/minters/bs721-launchparty/schema'
     }
   ],
   outPath: './src/',
@@ -57,7 +49,7 @@ codegen({
       enabled: false
     },
     messageComposer: {
-        enabled: true
+      enabled: true
     },
   }
 }).then(() => {

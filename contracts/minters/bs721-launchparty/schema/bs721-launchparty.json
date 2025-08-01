@@ -1,6 +1,6 @@
 {
   "contract_name": "bs721-launchparty",
-  "contract_version": "0.2.0",
+  "contract_version": "0.4.0",
   "idl_version": "1.0.0",
   "instantiate": {
     "$schema": "http://json-schema.org/draft-07/schema#",
@@ -114,7 +114,8 @@
           "denom": {
             "type": "string"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "PartyType": {
         "description": "Possible launchparty type. Each type defines how the party end.",
@@ -205,6 +206,28 @@
           }
         },
         "additionalProperties": false
+      },
+      {
+        "description": "Allows us to set the nft contract being used. Primary use for integration tests",
+        "type": "object",
+        "required": [
+          "set_nft_address"
+        ],
+        "properties": {
+          "set_nft_address": {
+            "type": "object",
+            "required": [
+              "nft_addr"
+            ],
+            "properties": {
+              "nft_addr": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
       }
     ]
   },
@@ -260,6 +283,7 @@
       "description": "Smart contract configuration structure.",
       "type": "object",
       "required": [
+        "bs721_address",
         "creator",
         "name",
         "next_token_id",
@@ -276,12 +300,9 @@
       "properties": {
         "bs721_address": {
           "description": "Address of the bs721 metadata-onchain token contract.",
-          "anyOf": [
+          "allOf": [
             {
               "$ref": "#/definitions/Addr"
-            },
-            {
-              "type": "null"
             }
           ]
         },
@@ -387,7 +408,8 @@
             "denom": {
               "type": "string"
             }
-          }
+          },
+          "additionalProperties": false
         },
         "PartyType": {
           "description": "Possible launchparty type. Each type defines how the party end.",

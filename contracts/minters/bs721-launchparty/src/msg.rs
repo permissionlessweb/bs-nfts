@@ -44,6 +44,7 @@ pub struct InstantiateMsg {
 
 /// Possible state-changing messages that the launchparty-fixed contract can handle.
 #[cw_serde]
+#[derive(cw_orch::ExecuteFns)]
 pub enum ExecuteMsg {
     /// Allows to mint a bs721 token and, optionally, to refer an address.
     Mint {
@@ -59,7 +60,7 @@ pub enum ExecuteMsg {
 
 /// Possible query messages that the launchparty-fixed contract can handle.
 #[cw_serde]
-#[derive(QueryResponses)]
+#[derive(QueryResponses, cw_orch::QueryFns)]
 pub enum QueryMsg {
     /// Retrieves contract's configuration
     #[returns(Config)]

@@ -1,0 +1,52 @@
+[package]
+name = "test-suite"
+version = "0.1.0"
+edition = "2021"
+
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+
+[features]
+# use library feature to disable all instantiate/execute/query exports
+library = []
+default = []
+vanilla = []
+
+
+[dependencies]
+btsg-nft-scripts = { workspace = true }
+bs721                       = { workspace = true }
+btsg-auth                   = { workspace = true}
+btsg-wavs                   = { workspace = true}
+bs721-base                  = { workspace = true }
+bs721-factory               = { workspace = true }
+bs721-curve                 = { workspace = true }
+bs721-royalties             = { workspace = true }
+bs721-launchparty           = { workspace = true }
+
+cw2= { workspace = true }
+cw-orch = { workspace = true, features = ["daemon"] }
+cosmwasm-std = { workspace = true }
+cosmwasm-schema = { workspace = true }
+cw-storage-plus = { workspace = true }
+ 
+cw-utils = "1.0.3"
+
+anyhow = { workspace = true }
+serde = { workspace = true }
+schemars= { workspace = true }
+
+#  For gating
+hex = "0.4.3"
+ 
+
+# v020infuse = {  branch = "v020-migrate",package="cw-infuser",git = "https://github.com/permissionlessweb/cw-infuser"}
+# v020scripts =  {  branch = "v020-migrate",package="scripts",git = "https://github.com/permissionlessweb/cw-infuser"}
+
+[dev-dependencies]
+rand = "0.8.5"
+cw-multi-test = "2.4.0"
+abstract-cw-multi-test = { version = "1.0.1" }
+

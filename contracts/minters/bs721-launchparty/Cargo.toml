@@ -31,6 +31,7 @@ schemars                = { workspace = true }
 serde                   = { workspace = true }
 thiserror               = { workspace = true }
 cosmos-sdk-proto        = { workspace = true }
+cw-orch                 = { workspace = true }
 
 [dev-dependencies]
 easy-addr         = { workspace = true }

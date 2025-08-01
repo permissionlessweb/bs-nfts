@@ -1,7 +1,6 @@
 use bs721::Expiration;
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::Binary;
-use schemars::JsonSchema;
 
 #[cw_serde]
 pub struct InstantiateMsg {
@@ -70,7 +69,7 @@ pub enum ExecuteMsg<T> {
 
 #[cw_serde]
 #[derive(QueryResponses, cw_orch::QueryFns)]
-pub enum QueryMsg<Q: JsonSchema> {
+pub enum QueryMsg<Q> {
     /// Return the owner of the given token, error if token does not exist
     #[returns(bs721::OwnerOfResponse)]
     OwnerOf {

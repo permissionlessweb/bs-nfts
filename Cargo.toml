@@ -4,7 +4,8 @@ members = [
  "contracts/collections/*",
  "contracts/minters/*",
  "contracts/factories/*",
- "scripts"
+ "scripts",
+ "test-suite"
  ]
 
 [workspace.package]
@@ -17,8 +18,9 @@ documentation = "https://docs.bitsong.io"
 
 [workspace.dependencies]
 anyhow                       = { version = "1.0" }
+btsg-nft-scripts             = {  path = "./scripts" }
 bs721                        = {  path = "./packages/bs721" }
-easy-addr                        = {  path = "./packages/easy-addr" }
+easy-addr                    = {  path = "./packages/easy-addr" }
 bs721-base                   = {  path = "./contracts/collections/bs721-base" }
 bs721-curve                  = {  path = "./contracts/collections/bs721-curve" }
 bs721-royalties              = {  path = "./contracts/collections/bs721-royalties" }

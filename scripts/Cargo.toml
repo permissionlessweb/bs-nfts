@@ -9,16 +9,19 @@ version.workspace = true
 bs721                      = { path = "../packages/bs721"}
 btsg-auth                  = { workspace = true}
 btsg-wavs                  = { workspace = true}
-bs721-base                 = { path = "../contracts/collections/bs721-base"  }
-bs721-factory                 = { path = "../contracts/factories/bs721-factory"  }
-bs721-launchparty          = { path = "../contracts/minters/bs721-launchparty"  }
-cosmwasm-std.workspace     = true
+bs721-base                 = { workspace = true}
+bs721-factory              = { workspace = true}
+bs721-curve                = { workspace = true}
+bs721-royalties             = { workspace = true}
+bs721-launchparty          = { workspace = true}
 
+cosmwasm-std.workspace     = true
 cw-orch-polytone = { package = "abstract-cw-orch-polytone", version = "6.0.1" }
 cw-orch-interchain = { version = "0.9.0",  features = ["daemon"] }
 cw-orch-interchain-core = "0.10.1"
 cw-orch   = { version = "0.26.0", features = ["daemon"] }
 dirs = "5.0.1"
+schemars        = { workspace = true }
 
 env_logger = "0.10.0"
 log = "0.4.22"
