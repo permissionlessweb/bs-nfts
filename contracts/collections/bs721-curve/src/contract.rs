@@ -2,6 +2,7 @@ use std::ops::Add;
 
 use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InstantiateMsg, MaxPerAddressResponse, MigrateMsg, PriceResponse, QueryMsg};
+use crate::msg::{ExecuteMsg, InstantiateMsg, MaxPerAddressResponse, MigrateMsg, PriceResponse, QueryMsg};
 use crate::state::{Config, EditionMetadata, Trait, ADDRESS_TOKENS, CONFIG};
 
 use cosmos_sdk_proto::{cosmos::protocolpool::v1beta1::MsgFundCommunityPool, traits::Message};

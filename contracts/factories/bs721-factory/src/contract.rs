@@ -313,3 +313,8 @@ fn fund_community_pool_msg(env: Env, amount: Coin) -> SubMsg {
         value: Binary::from(buffer),
     })
 }
+
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> StdResult<Response> {
+    Ok(Response::new())
+}
