@@ -153,7 +153,7 @@ pub fn execute_distribute(deps: DepsMut, env: Env) -> Result<Response, ContractE
 
             // Step 7: Track total distributed amount
             distributed_royalties =
-                distributed_royalties.checked_add(contributor_royalties.into())?;
+                distributed_royalties.checked_add(contributor_royalties)?;
 
             Ok(info)
         })?;
@@ -191,7 +191,7 @@ pub fn execute_withdraw(deps: DepsMut, info: MessageInfo) -> Result<Response, Co
         }
         tokens_to_send.amount = tokens_to_send
             .amount
-            .checked_add(contributor.withdrawable_amount.into())?;
+            .checked_add(contributor.withdrawable_amount)?;
         // set contributor withdrawable amount to zero since the contract will send their royalties
         contributor.withdrawable_amount = Uint256::zero();
         Ok(contributor)
@@ -237,7 +237,7 @@ pub fn query_list_contributors(
                 role: data.role,
                 initial_shares: data.initial_shares,
                 percentage_shares: data.percentage_shares,
-                withdrawable_royalties: data.withdrawable_amount.into(),
+                withdrawable_royalties: data.withdrawable_amount,
             })
         })
         .collect::<StdResult<_>>()?;
@@ -257,7 +257,7 @@ pub fn query_distributable_amount(deps: Deps, env: Env) -> StdResult<Uint256> {
 
     let withdrawable_amount = WITHDRAWABLE_AMOUNT.load(deps.storage).unwrap_or_default();
 
-    Ok(funds.amount.saturating_sub(withdrawable_amount.into()))
+    Ok(funds.amount.saturating_sub(withdrawable_amount))
 }
 
 /// Returns the withdrawable amount.

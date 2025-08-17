@@ -1,4 +1,4 @@
-use cosmwasm_std::{Instantiate2AddressError, StdError, Uint128, Uint256};
+use cosmwasm_std::{Instantiate2AddressError, StdError, Uint256};
 use cw_utils::PaymentError;
 use thiserror::Error;
 

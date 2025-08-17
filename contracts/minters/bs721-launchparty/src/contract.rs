@@ -11,9 +11,9 @@ use cosmos_sdk_proto::{cosmos::distribution::v1beta1::MsgFundCommunityPool, trai
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    attr, coin, ensure, instantiate2_address, to_json_binary, Addr, AnyMsg, Attribute, BankMsg,
-    Binary, Coin, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Response, StdError, StdResult,
-    SubMsg, Timestamp, Uint128, Uint256, WasmMsg,
+    attr, ensure, instantiate2_address, to_json_binary, Addr, AnyMsg, Attribute, BankMsg, Binary,
+    Coin, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Response, StdError, StdResult, SubMsg,
+    Timestamp, Uint256, WasmMsg,
 };
 use cw2::set_contract_version;
 
@@ -188,7 +188,7 @@ fn execute_mint(
         .price
         .amount
         .checked_mul(Uint256::from(amount))
-        .map_err(|e| StdError::from(e))?;
+        .map_err(StdError::from)?;
     if sent_amount != required_amount {
         return Err(ContractError::InvalidPaymentAmount(
             sent_amount,
@@ -352,17 +352,17 @@ pub fn compute_referral_and_royalties_amounts(
         |_address| -> Result<Uint256, _> {
             total_amount
                 .checked_mul(Uint256::from(config.referral_fee_bps))
-                .map_err(|e| StdError::from(e))?
+                .map_err(StdError::from)?
                 .checked_div(Uint256::new(10_000))
-                .map_err(|e| StdError::from(e))
+                .map_err(StdError::from)
         },
     )?;
 
     let protocol_amount = total_amount
         .checked_mul(Uint256::from(config.protocol_fee_bps))
-        .map_err(|e| StdError::from(e))?
+        .map_err(StdError::from)?
         .checked_div(Uint256::new(10_000))
-        .map_err(|e| StdError::from(e))?;
+        .map_err(StdError::from)?;
 
     let royalties_amount = total_amount - referral_amount - protocol_amount;
     if royalties_amount <= Uint256::zero() {
@@ -509,7 +509,7 @@ mod tests {
             symbol: String::from(""),
             name: String::from(""),
             uri: String::from(""),
-            price: coin(1, "ubtsg"),
+            price: Coin::new(1u128, "ubtsg"),
             max_per_address: None,
             next_token_id: 1,
             payment_address: Addr::unchecked("payment_address"),
@@ -574,7 +574,7 @@ mod tests {
             symbol: String::from(""),
             name: String::from(""),
             uri: String::from(""),
-            price: coin(1, "ubtsg"),
+            price: Coin::new(1u128, "ubtsg"),
             max_per_address: None,
             next_token_id: 1,
             seller_fee_bps: 1_000,
@@ -635,7 +635,10 @@ mod tests {
             assert!(result.is_err());
             match result {
                 Err(e) => {
-                    assert_eq!(e.to_string(), "kind: Other, error: royalties amount is zero or negative");
+                    assert_eq!(
+                        e.to_string(),
+                        "kind: Other, error: royalties amount is zero or negative"
+                    );
                 }
                 _ => panic!("Unexpected error"),
             }

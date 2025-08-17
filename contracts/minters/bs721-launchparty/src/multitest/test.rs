@@ -1,4 +1,4 @@
-use cosmwasm_std::{coin, Addr, Uint128, Uint256};
+use cosmwasm_std::{coin, Addr, Uint256};
 
 use crate::multitest::suite::{ADDRESS1, ADDRESS2, PAYMENT_RECIPIENT, REFERRAL};
 

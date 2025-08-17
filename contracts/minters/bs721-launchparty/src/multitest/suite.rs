@@ -1,5 +1,5 @@
 use anyhow::Result as AnyResult;
-use cosmwasm_std::{coin, Addr, Coin, Empty, StdError, Timestamp, Uint128, Uint256};
+use cosmwasm_std::{coin, Addr, Coin, Empty, StdError, Timestamp, Uint256};
 use cw_multi_test::{App, AppResponse, Contract, ContractWrapper, Executor};
 use derivative::Derivative;
 
