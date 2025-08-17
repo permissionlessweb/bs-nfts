@@ -81,6 +81,7 @@ pub struct MsgCreateCurve {
 }
 
 #[cw_serde]
+#[cfg_attr(feature = "interface", derive(cw_orch::ExecuteFns))] // cw-orch automatic
 pub enum ExecuteMsg {
     UpdateConfig {
         /// Address allowed to update contract parameters
@@ -115,6 +116,7 @@ pub enum ExecuteMsg {
 /// Possible query messages that the launchparty-curve contract can handle.
 #[cw_serde]
 #[derive(QueryResponses)]
+#[cfg_attr(feature = "interface", derive(cw_orch::QueryFns))] // cw-orch automatic
 pub enum QueryMsg {
     /// Retrieves contract's configuration
     #[returns(Config)]

@@ -1,7 +1,9 @@
+use std::str::FromStr;
+
 use bs721::cosmwasm_ext::DecimalToInteger;
-use bs721::cosmwasm_ext::IntegerToDecimal;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
+use cosmwasm_std::Uint256;
 use cosmwasm_std::{
     to_json_binary, Addr, BankMsg, Binary, Coin, Decimal, Decimal256, Deps, DepsMut, Env,
     MessageInfo, Order, Response, StdResult, Storage, Uint128,
@@ -45,7 +47,7 @@ pub fn instantiate(
         )?;
     }
 
-    WITHDRAWABLE_AMOUNT.save(deps.storage, &Uint128::zero())?;
+    WITHDRAWABLE_AMOUNT.save(deps.storage, &Uint256::zero())?;
     TOTAL_SHARES.save(deps.storage, &total_shares)?;
     DENOM.save(deps.storage, &msg.denom)?;
 
@@ -95,7 +97,7 @@ pub fn compute_shares_and_store(
         role,
         initial_shares,
         percentage_shares,
-        withdrawable_amount: Uint128::zero(),
+        withdrawable_amount: Uint256::zero(),
     };
 
     CONTRIBUTORS.save(store, &contributor_addr, &new_contributor)?;
@@ -111,7 +113,7 @@ pub fn execute_distribute(deps: DepsMut, env: Env) -> Result<Response, ContractE
 
     let withdrawable_amount = WITHDRAWABLE_AMOUNT.load(deps.storage).unwrap_or_default();
 
-    let distributable_royalties: Uint128 = funds.amount.saturating_sub(withdrawable_amount);
+    let distributable_royalties: Uint256 = funds.amount.saturating_sub(withdrawable_amount);
     if distributable_royalties.is_zero() {
         return Err(ContractError::NothingToDistribute {});
     }
@@ -120,13 +122,14 @@ pub fn execute_distribute(deps: DepsMut, env: Env) -> Result<Response, ContractE
         .keys(deps.storage, None, None, Order::Ascending)
         .collect::<StdResult<Vec<Addr>>>()?;
 
-    let mut distributed_royalties = Uint128::zero();
+    let mut distributed_royalties = Uint256::zero();
     for contributor_address in contributors {
         CONTRIBUTORS.update(deps.storage, &contributor_address, |info| {
             let mut info = info.unwrap();
 
             // Step 1: Convert distributable_royalties (Uint128) to Decimal256 with desired precision
-            let distributable_royalties_decimal = distributable_royalties.to_decimal256(18u32)?;
+            let distributable_royalties_decimal =
+                Decimal256::from_str(&distributable_royalties.to_string())?;
 
             // Step 2: Convert contributor percentage (Decimal) to Decimal256
             let percentage_decimal256 = Decimal256::from(info.percentage_shares);
@@ -136,7 +139,8 @@ pub fn execute_distribute(deps: DepsMut, env: Env) -> Result<Response, ContractE
                 percentage_decimal256 * distributable_royalties_decimal;
 
             // Step 4: Convert Decimal256 result to Uint128 using same precision
-            let contributor_royalties = contributor_royalties_decimal.to_uint(18u32)?;
+            let contributor_royalties: Uint256 =
+                contributor_royalties_decimal.to_uint(0u32)?.into();
             // Step 5: Ensure contributor gets a non-zero amount
             if contributor_royalties.is_zero() {
                 return Err(ContractError::NotEnoughToDistribute {});
@@ -148,16 +152,19 @@ pub fn execute_distribute(deps: DepsMut, env: Env) -> Result<Response, ContractE
                 .checked_add(contributor_royalties)?;
 
             // Step 7: Track total distributed amount
-            distributed_royalties = distributed_royalties.checked_add(contributor_royalties)?;
+            distributed_royalties =
+                distributed_royalties.checked_add(contributor_royalties.into())?;
 
             Ok(info)
         })?;
     }
     if distributed_royalties > distributable_royalties {
+        println!("distributable_royalties, {:#?}!", distributable_royalties);
+        println!("distributed_royalties, {:#?}!", distributed_royalties);
         return Err(ContractError::NotEnoughToDistribute {});
     }
 
-    WITHDRAWABLE_AMOUNT.update(deps.storage, |amount| -> Result<Uint128, ContractError> {
+    WITHDRAWABLE_AMOUNT.update(deps.storage, |amount| -> Result<Uint256, ContractError> {
         amount
             .checked_add(distributed_royalties)
             .map_err(ContractError::OverflowErr)
@@ -184,9 +191,9 @@ pub fn execute_withdraw(deps: DepsMut, info: MessageInfo) -> Result<Response, Co
         }
         tokens_to_send.amount = tokens_to_send
             .amount
-            .checked_add(contributor.withdrawable_amount)?;
+            .checked_add(contributor.withdrawable_amount.into())?;
         // set contributor withdrawable amount to zero since the contract will send their royalties
-        contributor.withdrawable_amount = Uint128::zero();
+        contributor.withdrawable_amount = Uint256::zero();
         Ok(contributor)
     })?;
 
@@ -230,7 +237,7 @@ pub fn query_list_contributors(
                 role: data.role,
                 initial_shares: data.initial_shares,
                 percentage_shares: data.percentage_shares,
-                withdrawable_royalties: data.withdrawable_amount,
+                withdrawable_royalties: data.withdrawable_amount.into(),
             })
         })
         .collect::<StdResult<_>>()?;
@@ -242,7 +249,7 @@ pub fn query_list_contributors(
 
 /// Returns the difference between contract balance and the amount of tokens that can be withdrawn as
 /// royalties.
-pub fn query_distributable_amount(deps: Deps, env: Env) -> StdResult<Uint128> {
+pub fn query_distributable_amount(deps: Deps, env: Env) -> StdResult<Uint256> {
     // get contract funds
     let funds = deps
         .querier
@@ -250,11 +257,11 @@ pub fn query_distributable_amount(deps: Deps, env: Env) -> StdResult<Uint128> {
 
     let withdrawable_amount = WITHDRAWABLE_AMOUNT.load(deps.storage).unwrap_or_default();
 
-    Ok(funds.amount.saturating_sub(withdrawable_amount))
+    Ok(funds.amount.saturating_sub(withdrawable_amount.into()))
 }
 
 /// Returns the withdrawable amount.
-pub fn query_withdrawable_amount(deps: Deps) -> Uint128 {
+pub fn query_withdrawable_amount(deps: Deps) -> Uint256 {
     WITHDRAWABLE_AMOUNT.load(deps.storage).unwrap_or_default()
 }
 

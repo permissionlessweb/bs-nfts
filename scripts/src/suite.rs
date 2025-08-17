@@ -6,6 +6,7 @@ use crate::{base::Bs721Base, factory::Bs721Factory};
 use bs721_launchparty::msg::{InstantiateMsg as Bs721LaunchInitMsg, PartyType};
 
 use cosmwasm_std::StdError;
+use cosmwasm_std::{Coin, Timestamp};
 use cw_orch::prelude::*;
 pub struct BtsgNftSuite<Chain>
 where
@@ -81,12 +82,16 @@ impl<Chain: CwEnv> cw_orch::contract::Deploy<Chain> for BtsgNftSuite<Chain> {
     fn deploy_on(chain: Chain, _data: Self::DeployData) -> Result<Self, Self::Error> {
         // ########### Upload ##############
         let suite: BtsgNftSuite<Chain> = BtsgNftSuite::store_on(chain.clone())?;
-        let start_time = chain
-            .node_querier()
-            .latest_block()
-            .map_err(|e| StdError::generic_err(e.to_string()))?
-            .time
-            .plus_seconds(60u64);
+        let start_time = Timestamp::from_nanos(
+            chain
+                .node_querier()
+                .latest_block()
+                .map_err(|e| StdError::msg(e.to_string()))
+                .unwrap()
+                .time
+                .plus_seconds(60u64)
+                .nanos(),
+        );
 
         // LAUNCHPARTY
         let res = suite.launchparty.instantiate(

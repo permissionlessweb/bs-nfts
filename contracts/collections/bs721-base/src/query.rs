@@ -118,7 +118,7 @@ where
             .collect();
 
         if filtered.is_empty() {
-            return Err(StdError::not_found("Approval not found"));
+            return Err(StdError::msg("Approval not found"));
         }
         // we expect only one item
         let approval = filtered[0].clone();

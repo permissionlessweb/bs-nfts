@@ -12,8 +12,8 @@ use bs721_launchparty::msg::InstantiateMsg as LaunchpartyFixedMsgInstantiate;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    coin, to_json_binary, AnyMsg, Binary, Coin, CosmosMsg, Deps, DepsMut, Env, MessageInfo,
-    Response, StdResult, SubMsg, WasmMsg,
+    to_json_binary, AnyMsg, Binary, Coin, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Response,
+    StdResult, SubMsg, WasmMsg,
 };
 use cw2::set_contract_version;
 use cw_utils::must_pay;
@@ -188,8 +188,8 @@ fn execute_create_curve(
     // Protocol fee
     res = res.add_submessage(fund_community_pool_msg(
         env,
-        coin(
-            config.create_nft_sale_fee.amount.u128(),
+        Coin::new(
+            config.create_nft_sale_fee.amount,
             config.create_nft_sale_fee.denom,
         ),
     ));
@@ -247,8 +247,8 @@ fn execute_create_launchparty(
     // Protocol fee
     res = res.add_submessage(fund_community_pool_msg(
         env,
-        coin(
-            config.create_nft_sale_fee.amount.u128(),
+        Coin::new(
+            config.create_nft_sale_fee.amount,
             config.create_nft_sale_fee.denom,
         ),
     ));

@@ -1,4 +1,5 @@
 use std::ops::Add;
+use std::str::FromStr;
 
 use crate::error::ContractError;
 use crate::msg::{
@@ -18,7 +19,7 @@ use cosmwasm_std::{
     attr, coin, from_json, instantiate2_address, to_json_binary, Addr, AnyMsg, Attribute, BankMsg,
     Binary, CanonicalAddr, Coin, CosmosMsg, Decimal, Deps, DepsMut, Empty, Env, MessageInfo,
     MsgResponse, QuerierWrapper, QueryRequest, Reply, ReplyOn, Response, StdError, StdResult,
-    Storage, SubMsg, Uint128, WasmMsg, WasmQuery,
+    Storage, SubMsg, Uint128, Uint256, WasmMsg, WasmQuery,
 };
 use cw2::set_contract_version;
 
@@ -297,9 +298,7 @@ fn execute_burn(
 
     let amount = token_ids.clone().len() as u32;
     if amount == 0 {
-        return Err(ContractError::Std(StdError::generic_err(
-            "no token ids provided",
-        )));
+        return Err(ContractError::Std(StdError::msg("no token ids provided")));
     }
 
     let mut res = Response::new();
@@ -437,7 +436,7 @@ fn execute_mint(
     let supply = query_supply(deps.querier, deps.storage);
     let price = buy_price(deps.storage, supply, amount.into());
 
-    if sent_amount < price.total_price {
+    if sent_amount < price.total_price.into() {
         return Err(ContractError::InvalidPaymentAmount(
             sent_amount,
             price.total_price,
@@ -544,14 +543,14 @@ fn execute_mint(
     attributes.push(attr("protocol_fee", price.protocol_fee.u128().to_string()));
 
     // Refund if needed
-    let refund_amount = sent_amount - price.total_price;
+    let refund_amount: Uint256 = sent_amount - Uint256::from_str(&price.total_price.to_string())?;
     if !refund_amount.is_zero() {
         bank_msgs.push(BankMsg::Send {
             to_address: info.sender.to_string(),
-            amount: vec![coin(refund_amount.u128(), payment_denom.clone())],
+            amount: vec![Coin::new(refund_amount, payment_denom.clone())],
         });
 
-        attributes.push(attr("refund", refund_amount.u128().to_string()));
+        attributes.push(attr("refund", refund_amount.to_string()));
     }
 
     res = res.add_messages(bank_msgs).add_attributes(attributes);

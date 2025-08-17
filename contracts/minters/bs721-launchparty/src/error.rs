@@ -1,8 +1,8 @@
-use cosmwasm_std::{Instantiate2AddressError, StdError, Uint128};
+use cosmwasm_std::{Instantiate2AddressError, StdError, Uint128, Uint256};
 use cw_utils::PaymentError;
 use thiserror::Error;
 
-#[derive(Error, Debug, PartialEq)]
+#[derive(Error, Debug)]
 pub enum ContractError {
     #[error("{0}")]
     Std(#[from] StdError),
@@ -44,7 +44,7 @@ pub enum ContractError {
     InvalidFunds {},
 
     #[error("invalid payment amount. Sent is {0} but required is {1}")]
-    InvalidPaymentAmount(Uint128, Uint128),
+    InvalidPaymentAmount(Uint256, Uint256),
 
     #[error("launchpad not started")]
     NotStarted {},

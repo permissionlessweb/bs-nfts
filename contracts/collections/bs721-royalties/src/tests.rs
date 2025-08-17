@@ -1,7 +1,7 @@
 use cosmwasm_std::{
     coin, coins,
     testing::{message_info, mock_dependencies, mock_env},
-    Addr, Attribute, BankMsg, CosmosMsg, Decimal, DepsMut, Uint128,
+    Addr, Attribute, BankMsg, CosmosMsg, Decimal, DepsMut, Uint256,
 };
 
 use crate::{
@@ -101,8 +101,8 @@ fn distribute_shares_fails() {
     {
         let err = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone()).unwrap_err();
         assert_eq!(
-            ContractError::NothingToDistribute {},
-            err,
+            ContractError::NothingToDistribute {}.to_string(),
+            err.to_string(),
             "expected error since contract has not funds to distribute"
         );
     }
@@ -113,8 +113,8 @@ fn distribute_shares_fails() {
             .update_balance(env.contract.address.clone(), coins(1_000, "NOT_DENOM"));
         let err = execute(deps.as_mut(), env, info, msg).unwrap_err();
         assert_eq!(
-            ContractError::NothingToDistribute {},
-            err,
+            ContractError::NothingToDistribute {}.to_string(),
+            err.to_string(),
             "expected error since contract has not funds of correct denom to distribute"
         );
     }
@@ -135,13 +135,13 @@ fn not_nough_to_distribute() {
             .update_balance(env.contract.address.clone(), coins(99, DENOM));
         let resp = execute(deps.as_mut(), env, info, msg).unwrap_err();
         assert_eq!(
-            resp,
-            ContractError::NotEnoughToDistribute {},
+            resp.to_string(),
+            ContractError::NotEnoughToDistribute {}.to_string(),
             "expected to fail since 1% of 99 is approximated to zero"
         );
 
         let query_resp = query_withdrawable_amount(deps.as_ref());
-        assert_eq!(query_resp, Uint128::new(0), "expected nothing to withdraw");
+        assert_eq!(query_resp, Uint256::new(0), "expected nothing to withdraw");
     }
 }
 
@@ -171,7 +171,7 @@ fn distribute_shares_single() {
         let query_resp = query_withdrawable_amount(deps.as_ref());
         assert_eq!(
             query_resp,
-            Uint128::new(1000),
+            Uint256::new(1000),
             "expected all initial balance as withdrawable"
         )
     }
@@ -183,15 +183,15 @@ fn distribute_shares_single() {
         execute(deps.as_mut(), env.clone(), info.clone(), msg.clone()).unwrap();
         let err = execute(deps.as_mut(), env, info, msg).unwrap_err();
         assert_eq!(
-            err,
-            ContractError::NothingToDistribute {},
+            err.to_string(),
+            ContractError::NothingToDistribute {}.to_string(),
             "expected to fail since after first distribution the contract has no more funds"
         );
 
         let query_resp = query_withdrawable_amount(deps.as_ref());
         assert_eq!(
             query_resp,
-            Uint128::new(2000),
+            Uint256::new(2000),
             "expected 1_000 + 1_000 as withdrawable"
         )
     }
@@ -223,14 +223,14 @@ fn distribute_two_contributor() {
         let query_resp = query_withdrawable_amount(deps.as_ref());
         assert_eq!(
             query_resp,
-            Uint128::new(100),
+            Uint256::new(100),
             "expected distributed token to withdraw"
         );
 
         let query_resp = query_distributable_amount(deps.as_ref(), env).unwrap();
         assert_eq!(
             query_resp,
-            Uint128::new(1),
+            Uint256::new(1),
             "expected only one token to be distributed"
         );
     }
@@ -262,7 +262,7 @@ fn distribute_shares_multiple() {
         let query_resp = query_withdrawable_amount(deps.as_ref());
         assert_eq!(
             query_resp,
-            Uint128::new(1000),
+            Uint256::new(1000),
             "expected all initial balance as withdrawable"
         );
 
@@ -274,7 +274,7 @@ fn distribute_shares_multiple() {
                 .find(|a| a.address == contribs[0])
                 .unwrap()
                 .withdrawable_royalties,
-            Uint128::new(100)
+            Uint256::new(100)
         );
         let query_resp = query_list_contributors(deps.as_ref(), None, None).unwrap();
         assert_eq!(
@@ -284,7 +284,7 @@ fn distribute_shares_multiple() {
                 .find(|a| a.address == contribs[1])
                 .unwrap()
                 .withdrawable_royalties,
-            Uint128::new(200)
+            Uint256::new(200)
         );
         let query_resp = query_list_contributors(deps.as_ref(), None, None).unwrap();
         assert_eq!(
@@ -294,7 +294,7 @@ fn distribute_shares_multiple() {
                 .find(|a| a.address == contribs[2])
                 .unwrap()
                 .withdrawable_royalties,
-            Uint128::new(300)
+            Uint256::new(300)
         );
         let query_resp = query_list_contributors(deps.as_ref(), None, None).unwrap();
         assert_eq!(
@@ -304,7 +304,7 @@ fn distribute_shares_multiple() {
                 .find(|a| a.address == contribs[3])
                 .unwrap()
                 .withdrawable_royalties,
-            Uint128::new(400)
+            Uint256::new(400)
         );
     }
 
@@ -315,15 +315,15 @@ fn distribute_shares_multiple() {
         execute(deps.as_mut(), env.clone(), info.clone(), msg.clone()).unwrap();
         let err = execute(deps.as_mut(), env.clone(), info, msg).unwrap_err();
         assert_eq!(
-            err,
-            ContractError::NothingToDistribute {},
+            err.to_string(),
+            ContractError::NothingToDistribute {}.to_string(),
             "expected to fail since after first distribution the contract has no more funds"
         );
 
         let query_resp = query_distributable_amount(deps.as_ref(), env).unwrap();
         assert_eq!(
             query_resp,
-            Uint128::zero(),
+            Uint256::zero(),
             "expected nothing to distribute"
         );
     }
@@ -344,8 +344,8 @@ fn withdraw_royalties_fails() {
         let info = message_info(&Addr::unchecked(RANDO), &[]);
         let err = execute(deps.as_mut(), env.clone(), info, withdraw_msg.clone()).unwrap_err();
         assert_eq!(
-            err,
-            ContractError::Unauthorized {},
+            err.to_string(),
+            ContractError::Unauthorized {}.to_string(),
             "expected to fail since only contributors can withdraw"
         )
     }
@@ -354,8 +354,8 @@ fn withdraw_royalties_fails() {
         let info = message_info(&Addr::unchecked(CONTRIBUTOR1), &[]);
         let err = execute(deps.as_mut(), env, info, withdraw_msg).unwrap_err();
         assert_eq!(
-            err,
-            ContractError::NothingToWithdraw {},
+            err.to_string(),
+            ContractError::NothingToWithdraw {}.to_string(),
             "expected to fail since contributors has nothing to withdraw"
         )
     }
@@ -390,14 +390,14 @@ fn withdraw_royalties_single() {
         let query_resp = query_withdrawable_amount(deps.as_ref());
         assert_eq!(
             query_resp,
-            Uint128::zero(),
+            Uint256::zero(),
             "expected withdrawable amount zero after withdraw"
         );
 
         let query_resp = query_list_contributors(deps.as_ref(), None, None).unwrap();
         assert_eq!(
             query_resp.contributors[0].withdrawable_royalties,
-            Uint128::zero(),
+            Uint256::zero(),
             "expected withdrawable royalties zero after withdraw"
         )
     }
@@ -432,7 +432,7 @@ fn withdraw_royalties_multiple() {
     let query_resp = query_withdrawable_amount(deps.as_ref());
     assert_eq!(
         query_resp,
-        Uint128::new(500),
+        Uint256::new(500),
         "expected withdrawable amount half initial amount"
     );
 
@@ -449,7 +449,7 @@ fn withdraw_royalties_multiple() {
             .find(|a| a.address == contribs[0])
             .unwrap()
             .withdrawable_royalties,
-        Uint128::zero(),
+        Uint256::zero(),
         "{}",
         assertion,
     );
@@ -469,14 +469,14 @@ fn withdraw_royalties_multiple() {
     let query_resp = query_withdrawable_amount(deps.as_ref());
     assert_eq!(
         query_resp,
-        Uint128::zero(),
+        Uint256::zero(),
         "expected withdrawable amount zero after all contributors withdraw"
     );
 
     let query_resp = query_list_contributors(deps.as_ref(), None, None).unwrap();
     assert_eq!(
         query_resp.contributors[1].withdrawable_royalties,
-        Uint128::zero(),
+        Uint256::zero(),
         "expected withdrawable royalties of address1 zero after withdraw"
     );
 }
@@ -548,7 +548,7 @@ fn mixed_distribute_and_withdraw() {
     let query_resp = query_withdrawable_amount(deps.as_ref());
     assert_eq!(
         query_resp,
-        Uint128::zero(),
+        Uint256::zero(),
         "expected withdrawable amount zero after all contributors withdraw"
     );
 }
@@ -562,24 +562,24 @@ fn query_withdrawable_amount_works() {
 
     {
         WITHDRAWABLE_AMOUNT
-            .save(deps.as_mut().storage, &Uint128::zero())
+            .save(deps.as_mut().storage, &Uint256::zero())
             .unwrap();
 
         let query_resp = query_withdrawable_amount(deps.as_ref());
         assert_eq!(
             query_resp,
-            Uint128::zero(),
+            Uint256::zero(),
             "expected zero since just initialized"
         );
     }
 
     {
         WITHDRAWABLE_AMOUNT
-            .save(deps.as_mut().storage, &Uint128::new(1_000))
+            .save(deps.as_mut().storage, &Uint256::new(1_000))
             .unwrap();
 
         let query_resp = query_withdrawable_amount(deps.as_ref());
-        assert_eq!(query_resp, Uint128::new(1_000), "expected 1_000");
+        assert_eq!(query_resp, Uint256::new(1_000), "expected 1_000");
     }
 }
 
@@ -593,26 +593,26 @@ fn query_distributable_amount_works() {
             .save(deps.as_mut().storage, &String::from(DENOM))
             .unwrap();
         WITHDRAWABLE_AMOUNT
-            .save(deps.as_mut().storage, &Uint128::zero())
+            .save(deps.as_mut().storage, &Uint256::zero())
             .unwrap();
 
         let query_resp = query_distributable_amount(deps.as_ref(), env.clone()).unwrap();
         assert_eq!(
             query_resp,
-            Uint128::zero(),
+            Uint256::zero(),
             "expected zero since contract as no funds"
         );
     }
 
     {
         WITHDRAWABLE_AMOUNT
-            .save(deps.as_mut().storage, &Uint128::new(1))
+            .save(deps.as_mut().storage, &Uint256::new(1))
             .unwrap();
 
         let query_resp = query_distributable_amount(deps.as_ref(), env.clone()).unwrap();
         assert_eq!(
             query_resp,
-            Uint128::zero(),
+            Uint256::zero(),
             "expected zero also if contract has less funds than distributable"
         );
     }
@@ -622,13 +622,13 @@ fn query_distributable_amount_works() {
             .bank
             .update_balance(env.contract.address.clone(), coins(1_000, DENOM));
         WITHDRAWABLE_AMOUNT
-            .save(deps.as_mut().storage, &Uint128::zero())
+            .save(deps.as_mut().storage, &Uint256::zero())
             .unwrap();
 
         let query_resp = query_distributable_amount(deps.as_ref(), env).unwrap();
         assert_eq!(
             query_resp,
-            Uint128::new(1_000),
+            Uint256::new(1_000),
             "expected the difference between balance and withdrawable amount"
         );
     }
@@ -652,21 +652,21 @@ fn test_query_list_contributors() {
                     role: "role".into(),
                     initial_shares: 20,
                     percentage_shares: Decimal::from_ratio(20u128, 60u128),
-                    withdrawable_royalties: Uint128::zero(),
+                    withdrawable_royalties: Uint256::zero(),
                 },
                 ContributorResponse {
                     address: CONTRIBUTOR1.into(),
                     role: "role".into(),
                     initial_shares: 10,
                     percentage_shares: Decimal::from_ratio(10u128, 60u128),
-                    withdrawable_royalties: Uint128::zero(),
+                    withdrawable_royalties: Uint256::zero(),
                 },
                 ContributorResponse {
                     address: CONTRIBUTOR3.into(),
                     role: "role".into(),
                     initial_shares: 30,
                     percentage_shares: Decimal::from_ratio(30u128, 60u128),
-                    withdrawable_royalties: Uint128::zero(),
+                    withdrawable_royalties: Uint256::zero(),
                 },
             ]
         }
@@ -696,7 +696,7 @@ fn test_query_list_contributors() {
                 role: "role".into(),
                 initial_shares: 30,
                 percentage_shares: Decimal::from_ratio(30u128, 60u128),
-                withdrawable_royalties: Uint128::zero(),
+                withdrawable_royalties: Uint256::zero(),
             }]
         }
     )

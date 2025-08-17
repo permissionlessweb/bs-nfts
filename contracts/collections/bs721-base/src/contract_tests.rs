@@ -98,7 +98,7 @@ fn minting() {
     let err = contract
         .execute(deps.as_mut(), mock_env(), random, mint_msg.clone())
         .unwrap_err();
-    assert_eq!(err, ContractError::Unauthorized {});
+    assert_eq!(err.to_string(), ContractError::Unauthorized {}.to_string());
 
     // minter can mint
     let allowed = message_info(&minter, &[]);
@@ -153,7 +153,7 @@ fn minting() {
     let err = contract
         .execute(deps.as_mut(), mock_env(), allowed, mint_msg2)
         .unwrap_err();
-    assert_eq!(err, ContractError::Claimed {});
+    assert_eq!(err.to_string(), ContractError::Claimed {}.to_string());
 
     // list the token_ids
     let tokens = contract.all_tokens(deps.as_ref(), None, None).unwrap();
@@ -197,7 +197,7 @@ fn burning() {
         .execute(deps.as_mut(), mock_env(), random_msg, burn_msg.clone())
         .unwrap_err();
 
-    assert_eq!(err, ContractError::Unauthorized {});
+    assert_eq!(err.to_string(), ContractError::Unauthorized {}.to_string());
 
     let _ = contract
         .execute(deps.as_mut(), mock_env(), allowed, burn_msg)
@@ -256,7 +256,7 @@ fn transferring_nft() {
     let err = contract
         .execute(deps.as_mut(), mock_env(), random_msg, transfer_msg)
         .unwrap_err();
-    assert_eq!(err, ContractError::Unauthorized {});
+    assert_eq!(err.to_string(), ContractError::Unauthorized {}.to_string());
 
     // owner can
     let random_msg = message_info(&venus, &[]);
@@ -320,7 +320,7 @@ fn sending_nft() {
     let err = contract
         .execute(deps.as_mut(), mock_env(), random, send_msg.clone())
         .unwrap_err();
-    assert_eq!(err, ContractError::Unauthorized {});
+    assert_eq!(err.to_string(), ContractError::Unauthorized {}.to_string());
 
     // but owner can
     let random = message_info(&venus, &[]);

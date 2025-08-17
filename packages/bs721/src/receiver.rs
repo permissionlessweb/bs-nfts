@@ -1,5 +1,3 @@
-use schemars::JsonSchema;
-
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{to_json_binary, Binary, CosmosMsg, StdResult, WasmMsg};
 
@@ -21,7 +19,7 @@ impl Bs721ReceiveMsg {
     /// creates a cosmos_msg sending this struct to the named contract
     pub fn into_cosmos_msg<T: Into<String>, C>(self, contract_addr: T) -> StdResult<CosmosMsg<C>>
     where
-        C: Clone + std::fmt::Debug + PartialEq + JsonSchema,
+        C: Clone + std::fmt::Debug + PartialEq,
     {
         let msg = self.into_json_binary()?;
         let execute = WasmMsg::Execute {

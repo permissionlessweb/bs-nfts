@@ -6,37 +6,28 @@ repository = "https://github.com/bitsongofficial/go-bitsong"
 version.workspace = true
 
 [dependencies]
-bs721                      = { path = "../packages/bs721"}
-btsg-auth                  = { workspace = true}
-btsg-wavs                  = { workspace = true}
-bs721-base                 = { workspace = true}
-bs721-factory              = { workspace = true}
-bs721-curve                = { workspace = true}
-bs721-royalties             = { workspace = true}
-bs721-launchparty          = { workspace = true}
-
-cosmwasm-std.workspace     = true
-cw-orch-polytone = { package = "abstract-cw-orch-polytone", version = "6.0.1" }
-cw-orch-interchain = { version = "0.9.0",  features = ["daemon"] }
-cw-orch-interchain-core = "0.10.1"
-cw-orch   = { version = "0.26.0", features = ["daemon"] }
-dirs = "5.0.1"
-schemars        = { workspace = true }
-
-env_logger = "0.10.0"
-log = "0.4.22"
-dotenv = { version = "0.15.0" }
-anyhow = "1"
-pretty_env_logger = { version = "0.5.0" }
-serde = { version = "1.0.140", default-features = false, features = ["derive"] }
-serde_json = "1.0.79"
-
-clap = { version = "4.0.32", features = ["derive"] }
-reqwest = { version = "0.11.9" }
-
-# crypto libraries
-base64-serde = "0.8.0"
-base64 = "0.22.0"
-
-[dev-dependencies]
-tokio = "1.39.3"
+anyhow                     = { version = "1" }
+base64                     = { version = "0.22.0" }
+base64-serde               = { version = "0.8.0" }
+bs721                      = { path = "../packages/bs721" }
+bs721-base                 = { workspace = true }
+bs721-curve                = { workspace = true }
+bs721-factory              = { workspace = true }
+bs721-launchparty          = { workspace = true }
+bs721-royalties            = { workspace = true }
+btsg-auth                  = { workspace = true }
+btsg-wavs                  = { workspace = true }
+clap                       = { version = "4.0.32", features = ["derive"] }
+cosmwasm-std               = { workspace = true }
+cw-orch                    = { version = "0.26.0", features = ["daemon"] }
+cw-orch-interchain         = { version = "0.9.0", features = ["daemon"] }
+cw-orch-interchain-core    = { version = "0.10.1" }
+dirs                       = { version = "5.0.1" }
+dotenv                     = { version = "0.15.0" }
+env_logger                 = { version = "0.10.0" }
+log                        = { version = "0.4.22" }
+pretty_env_logger          = { version = "0.5.0" }
+reqwest                    = { version = "0.11.9" }
+schemars                   = { workspace = true }
+serde                      = { version = "1.0.140", default-features = false, features = ["derive"] }
+serde_json                 = { version = "1.0.79" }

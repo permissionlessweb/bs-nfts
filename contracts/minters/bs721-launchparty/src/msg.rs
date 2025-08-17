@@ -44,7 +44,7 @@ pub struct InstantiateMsg {
 
 /// Possible state-changing messages that the launchparty-fixed contract can handle.
 #[cw_serde]
-#[derive(cw_orch::ExecuteFns)]
+#[cfg_attr(feature = "interface", derive(cw_orch::ExecuteFns))] // cw-orch automatic
 pub enum ExecuteMsg {
     /// Allows to mint a bs721 token and, optionally, to refer an address.
     Mint {
@@ -60,7 +60,8 @@ pub enum ExecuteMsg {
 
 /// Possible query messages that the launchparty-fixed contract can handle.
 #[cw_serde]
-#[derive(QueryResponses, cw_orch::QueryFns)]
+#[derive(QueryResponses)]
+#[cfg_attr(feature = "interface", derive(cw_orch::QueryFns))] // cw-orch automatic
 pub enum QueryMsg {
     /// Retrieves contract's configuration
     #[returns(Config)]
@@ -151,8 +152,8 @@ mod test {
             let err = party_type.validate().unwrap_err();
 
             assert_eq!(
-                err,
-                ContractError::ZeroDuration {},
+                err.to_string(),
+                ContractError::ZeroDuration {}.to_string(),
                 "expected to fail since no zero duration party is allowed"
             );
         }
@@ -162,8 +163,8 @@ mod test {
             let err = party_type.validate().unwrap_err();
 
             assert_eq!(
-                err,
-                ContractError::ZeroEditions {},
+                err.to_string(),
+                ContractError::ZeroEditions {}.to_string(),
                 "expected to fail since no party with zero editions is allowed"
             );
         }
@@ -191,10 +192,10 @@ mod test {
             msg.seller_fee_bps = 10_001;
             let err = msg.validate(mock_env()).unwrap_err();
             assert_eq!(
-                err,
+                err.to_string(),
                 ContractError::FeeBps {
                     profile: String::from("seller")
-                },
+                }.to_string(),
                 "expected to fail since fee bps higher than maximum allowed"
             );
             msg.seller_fee_bps = 1_000;
@@ -204,10 +205,10 @@ mod test {
             msg.referral_fee_bps = 10_001;
             let err = msg.validate(mock_env()).unwrap_err();
             assert_eq!(
-                err,
+                err.to_string(),
                 ContractError::FeeBps {
                     profile: String::from("referral")
-                },
+                }.to_string(),
                 "expected to fail since fee bps higher than maximum allowed"
             );
             msg.referral_fee_bps = 1_000;

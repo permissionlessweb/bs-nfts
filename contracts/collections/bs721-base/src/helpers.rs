@@ -1,5 +1,3 @@
-use std::marker::PhantomData;
-
 use bs721::{
     AllNftInfoResponse, Approval, ApprovalResponse, ApprovalsResponse, ContractInfoResponse,
     NftInfoResponse, NumTokensResponse, OperatorsResponse, OwnerOfResponse, TokensResponse,
@@ -14,11 +12,7 @@ use serde::Serialize;
 use crate::{ExecuteMsg, QueryMsg};
 
 #[cw_serde]
-pub struct Bs721Contract<Q: CustomMsg, E: CustomMsg>(
-    pub Addr,
-    pub PhantomData<Q>,
-    pub PhantomData<E>,
-);
+pub struct Bs721Contract<Q: CustomMsg, E: CustomMsg>(pub Addr, pub Q, pub E);
 
 #[allow(dead_code)]
 impl<Q: CustomMsg, E: CustomMsg> Bs721Contract<Q, E> {

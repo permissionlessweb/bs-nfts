@@ -38,12 +38,6 @@ where
         let minter = deps.api.addr_validate(&msg.minter)?;
         self.minter.save(deps.storage, &minter)?;
 
-        cw_ownable::initialize_owner(
-            deps.storage,
-            deps.api,
-            Some(deps.api.addr_validate(&msg.minter)?.as_str()),
-        )?;
-
         Ok(Response::default())
     }
 

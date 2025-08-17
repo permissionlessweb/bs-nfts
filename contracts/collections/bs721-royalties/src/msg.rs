@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use crate::ContractError;
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Decimal, Uint128};
+use cosmwasm_std::{Decimal, Uint128, Uint256};
 
 /// Represents a contributor to the collection.
 #[cw_serde]
@@ -73,7 +73,7 @@ impl InstantiateMsg {
 }
 
 #[cw_serde]
-
+#[cfg_attr(feature = "interface", derive(cw_orch::ExecuteFns))] // cw-orch automatic
 pub enum ExecuteMsg {
     /// Update contributors withdrawable amount by computing each contributors percentage of the
     /// total distributable contract balance. This function will consider only coins of the stored denom.
@@ -83,7 +83,8 @@ pub enum ExecuteMsg {
 }
 
 #[cw_serde]
-#[derive(QueryResponses, cw_orch::QueryFns)]
+#[derive(QueryResponses)]
+#[cfg_attr(feature = "interface", derive(cw_orch::QueryFns))] // cw-orch automatic
 pub enum QueryMsg {
     /// Retrieves the list of contributors.
     #[returns(ContributorListResponse)]
@@ -122,7 +123,7 @@ pub struct ContributorResponse {
     /// Shares of the contributor in terms of percentage of total shares
     pub percentage_shares: Decimal,
     /// Amount of royalties that can be withdrawn
-    pub withdrawable_royalties: Uint128,
+    pub withdrawable_royalties: Uint256,
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -143,8 +144,8 @@ mod test {
         {
             let err = msg.validate_and_compute_total_shares().unwrap_err();
             assert_eq!(
-                err,
-                ContractError::EmptyContributors {},
+                err.to_string(),
+                ContractError::EmptyContributors {}.to_string(),
                 "expected to fail since at least one contributor is requried"
             )
         }
@@ -160,8 +161,8 @@ mod test {
 
             let err = msg.validate_and_compute_total_shares().unwrap_err();
             assert_eq!(
-                err,
-                ContractError::InvalidShares {},
+                err.to_string(),
+                ContractError::InvalidShares {}.to_string(),
                 "expected to fail since zero shares is not allowed"
             )
         }
@@ -181,8 +182,8 @@ mod test {
 
             let err = msg.validate_and_compute_total_shares().unwrap_err();
             assert_eq!(
-                err,
-                ContractError::MaximumCharacters { max_characters: 50 },
+                err.to_string(),
+                ContractError::MaximumCharacters { max_characters: 50 }.to_string(),
                 "expected to fails since role has more than max allowed characters"
             )
         }
@@ -230,8 +231,8 @@ mod test {
 
             let val = msg.validate_and_compute_total_shares().unwrap_err();
             assert_eq!(
-                val,
-                ContractError::DuplicateContributor {},
+                val.to_string(),
+                ContractError::DuplicateContributor {}.to_string(),
                 "expected to fail since duplicated contributors are not allowed"
             )
         }
@@ -250,8 +251,8 @@ mod test {
 
             let val = msg.validate_and_compute_total_shares().unwrap_err();
             assert_eq!(
-                val,
-                ContractError::InvalidShares {},
+                val.to_string(),
+                ContractError::InvalidShares {}.to_string(),
                 "expected to fail since all contributors must have shares"
             )
         }
@@ -274,10 +275,11 @@ mod test {
 
             let err = msg.validate_and_compute_total_shares().unwrap_err();
             assert_eq!(
-                err,
+                err.to_string(),
                 ContractError::MaximumContributors {
                     max_contributors: 50
-                },
+                }
+                .to_string(),
                 "expected to fail since maximum number of contributors reached"
             )
         }

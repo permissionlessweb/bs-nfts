@@ -1,5 +1,5 @@
 use anyhow::Result as AnyResult;
-use cosmwasm_std::{coin, Addr, Coin, Empty, Timestamp, Uint128};
+use cosmwasm_std::{coin, Addr, Coin, Empty, StdError, Timestamp, Uint128, Uint256};
 use cw_multi_test::{App, AppResponse, Contract, ContractWrapper, Executor};
 use derivative::Derivative;
 
@@ -109,7 +109,7 @@ impl TestSuiteBuilder {
             symbol: self.symbol.clone(),
             name: self.name.clone(),
             uri: self.uri.clone(),
-            price: match self.price.amount == Uint128::zero() {
+            price: match self.price.amount == Uint256::zero() {
                 true => coin(1, "ubtsg"),
                 false => self.price.clone(),
             },
@@ -149,7 +149,7 @@ impl TestSuiteBuilder {
 
         app.init_modules(|router, _, storage| -> AnyResult<()> {
             for (addr, coin) in self.init_funds {
-                router.bank.init_balance(storage, &addr, coin)?;
+                router.bank.init_balance(storage, &addr, coin).unwrap();
             }
             Ok(())
         })
@@ -215,7 +215,7 @@ impl Suite {
         referral: Option<String>,
         amount: u32,
         funds: Option<Coin>,
-    ) -> AnyResult<AppResponse> {
+    ) -> Result<AppResponse, StdError> {
         let msg = ExecuteMsg::Mint { referral, amount };
 
         let send_funds: Vec<Coin> = funds.map_or_else(Vec::new, |sent_coin| vec![sent_coin]);
