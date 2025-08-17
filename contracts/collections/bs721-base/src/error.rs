@@ -23,5 +23,4 @@ pub enum ContractError {
 
     #[error("Seller fee and payment address must be set together")]
     InvalidSellerFee {},
-
 }

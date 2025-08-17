@@ -152,8 +152,7 @@ pub fn execute_distribute(deps: DepsMut, env: Env) -> Result<Response, ContractE
                 .checked_add(contributor_royalties)?;
 
             // Step 7: Track total distributed amount
-            distributed_royalties =
-                distributed_royalties.checked_add(contributor_royalties)?;
+            distributed_royalties = distributed_royalties.checked_add(contributor_royalties)?;
 
             Ok(info)
         })?;

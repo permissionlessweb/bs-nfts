@@ -38,9 +38,7 @@ impl Decimal256Ext for Decimal256 {
         value
             .checked_div(10u128.pow(self.decimal_places() - precision).into())?
             .try_into()
-            .map_err(|o: ConversionOverflowError| {
-                StdError::msg(format!("Error converting {}", o))
-            })
+            .map_err(|o: ConversionOverflowError| StdError::msg(format!("Error converting {}", o)))
     }
 
     fn to_uint256_with_precision(&self, precision: impl Into<u32>) -> StdResult<Uint256> {

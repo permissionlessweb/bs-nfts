@@ -195,7 +195,8 @@ mod test {
                 err.to_string(),
                 ContractError::FeeBps {
                     profile: String::from("seller")
-                }.to_string(),
+                }
+                .to_string(),
                 "expected to fail since fee bps higher than maximum allowed"
             );
             msg.seller_fee_bps = 1_000;
@@ -208,7 +209,8 @@ mod test {
                 err.to_string(),
                 ContractError::FeeBps {
                     profile: String::from("referral")
-                }.to_string(),
+                }
+                .to_string(),
                 "expected to fail since fee bps higher than maximum allowed"
             );
             msg.referral_fee_bps = 1_000;
