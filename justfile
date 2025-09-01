@@ -1,4 +1,4 @@
- 
+#!/bin/sh
 
 fmt:
     cargo fmt --all --check

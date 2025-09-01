@@ -38,9 +38,7 @@ impl Decimal256Ext for Decimal256 {
         value
             .checked_div(10u128.pow(self.decimal_places() - precision).into())?
             .try_into()
-            .map_err(|o: ConversionOverflowError| {
-                StdError::generic_err(format!("Error converting {}", o))
-            })
+            .map_err(|o: ConversionOverflowError| StdError::msg(format!("Error converting {}", o)))
     }
 
     fn to_uint256_with_precision(&self, precision: impl Into<u32>) -> StdResult<Uint256> {
@@ -49,7 +47,7 @@ impl Decimal256Ext for Decimal256 {
 
         value
             .checked_div(10u128.pow(self.decimal_places() - precision).into())
-            .map_err(|_| StdError::generic_err("DivideByZeroError"))
+            .map_err(|_| StdError::msg("DivideByZeroError"))
     }
 
     fn from_integer(i: impl Into<Uint256>) -> Self {
@@ -64,7 +62,7 @@ impl Decimal256Ext for Decimal256 {
         Ok(Decimal256::new(
             self.atomics()
                 .checked_multiply_ratio(numerator.atomics(), denominator.atomics())
-                .map_err(|_| StdError::generic_err("CheckedMultiplyRatioError"))?,
+                .map_err(|_| StdError::msg("CheckedMultiplyRatioError"))?,
         ))
     }
 
@@ -73,7 +71,7 @@ impl Decimal256Ext for Decimal256 {
         precision: impl Into<u32>,
     ) -> StdResult<Decimal256> {
         Decimal256::from_atomics(value, precision.into())
-            .map_err(|_| StdError::generic_err("Decimal256 range exceeded"))
+            .map_err(|_| StdError::msg("Decimal256 range exceeded"))
     }
 }
 pub trait AbsDiff
@@ -136,6 +134,6 @@ impl ConvertInto<Decimal> for Decimal256 {
     fn conv(self) -> Result<Decimal, Self::Error> {
         let numerator: Uint128 = self.numerator().try_into()?;
         Decimal::from_atomics(numerator, self.decimal_places())
-            .map_err(|err| StdError::generic_err(err.to_string()))
+            .map_err(|err| StdError::msg(err.to_string()))
     }
 }

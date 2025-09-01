@@ -11,9 +11,9 @@ use cosmos_sdk_proto::{cosmos::distribution::v1beta1::MsgFundCommunityPool, trai
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    attr, coin, ensure, instantiate2_address, to_json_binary, Addr, AnyMsg, Attribute, BankMsg,
-    Binary, Coin, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Response, StdError, StdResult,
-    SubMsg, Timestamp, Uint128, WasmMsg,
+    attr, ensure, instantiate2_address, to_json_binary, Addr, AnyMsg, Attribute, BankMsg, Binary,
+    Coin, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Response, StdError, StdResult, SubMsg,
+    Timestamp, Uint256, WasmMsg,
 };
 use cw2::set_contract_version;
 
@@ -44,7 +44,7 @@ pub fn instantiate(
     };
 
     let payment_address = deps.api.addr_validate(&msg.payment_address).map_err(|_| {
-        StdError::generic_err(format!(
+        StdError::msg(format!(
             "payment address {} is not a valid address",
             msg.payment_address
         ))
@@ -187,8 +187,8 @@ fn execute_mint(
     let required_amount = config
         .price
         .amount
-        .checked_mul(Uint128::from(amount))
-        .map_err(StdError::overflow)?;
+        .checked_mul(Uint256::from(amount))
+        .map_err(StdError::from)?;
     if sent_amount != required_amount {
         return Err(ContractError::InvalidPaymentAmount(
             sent_amount,
@@ -268,31 +268,31 @@ fn execute_mint(
         if !referral_amount.is_zero() {
             bank_msgs.push(BankMsg::Send {
                 to_address: referral.clone().unwrap().to_string(),
-                amount: vec![coin(referral_amount.u128(), accepted_denom.clone())],
+                amount: vec![Coin::new(referral_amount, accepted_denom.clone())],
             });
 
             attributes.push(attr("referral", referral.unwrap().to_string()));
             attributes.push(attr(
                 "amount",
-                coin(referral_amount.u128(), accepted_denom.clone()).to_string(),
+                Coin::new(referral_amount, accepted_denom.clone()).to_string(),
             ));
         }
 
-        if protocol_amount > Uint128::zero() {
+        if protocol_amount > Uint256::zero() {
             res = res.add_submessage(fund_community_pool_msg(
                 env,
-                coin(protocol_amount.u128(), accepted_denom.clone()),
+                Coin::new(protocol_amount, accepted_denom.clone()),
             ));
         }
 
-        attributes.push(attr("protocol_fee", protocol_amount.u128().to_string()));
+        attributes.push(attr("protocol_fee", protocol_amount.to_string()));
 
         bank_msgs.push(BankMsg::Send {
             to_address: config.payment_address.clone().to_string(),
-            amount: vec![coin(royalties_amount.u128(), accepted_denom.clone())],
+            amount: vec![Coin::new(royalties_amount, accepted_denom.clone())],
         });
 
-        attributes.push(attr("royalties", royalties_amount.u128().to_string()));
+        attributes.push(attr("royalties", royalties_amount.to_string()));
 
         res = res.add_messages(bank_msgs).add_attributes(attributes)
     }
@@ -345,30 +345,28 @@ fn fund_community_pool_msg(env: Env, amount: Coin) -> SubMsg {
 pub fn compute_referral_and_royalties_amounts(
     config: &Config,
     referral: &Option<Addr>,
-    total_amount: Uint128,
-) -> StdResult<(Uint128, Uint128, Uint128)> {
+    total_amount: Uint256,
+) -> StdResult<(Uint256, Uint256, Uint256)> {
     let referral_amount = referral.as_ref().map_or_else(
-        || Ok(Uint128::zero()),
-        |_address| -> Result<Uint128, _> {
+        || Ok(Uint256::zero()),
+        |_address| -> Result<Uint256, _> {
             total_amount
-                .checked_mul(Uint128::from(config.referral_fee_bps))
-                .map_err(StdError::overflow)?
-                .checked_div(Uint128::new(10_000))
-                .map_err(StdError::divide_by_zero)
+                .checked_mul(Uint256::from(config.referral_fee_bps))
+                .map_err(StdError::from)?
+                .checked_div(Uint256::new(10_000))
+                .map_err(StdError::from)
         },
     )?;
 
     let protocol_amount = total_amount
-        .checked_mul(Uint128::from(config.protocol_fee_bps))
-        .map_err(StdError::overflow)?
-        .checked_div(Uint128::new(10_000))
-        .map_err(StdError::divide_by_zero)?;
+        .checked_mul(Uint256::from(config.protocol_fee_bps))
+        .map_err(StdError::from)?
+        .checked_div(Uint256::new(10_000))
+        .map_err(StdError::from)?;
 
     let royalties_amount = total_amount - referral_amount - protocol_amount;
-    if royalties_amount <= Uint128::zero() {
-        return Err(StdError::generic_err(
-            "royalties amount is zero or negative",
-        ));
+    if royalties_amount <= Uint256::zero() {
+        return Err(StdError::msg("royalties amount is zero or negative"));
     }
 
     Ok((referral_amount, royalties_amount, protocol_amount))
@@ -467,7 +465,7 @@ mod tests {
     use cosmwasm_std::testing::mock_env;
     use cosmwasm_std::Timestamp;
     use prost::Message;
-    
+
     // use easy_addr::addr;
     // const NFT_CONTRACT_ADDR: &str = addr!("nftcontract");
     // const ROYALTIES_CONTRACT_ADDR: &str = addr!("royaltiescontract");
@@ -511,7 +509,7 @@ mod tests {
             symbol: String::from(""),
             name: String::from(""),
             uri: String::from(""),
-            price: coin(1, "ubtsg"),
+            price: Coin::new(1u128, "ubtsg"),
             max_per_address: None,
             next_token_id: 1,
             payment_address: Addr::unchecked("payment_address"),
@@ -527,8 +525,8 @@ mod tests {
             config.start_time = env.block.time.plus_seconds(1);
             let resp = before_mint_checks(&env, &config, 1).unwrap_err();
             assert_eq!(
-                resp,
-                ContractError::NotStarted {},
+                resp.to_string(),
+                ContractError::NotStarted {}.to_string(),
                 "expected to fail since start time > current time"
             );
             config.start_time = env.block.time.minus_seconds(1);
@@ -550,8 +548,8 @@ mod tests {
             config.start_time = env.block.time.minus_seconds(1);
             let resp = before_mint_checks(&env, &config, 1).unwrap_err();
             assert_eq!(
-                resp,
-                ContractError::PartyEnded {},
+                resp.to_string(),
+                ContractError::PartyEnded {}.to_string(),
                 "expected to fail since party is ended"
             );
         }
@@ -562,8 +560,8 @@ mod tests {
             config.next_token_id = OVERAL_MAXIMUM_MINTABLE + 1;
             let resp = before_mint_checks(&env, &config, 1).unwrap_err();
             assert_eq!(
-                resp,
-                ContractError::MaxMetadataReached {},
+                resp.to_string(),
+                ContractError::MaxMetadataReached {}.to_string(),
                 "expected to fail since next token id is higher than overal maximum mintable tokens"
             );
         }
@@ -576,7 +574,7 @@ mod tests {
             symbol: String::from(""),
             name: String::from(""),
             uri: String::from(""),
-            price: coin(1, "ubtsg"),
+            price: Coin::new(1u128, "ubtsg"),
             max_per_address: None,
             next_token_id: 1,
             seller_fee_bps: 1_000,
@@ -590,19 +588,19 @@ mod tests {
 
         {
             let (referral_amt, royalties_amt, protocol_amt) =
-                compute_referral_and_royalties_amounts(&config, &None, Uint128::new(1_000))
+                compute_referral_and_royalties_amounts(&config, &None, Uint256::new(1_000))
                     .unwrap();
             assert_eq!(
-                Uint128::zero(),
+                Uint256::zero(),
                 referral_amt,
                 "expected zero referral amount since no referral address"
             );
             assert_eq!(
-                Uint128::new(900),
+                Uint256::new(900),
                 royalties_amt,
                 "expected royalties amount equal to total amount - protocol_fee"
             );
-            assert_eq!(Uint128::new(100), protocol_amt, "expected protocol fee")
+            assert_eq!(Uint256::new(100), protocol_amt, "expected protocol fee")
         }
 
         {
@@ -610,20 +608,20 @@ mod tests {
                 compute_referral_and_royalties_amounts(
                     &config,
                     &Some(Addr::unchecked("referrral".to_string())),
-                    Uint128::new(1_000),
+                    Uint256::new(1_000),
                 )
                 .unwrap();
             assert_eq!(
-                Uint128::new(100),
+                Uint256::new(100),
                 referral_amt,
                 "expected 10% as referral amount"
             );
             assert_eq!(
-                Uint128::new(800),
+                Uint256::new(800),
                 royalties_amt,
                 "expected 80% as royalties amount"
             );
-            assert_eq!(Uint128::new(100), protocol_amt, "expected protocol fee")
+            assert_eq!(Uint256::new(100), protocol_amt, "expected protocol fee")
         }
 
         {
@@ -631,13 +629,16 @@ mod tests {
             let result = compute_referral_and_royalties_amounts(
                 &config,
                 &Some(Addr::unchecked("referrral".to_string())),
-                Uint128::zero(),
+                Uint256::zero(),
             );
 
             assert!(result.is_err());
             match result {
-                Err(StdError::GenericErr { msg, backtrace: _ }) => {
-                    assert_eq!(msg, "royalties amount is zero or negative");
+                Err(e) => {
+                    assert_eq!(
+                        e.to_string(),
+                        "kind: Other, error: royalties amount is zero or negative"
+                    );
                 }
                 _ => panic!("Unexpected error"),
             }
@@ -648,20 +649,20 @@ mod tests {
                 compute_referral_and_royalties_amounts(
                     &config,
                     &Some(Addr::unchecked("referrral".to_string())),
-                    Uint128::new(1),
+                    Uint256::new(1),
                 )
                 .unwrap();
             assert_eq!(
-                Uint128::zero(),
+                Uint256::zero(),
                 referral_amt,
                 "expected zero 10% of 1 is rounded zero"
             );
             assert_eq!(
-                Uint128::new(1),
+                Uint256::new(1),
                 royalties_amt,
                 "expected 1 since royalties is 1 minus referral amount"
             );
-            assert_eq!(Uint128::new(0), protocol_amt, "expected zero protocol fee")
+            assert_eq!(Uint256::new(0), protocol_amt, "expected zero protocol fee")
         }
 
         {
@@ -669,20 +670,20 @@ mod tests {
                 compute_referral_and_royalties_amounts(
                     &config,
                     &Some(Addr::unchecked("referrral".to_string())),
-                    Uint128::new(9),
+                    Uint256::new(9),
                 )
                 .unwrap();
             assert_eq!(
-                Uint128::zero(),
+                Uint256::zero(),
                 referral_amt,
                 "expected zero since 10% of 9 is rounded zero"
             );
             assert_eq!(
-                Uint128::new(9),
+                Uint256::new(9),
                 royalties_amt,
                 "expected 9 since royalties is 9 minus referral amount"
             );
-            assert_eq!(Uint128::new(0), protocol_amt, "expected zero protocol fee")
+            assert_eq!(Uint256::new(0), protocol_amt, "expected zero protocol fee")
         }
 
         {
@@ -690,16 +691,16 @@ mod tests {
                 compute_referral_and_royalties_amounts(
                     &config,
                     &Some(Addr::unchecked("referrral".to_string())),
-                    Uint128::new(10),
+                    Uint256::new(10),
                 )
                 .unwrap();
-            assert_eq!(Uint128::new(1), referral_amt, "expected 1 since 10% of 10");
+            assert_eq!(Uint256::new(1), referral_amt, "expected 1 since 10% of 10");
             assert_eq!(
-                Uint128::new(8),
+                Uint256::new(8),
                 royalties_amt,
                 "expected 8 since royalties is 10 minus referral amount minus protocol fee"
             );
-            assert_eq!(Uint128::new(1), protocol_amt, "expected 1 protocol fee")
+            assert_eq!(Uint256::new(1), protocol_amt, "expected 1 protocol fee")
         }
     }
 

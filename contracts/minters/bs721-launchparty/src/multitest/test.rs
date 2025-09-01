@@ -1,4 +1,4 @@
-use cosmwasm_std::{coin, Addr, Uint128};
+use cosmwasm_std::{coin, Addr, Uint256};
 
 use crate::multitest::suite::{ADDRESS1, ADDRESS2, PAYMENT_RECIPIENT, REFERRAL};
 
@@ -42,7 +42,7 @@ fn mint_single_no_referral() {
         suite
             .query_address_balance(royalties_address, "ubtsg")
             .amount,
-        Uint128::one(),
+        Uint256::one(),
         "expected to have the royalties contract balance equal to the price of a single NFT"
     );
 
@@ -71,7 +71,7 @@ fn mint_single_with_referral() {
         suite
             .query_address_balance(referral.unwrap(), "ubtsg")
             .amount,
-        Uint128::one(),
+        Uint256::one(),
         "expected to have the referral address balance equal to the 10% of the NFT price"
     );
 
@@ -79,7 +79,7 @@ fn mint_single_with_referral() {
         suite
             .query_address_balance(royalties_address, "ubtsg")
             .amount,
-        Uint128::new(9),
+        Uint256::new(9),
         "expected to have the royalties contract balance equal to the 90% of the NFT price"
     );
 }
@@ -104,7 +104,7 @@ fn mint_multiple() {
         suite
             .query_address_balance(royalties_address, "ubtsg")
             .amount,
-        Uint128::new(3),
+        Uint256::new(3),
         "expected to have the royalties contract balance equal to the price of 3 NFT"
     );
 

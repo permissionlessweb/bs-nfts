@@ -1,7 +1,7 @@
 use cosmwasm_std::StdError;
 use thiserror::Error;
 
-#[derive(Error, Debug, PartialEq)]
+#[derive(Error, Debug)]
 pub enum ContractError {
     #[error("{0}")]
     Std(#[from] StdError),
@@ -23,7 +23,4 @@ pub enum ContractError {
 
     #[error("Seller fee and payment address must be set together")]
     InvalidSellerFee {},
-
-    #[error(transparent)]
-    Ownership(#[from] cw_ownable::OwnershipError),
 }
