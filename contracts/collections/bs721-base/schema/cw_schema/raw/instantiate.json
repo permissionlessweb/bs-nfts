@@ -1,0 +1,37 @@
+{
+  "type": "v1",
+  "root": 0,
+  "definitions": [
+    {
+      "name": "bs721_base_msg_InstantiateMsg",
+      "type": "struct",
+      "properties": {
+        "minter": {
+          "description": "The minter is the only one who can create new NFTs.\nThis is designed for a base NFT that is controlled by an external program\nor contract. You will likely replace this with custom logic in custom NFTs",
+          "value": 1
+        },
+        "name": {
+          "description": "Name of the NFT contract",
+          "value": 1
+        },
+        "symbol": {
+          "description": "Symbol of the NFT contract",
+          "value": 1
+        },
+        "uri": {
+          "description": "Uri, optional uri to get more information about the NFT",
+          "value": 2
+        }
+      }
+    },
+    {
+      "name": "String",
+      "type": "string"
+    },
+    {
+      "name": "core::option::Option<alloc::string::String>",
+      "type": "optional",
+      "inner": 1
+    }
+  ]
+}

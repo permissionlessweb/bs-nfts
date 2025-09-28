@@ -1,0 +1,20 @@
+{
+  "type": "v1",
+  "root": 0,
+  "definitions": [
+    {
+      "name": "bs721_base_msg_MinterResponse",
+      "description": "Shows who can mint these tokens",
+      "type": "struct",
+      "properties": {
+        "minter": {
+          "value": 1
+        }
+      }
+    },
+    {
+      "name": "String",
+      "type": "string"
+    }
+  ]
+}

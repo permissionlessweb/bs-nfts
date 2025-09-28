@@ -1,0 +1,54 @@
+{
+  "type": "v1",
+  "root": 0,
+  "definitions": [
+    {
+      "name": "bs721_royalties_msg_InstantiateMsg",
+      "type": "struct",
+      "properties": {
+        "contributors": {
+          "description": "NFT collection contibutors.",
+          "value": 4
+        },
+        "denom": {
+          "description": "Native denom distributed to contributors.",
+          "value": 1
+        }
+      }
+    },
+    {
+      "name": "String",
+      "type": "string"
+    },
+    {
+      "name": "bs721_royalties_msg_ContributorMsg",
+      "description": "Represents a contributor to the collection.",
+      "type": "struct",
+      "properties": {
+        "address": {
+          "description": "Contributor's address.",
+          "value": 1
+        },
+        "role": {
+          "description": "Contributor's role",
+          "value": 1
+        },
+        "shares": {
+          "description": "Amount of share associated to the contributor.",
+          "value": 3
+        }
+      }
+    },
+    {
+      "name": "u32",
+      "type": "integer",
+      "precision": 32,
+      "signed": false
+    },
+    {
+      "name": "alloc::vec::Vec<bs721_royalties::msg::ContributorMsg>",
+      "type": "array",
+      "items": 2
+    }
+  ]
+}

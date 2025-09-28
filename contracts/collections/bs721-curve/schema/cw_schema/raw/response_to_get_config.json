@@ -1,0 +1,106 @@
+{
+  "type": "v1",
+  "root": 0,
+  "definitions": [
+    {
+      "name": "bs721_curve_state_Config",
+      "description": "Smart contract configuration structure.",
+      "type": "struct",
+      "properties": {
+        "bs721_address": {
+          "description": "Address of the bs721 metadata-onchain token contract.",
+          "value": 7
+        },
+        "creator": {
+          "description": "Creator of the collection. If not provided it will be the sender. The minter is the only one who can create new NFTs.",
+          "value": 1
+        },
+        "max_edition": {
+          "description": "Max edition of the collection launchparty.",
+          "value": 4
+        },
+        "max_per_address": {
+          "description": "Maximum amount of token an address can mint.",
+          "value": 4
+        },
+        "name": {
+          "description": "Name of the NFT contract",
+          "value": 2
+        },
+        "next_token_id": {
+          "description": "ID of the next NFT that will be minted. The first NFT will be minted with ID == 1.",
+          "value": 3
+        },
+        "payment_address": {
+          "description": "Address of the bs721 royalties contract.",
+          "value": 1
+        },
+        "payment_denom": {
+          "description": "Denom used to pay for the NFTs",
+          "value": 2
+        },
+        "protocol_fee_bps": {
+          "value": 5
+        },
+        "ratio": {
+          "description": "Ratio, is the cooeficient of the curve",
+          "value": 3
+        },
+        "referral_fee_bps": {
+          "value": 5
+        },
+        "seller_fee_bps": {
+          "value": 5
+        },
+        "start_time": {
+          "description": "Start time of the launchparty.",
+          "value": 6
+        },
+        "symbol": {
+          "description": "Symbol of the NFT contract",
+          "value": 2
+        },
+        "uri": {
+          "description": "URI of the NFT contract",
+          "value": 2
+        }
+      }
+    },
+    {
+      "name": "cosmwasm_std_addresses_Addr",
+      "description": "A human readable address.\n\nIn Cosmos, this is typically bech32 encoded. But for multi-chain smart contracts no\nassumptions should be made other than being UTF-8 encoded and of reasonable length.\n\nThis type represents a validated address. It can be created in the following ways\n1. Use `Addr::unchecked(input)`\n2. Use `let checked: Addr = deps.api.addr_validate(input)?`\n3. Use `let checked: Addr = deps.api.addr_humanize(canonical_addr)?`\n4. Deserialize from JSON. This must only be done from JSON that was validated before\nsuch as a contract's state. `Addr` must not be used in messages sent by the user\nbecause this would result in unvalidated instances.\n\nThis type is immutable. If you really need to mutate it (Really? Are you sure?), create\na mutable copy using `let mut mutable = Addr::to_string()` and operate on that `String`\ninstance.",
+      "type": "address"
+    },
+    {
+      "name": "String",
+      "type": "string"
+    },
+    {
+      "name": "u32",
+      "type": "integer",
+      "precision": 32,
+      "signed": false
+    },
+    {
+      "name": "core::option::Option<u32>",
+      "type": "optional",
+      "inner": 3
+    },
+    {
+      "name": "u16",
+      "type": "integer",
+      "precision": 16,
+      "signed": false
+    },
+    {
+      "name": "cosmwasm_std_timestamp_Timestamp",
+      "description": "A point in time in nanosecond precision.\n\nThis type can represent times from 1970-01-01T00:00:00Z to 2554-07-21T23:34:33Z.\n\n## Examples\n\n```\n# use cosmwasm_std::Timestamp;\nlet ts = Timestamp::from_nanos(1_000_000_202);\nassert_eq!(ts.nanos(), 1_000_000_202);\nassert_eq!(ts.seconds(), 1);\nassert_eq!(ts.subsec_nanos(), 202);\n\nlet ts = ts.plus_seconds(2);\nassert_eq!(ts.nanos(), 3_000_000_202);\nassert_eq!(ts.seconds(), 3);\nassert_eq!(ts.subsec_nanos(), 202);\n```",
+      "type": "timestamp"
+    },
+    {
+      "name": "core::option::Option<cosmwasm_std::addresses::Addr>",
+      "type": "optional",
+      "inner": 1
+    }
+  ]
+}

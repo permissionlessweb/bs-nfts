@@ -1,0 +1,22 @@
+{
+  "type": "v1",
+  "root": 0,
+  "definitions": [
+    {
+      "name": "bs721_royalties_msg_ExecuteMsg",
+      "type": "enum",
+      "cases": {
+        "distribute": {
+          "description": "Update contributors withdrawable amount by computing each contributors percentage of the\ntotal distributable contract balance. This function will consider only coins of the stored denom.",
+          "type": "named",
+          "properties": {}
+        },
+        "withdraw": {
+          "description": "Withdraw accrued royalties. This message can only be sent by a contributor.",
+          "type": "named",
+          "properties": {}
+        }
+      }
+    }
+  ]
+}

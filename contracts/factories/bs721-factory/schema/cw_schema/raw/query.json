@@ -1,0 +1,18 @@
+{
+  "type": "v1",
+  "root": 0,
+  "definitions": [
+    {
+      "name": "bs721_factory_msg_QueryMsg",
+      "description": "Possible query messages that the launchparty-curve contract can handle.",
+      "type": "enum",
+      "cases": {
+        "config": {
+          "description": "Retrieves contract's configuration",
+          "type": "named",
+          "properties": {}
+        }
+      }
+    }
+  ]
+}

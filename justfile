@@ -10,7 +10,7 @@ test:
     cargo test --locked
 
 lint:
-    cargo clippy --tests -- -D warnings
+    cargo clippy --tests --fix -- -D warnings
 
 build:
     cargo build --release --locked --target wasm32-unknown-unknown

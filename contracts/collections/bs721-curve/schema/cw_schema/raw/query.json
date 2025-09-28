@@ -1,0 +1,53 @@
+{
+  "type": "v1",
+  "root": 0,
+  "definitions": [
+    {
+      "name": "bs721_curve_msg_QueryMsg",
+      "description": "Possible query messages that the launchparty-curve contract can handle.",
+      "type": "enum",
+      "cases": {
+        "buy_price": {
+          "type": "named",
+          "properties": {
+            "amount": {
+              "value": 2
+            }
+          }
+        },
+        "get_config": {
+          "description": "Retrieves contract's configuration",
+          "type": "named",
+          "properties": {}
+        },
+        "max_per_address": {
+          "description": "Returns the maximum amount of token an address can mint.",
+          "type": "named",
+          "properties": {
+            "address": {
+              "value": 1
+            }
+          }
+        },
+        "sell_price": {
+          "type": "named",
+          "properties": {
+            "amount": {
+              "value": 2
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "String",
+      "type": "string"
+    },
+    {
+      "name": "u128",
+      "type": "integer",
+      "precision": 128,
+      "signed": false
+    }
+  ]
+}

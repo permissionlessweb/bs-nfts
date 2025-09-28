@@ -1,0 +1,31 @@
+{
+  "type": "v1",
+  "root": 0,
+  "definitions": [
+    {
+      "name": "bs721_launchparty_msg_QueryMsg",
+      "description": "Possible query messages that the launchparty-fixed contract can handle.",
+      "type": "enum",
+      "cases": {
+        "get_config": {
+          "description": "Retrieves contract's configuration",
+          "type": "named",
+          "properties": {}
+        },
+        "max_per_address": {
+          "description": "Returns the maximum amount of token an address can mint.",
+          "type": "named",
+          "properties": {
+            "address": {
+              "value": 1
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "String",
+      "type": "string"
+    }
+  ]
+}

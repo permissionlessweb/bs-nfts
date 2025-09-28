@@ -1,0 +1,27 @@
+{
+  "type": "v1",
+  "root": 0,
+  "definitions": [
+    {
+      "name": "bs721_launchparty_msg_MaxPerAddressResponse",
+      "type": "struct",
+      "properties": {
+        "remaining": {
+          "description": "Returns the maximum amount of token an address can mint.",
+          "value": 2
+        }
+      }
+    },
+    {
+      "name": "u32",
+      "type": "integer",
+      "precision": 32,
+      "signed": false
+    },
+    {
+      "name": "core::option::Option<u32>",
+      "type": "optional",
+      "inner": 1
+    }
+  ]
+}

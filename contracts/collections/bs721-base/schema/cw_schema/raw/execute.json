@@ -1,0 +1,205 @@
+{
+  "type": "v1",
+  "root": 0,
+  "definitions": [
+    {
+      "name": "bs721_base_msg_ExecuteMsg_cosmwasm_std_results_empty_Empty_",
+      "description": "This is like Bs721ExecuteMsg but we add a Mint command for an owner\nto make this stand-alone. You will likely want to remove mint and\nuse other control logic in any contract that inherits this.",
+      "type": "enum",
+      "cases": {
+        "approve": {
+          "description": "Allows operator to transfer / send the token from the owner's account.\nIf expiration is set, then this allowance has a time/height limit",
+          "type": "named",
+          "properties": {
+            "expires": {
+              "value": 6
+            },
+            "spender": {
+              "value": 1
+            },
+            "token_id": {
+              "value": 1
+            }
+          }
+        },
+        "approve_all": {
+          "description": "Allows operator to transfer / send any token from the owner's account.\nIf expiration is set, then this allowance has a time/height limit",
+          "type": "named",
+          "properties": {
+            "expires": {
+              "value": 6
+            },
+            "operator": {
+              "value": 1
+            }
+          }
+        },
+        "burn": {
+          "description": "Burn an NFT the sender has access to",
+          "type": "named",
+          "properties": {
+            "token_id": {
+              "value": 1
+            }
+          }
+        },
+        "mint": {
+          "description": "Mint a new NFT, can only be called by the contract minter",
+          "type": "named",
+          "properties": {
+            "extension": {
+              "description": "Any custom extension used by this contract",
+              "value": 10
+            },
+            "owner": {
+              "value": 1
+            },
+            "payment_addr": {
+              "description": "Payment address, is the address that will receive the payment",
+              "value": 7
+            },
+            "seller_fee_bps": {
+              "value": 9
+            },
+            "token_id": {
+              "value": 1
+            },
+            "token_uri": {
+              "value": 7
+            }
+          }
+        },
+        "revoke": {
+          "description": "Remove previously granted Approval",
+          "type": "named",
+          "properties": {
+            "spender": {
+              "value": 1
+            },
+            "token_id": {
+              "value": 1
+            }
+          }
+        },
+        "revoke_all": {
+          "description": "Remove previously granted ApproveAll permission",
+          "type": "named",
+          "properties": {
+            "operator": {
+              "value": 1
+            }
+          }
+        },
+        "send_nft": {
+          "description": "Send is a base message to transfer a token to a contract and trigger an action\non the receiving contract.",
+          "type": "named",
+          "properties": {
+            "contract": {
+              "value": 1
+            },
+            "msg": {
+              "value": 2
+            },
+            "token_id": {
+              "value": 1
+            }
+          }
+        },
+        "set_minter": {
+          "description": "Set a new minter",
+          "type": "named",
+          "properties": {
+            "new_minter": {
+              "value": 1
+            }
+          }
+        },
+        "transfer_nft": {
+          "description": "Transfer is a base message to move a token to another account without triggering actions",
+          "type": "named",
+          "properties": {
+            "recipient": {
+              "value": 1
+            },
+            "token_id": {
+              "value": 1
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "String",
+      "type": "string"
+    },
+    {
+      "name": "cosmwasm_std_binary_Binary",
+      "description": "Binary is a wrapper around Vec<u8> to add base64 de/serialization\nwith serde. It also adds some helper methods to help encode inline.\n\nThis is only needed as serde-json-{core,wasm} has a horrible encoding for Vec<u8>.\nSee also <https://github.com/CosmWasm/cosmwasm/blob/main/docs/MESSAGE_TYPES.md>.",
+      "type": "binary"
+    },
+    {
+      "name": "cw_utils_expiration_Expiration",
+      "description": "Expiration represents a point in time when some event happens.\nIt can compare with a BlockInfo and will return is_expired() == true\nonce the condition is hit (and for every block in the future)",
+      "type": "enum",
+      "cases": {
+        "at_height": {
+          "description": "AtHeight will expire when `env.block.height` >= height",
+          "type": "tuple",
+          "items": [
+            4
+          ]
+        },
+        "at_time": {
+          "description": "AtTime will expire when `env.block.time` >= time",
+          "type": "tuple",
+          "items": [
+            5
+          ]
+        },
+        "never": {
+          "description": "Never will never expire. Used to express the empty variant",
+          "type": "named",
+          "properties": {}
+        }
+      }
+    },
+    {
+      "name": "u64",
+      "type": "integer",
+      "precision": 64,
+      "signed": false
+    },
+    {
+      "name": "cosmwasm_std_timestamp_Timestamp",
+      "description": "A point in time in nanosecond precision.\n\nThis type can represent times from 1970-01-01T00:00:00Z to 2554-07-21T23:34:33Z.\n\n## Examples\n\n```\n# use cosmwasm_std::Timestamp;\nlet ts = Timestamp::from_nanos(1_000_000_202);\nassert_eq!(ts.nanos(), 1_000_000_202);\nassert_eq!(ts.seconds(), 1);\nassert_eq!(ts.subsec_nanos(), 202);\n\nlet ts = ts.plus_seconds(2);\nassert_eq!(ts.nanos(), 3_000_000_202);\nassert_eq!(ts.seconds(), 3);\nassert_eq!(ts.subsec_nanos(), 202);\n```",
+      "type": "timestamp"
+    },
+    {
+      "name": "core::option::Option<cw_utils::expiration::Expiration>",
+      "type": "optional",
+      "inner": 3
+    },
+    {
+      "name": "core::option::Option<alloc::string::String>",
+      "type": "optional",
+      "inner": 1
+    },
+    {
+      "name": "u16",
+      "type": "integer",
+      "precision": 16,
+      "signed": false
+    },
+    {
+      "name": "core::option::Option<u16>",
+      "type": "optional",
+      "inner": 8
+    },
+    {
+      "name": "cosmwasm_std_results_empty_Empty",
+      "description": "An empty struct that serves as a placeholder in different places,\nsuch as contracts that don't set a custom message.\n\nIt is designed to be expressible in correct JSON and JSON Schema but\ncontains no meaningful data. Previously we used enums without cases,\nbut those cannot represented as valid JSON Schema (https://github.com/CosmWasm/cosmwasm/issues/451)",
+      "type": "struct",
+      "properties": {}
+    }
+  ]
+}

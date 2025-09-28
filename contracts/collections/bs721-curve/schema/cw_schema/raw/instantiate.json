@@ -1,0 +1,100 @@
+{
+  "type": "v1",
+  "root": 0,
+  "definitions": [
+    {
+      "name": "bs721_curve_msg_InstantiateMsg",
+      "description": "Structure required by the launchparty-curve contract during its instantiation.",
+      "type": "struct",
+      "properties": {
+        "bs721_admin": {
+          "value": 1
+        },
+        "bs721_code_id": {
+          "description": "Code id used to instantiate a bs721 metadata onchain token contract.",
+          "value": 6
+        },
+        "max_edition": {
+          "description": "Max edition of the collection launchparty.",
+          "value": 3
+        },
+        "max_per_address": {
+          "description": "Maximum amount of tokens an address can mint.",
+          "value": 3
+        },
+        "name": {
+          "description": "BS721 token name.",
+          "value": 1
+        },
+        "payment_address": {
+          "description": "Payment address for the royalties.",
+          "value": 1
+        },
+        "payment_denom": {
+          "description": "Denom used to pay for the NFTs",
+          "value": 1
+        },
+        "protocol_fee_bps": {
+          "description": "Basis per point of the `price` sent to the community pool during mint or burn.",
+          "value": 4
+        },
+        "ratio": {
+          "description": "Ratio, is the cooeficient of the curve",
+          "value": 2
+        },
+        "referral_fee_bps": {
+          "description": "Basis per point of the `price` sent to the referred address during mint or burn.",
+          "value": 4
+        },
+        "seller_fee_bps": {
+          "description": "Basis per point of the `price` sent to the royalties address during mint or burn.",
+          "value": 4
+        },
+        "start_time": {
+          "description": "Start time of the launchparty.",
+          "value": 5
+        },
+        "symbol": {
+          "description": "BS721 token symbol.",
+          "value": 1
+        },
+        "uri": {
+          "description": "BS721 Uri",
+          "value": 1
+        }
+      }
+    },
+    {
+      "name": "String",
+      "type": "string"
+    },
+    {
+      "name": "u32",
+      "type": "integer",
+      "precision": 32,
+      "signed": false
+    },
+    {
+      "name": "core::option::Option<u32>",
+      "type": "optional",
+      "inner": 2
+    },
+    {
+      "name": "u16",
+      "type": "integer",
+      "precision": 16,
+      "signed": false
+    },
+    {
+      "name": "cosmwasm_std_timestamp_Timestamp",
+      "description": "A point in time in nanosecond precision.\n\nThis type can represent times from 1970-01-01T00:00:00Z to 2554-07-21T23:34:33Z.\n\n## Examples\n\n```\n# use cosmwasm_std::Timestamp;\nlet ts = Timestamp::from_nanos(1_000_000_202);\nassert_eq!(ts.nanos(), 1_000_000_202);\nassert_eq!(ts.seconds(), 1);\nassert_eq!(ts.subsec_nanos(), 202);\n\nlet ts = ts.plus_seconds(2);\nassert_eq!(ts.nanos(), 3_000_000_202);\nassert_eq!(ts.seconds(), 3);\nassert_eq!(ts.subsec_nanos(), 202);\n```",
+      "type": "timestamp"
+    },
+    {
+      "name": "u64",
+      "type": "integer",
+      "precision": 64,
+      "signed": false
+    }
+  ]
+}
