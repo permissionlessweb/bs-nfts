@@ -1569,7 +1569,6 @@ dependencies = [
  "bs721-launchparty",
  "bs721-royalties",
  "btsg-auth",
- "btsg-wavs",
  "clap",
  "cosmwasm-std 2.2.2",
  "cw-orch 0.26.0",
@@ -1585,25 +1584,6 @@ dependencies = [
  "serde",
  "serde_json",
  "tokio",
-]
-
-[[package]]
-name = "btsg-wavs"
-version = "0.2.0"
-source = "git+https://github.com/permissionlessweb/bs-accounts?branch=cleanup#3bb6a490744e0a89e0d22909a9944f37e8235da9"
-dependencies = [
- "btsg-auth",
- "cosmos-sdk-proto 0.26.1",
- "cosmwasm-schema 2.2.2",
- "cosmwasm-std 2.2.2",
- "cw-orch 0.28.0",
- "cw-ownable",
- "cw-storage-plus 2.0.0",
- "cw-utils 2.0.0",
- "cw2 2.0.0",
- "schemars 0.8.22",
- "serde",
- "thiserror 1.0.69",
 ]
 
 [[package]]
@@ -2642,27 +2622,6 @@ dependencies = [
  "serde",
  "thiserror 1.0.69",
  "tokio",
-]
-
-[[package]]
-name = "cw-orch"
-version = "0.28.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3bb8dfb35ae85f05874dcb6b2526b41dfa9007db83a3ccad451b4536a544cc1c"
-dependencies = [
- "anyhow",
- "cosmwasm-std 2.2.2",
- "cw-orch-contract-derive",
- "cw-orch-core",
- "cw-orch-fns-derive",
- "cw-orch-mock",
- "cw-orch-traits 0.25.0",
- "cw-utils 2.0.0",
- "hex",
- "log",
- "schemars 0.8.22",
- "serde",
- "thiserror 1.0.69",
 ]
 
 [[package]]
@@ -12631,7 +12590,6 @@ dependencies = [
  "bs721-royalties",
  "btsg-auth",
  "btsg-nft-scripts",
- "btsg-wavs",
  "cosmwasm-schema 2.2.2",
  "cosmwasm-std 2.2.2",
  "cw-multi-test",

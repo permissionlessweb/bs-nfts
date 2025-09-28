@@ -1,7 +1,6 @@
 use crate::curve::Bs721Curve;
 use crate::launchparty::Btsg721Launchparty;
 use crate::royalties::Bs721Royalties;
-use crate::wavs::BtsgWavsAuthenticator;
 use crate::{base::Bs721Base, factory::Bs721Factory};
 use bs721_launchparty::msg::{InstantiateMsg as Bs721LaunchInitMsg, PartyType};
 
@@ -16,7 +15,6 @@ where
     pub royalties: Bs721Royalties<Chain>,
     pub launchparty: Btsg721Launchparty<Chain>,
     pub factory: Bs721Factory<Chain>,
-    pub wavs: BtsgWavsAuthenticator<Chain>,
 }
 
 pub const BLS_PUBKEY: &str = "";
@@ -24,7 +22,6 @@ pub const BLS_PUBKEY: &str = "";
 impl<Chain: CwEnv> BtsgNftSuite<Chain> {
     pub fn new(chain: Chain) -> BtsgNftSuite<Chain> {
         BtsgNftSuite::<Chain> {
-            wavs: BtsgWavsAuthenticator::new("btsg_wavs", chain.clone()),
             base: Bs721Base::new("bs721_base", chain.clone()),
             curve: Bs721Curve::new("bs721_curve", chain.clone()),
             launchparty: Btsg721Launchparty::new("bs721_launchparty", chain.clone()),
@@ -34,7 +31,6 @@ impl<Chain: CwEnv> BtsgNftSuite<Chain> {
     }
 
     pub fn upload(&self) -> Result<(), CwOrchError> {
-        let _wavs = self.wavs.upload()?.uploaded_code_id()?;
         let _bs721base = self.base.upload()?.uploaded_code_id()?;
         let _launchpad = self.launchparty.upload()?.uploaded_code_id()?;
         let _factory = self.factory.upload()?.uploaded_code_id()?;
@@ -64,7 +60,6 @@ impl<Chain: CwEnv> cw_orch::contract::Deploy<Chain> for BtsgNftSuite<Chain> {
 
     fn get_contracts_mut(&mut self) -> Vec<Box<&mut dyn ContractInstance<Chain>>> {
         vec![
-            Box::new(&mut self.wavs),
             Box::new(&mut self.launchparty),
             Box::new(&mut self.base),
             Box::new(&mut self.curve),

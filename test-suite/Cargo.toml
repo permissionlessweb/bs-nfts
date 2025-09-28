@@ -19,7 +19,6 @@ vanilla = []
 btsg-nft-scripts = { workspace = true }
 bs721                       = { workspace = true }
 btsg-auth                   = { workspace = true}
-btsg-wavs                   = { workspace = true}
 bs721-base                  = { workspace = true }
 bs721-factory               = { workspace = true }
 bs721-curve                 = { workspace = true }
