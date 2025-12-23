@@ -40,6 +40,6 @@ serde            = { workspace = true }
 
 [dev-dependencies]
 rand = "0.8.5"
-cw-multi-test = "2.4.0"
+cw-multi-test = { git = "https://github.com/permissionlessweb/cw-multi-test", branch = "mvp" }
 # abstract-cw-multi-test = { version = "2.2.4" }
 

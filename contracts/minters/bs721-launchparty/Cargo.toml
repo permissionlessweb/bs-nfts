@@ -15,13 +15,14 @@ documentation = { workspace = true }
 crate-type = ["cdylib", "rlib"]
 
 [features]
+default = []
 # use library feature to disable all instantiate/execute/query exports
 library = []
 interface = ["dep:cw-orch"]
 
 [dependencies]
 cosmwasm-schema         = { workspace = true }
-cosmwasm-std            = { workspace = true }
+cosmwasm-std            = { workspace = true , features = ["cosmwasm_2_0"]}
 cw-utils                = { workspace = true }
 cw2                     = { workspace = true }
 bs721-base              = { workspace = true, features = ["library"] }

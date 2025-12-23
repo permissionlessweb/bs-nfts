@@ -26,17 +26,19 @@ bs721                        = { path = "./packages/bs721" }
 easy-addr                    = { path = "./packages/easy-addr" }
 bs-controllers               = { path = "./packages/controllers" }
 btsg-nft-scripts             = { path = "./scripts" }
-btsg-auth                    = { git = "https://github.com/permissionlessweb/bs-accounts", package = "btsg-auth", branch = "cleanup" }
-btsg-wavs                    = { git = "https://github.com/permissionlessweb/bs-accounts", package = "btsg-wavs", branch = "cleanup", features = ["library"] }
+
+
+cosmwasm-std = { git = "https://github.com/permissionlessweb/cosmwasm", branch = "mvp" }
+cosmwasm-schema                = { git = "https://github.com/permissionlessweb/cosmwasm", branch = "mvp", package = "cosmwasm-schema" }
+cw2                          = { git = "https://github.com/permissionlessweb/cw-minus", branch = "mvp", package = "cw2" }
+cw-storage-plus              = { git = "https://github.com/permissionlessweb/cw-storage-plus", branch = "mvp" }
+btsg-auth                    = { git = "https://github.com/permissionlessweb/bs-accounts", package = "btsg-auth", branch = "mvp" }
+btsg-wavs                    = { git = "https://github.com/permissionlessweb/bs-accounts", package = "btsg-wavs", branch = "mvp", features = ["library"] }
 cosmos-sdk-proto             = { git = "https://github.com/permissionlessweb/cosmos-rust", default-features = false }
+cw-utils                     = { git = "https://github.com/permissionlessweb/cw-minus", branch = "mvp", package = "cw-utils" }
+cw-storage-macro             = { git = "https://github.com/permissionlessweb/cw-storage-plus", branch = "mvp", package = "cw-storage-macro" }
 
 anyhow                       = { version = "1.0" }
-cosmwasm-schema              = { version = "3.0.1" }
-cosmwasm-std                 = { version = "3.0.1" }
-cw2                          = { version =  "3.0.0"  }
-cw-storage-macro             = { version = "2.1.0" }
-cw-storage-plus              = { version = "3.0.0" }
-cw-utils                     = { version = "3.0.0" }
 schemars                     = { version = "0.8.21" }
 serde                        = { version = "1.0.140", default-features = false, features = ["derive"] }
 serde_json                   = { version = "1.0.79" }
@@ -45,8 +47,7 @@ thiserror                    = { version = "1.0.31" }
 url                          = { version = "2.2.2" }
 
 # dev dependencies
-cw-multi-test                = { version = "3.0.1" , features = ["stargate", "cosmwasm_2_1"] }
-
+cw-multi-test = { git = "https://github.com/permissionlessweb/cw-multi-test", branch = "mvp", features = ["stargate", "cosmwasm_2_1"] }
 [profile.release.package.bs721-base]
 codegen-units = 1
 incremental = false
